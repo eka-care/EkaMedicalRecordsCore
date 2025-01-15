@@ -1,4 +1,4 @@
-**Eka Medical Records Core SDK Documentation**
+# **Eka Medical Records Core SDK Documentation**
 
 This SDK will have core records database functionalities like:
 
