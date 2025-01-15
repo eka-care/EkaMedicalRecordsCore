@@ -1,4 +1,6 @@
-his SDK will have core records database functionalities like:
+**Eka Medical Records Core SDK Documentation**
+
+This SDK will have core records database functionalities like:
 
 1. Sync Records (from the server)
 2. Create record (Bulk or Single)
