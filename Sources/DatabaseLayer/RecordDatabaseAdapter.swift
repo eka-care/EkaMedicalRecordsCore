@@ -13,7 +13,7 @@ import SwiftProtoContracts
  */
 
 /// Model used for record insert
-struct RecordModel {
+public struct RecordModel {
   var documentID: String?
   var documentDate: Date?
   var documentHash: String?

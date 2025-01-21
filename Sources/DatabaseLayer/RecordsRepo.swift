@@ -9,7 +9,7 @@ import Foundation
 import SwiftProtoContracts
 import CoreData
 
-final class RecordsRepo {
+public final class RecordsRepo {
   
   // MARK: - Properties
   
@@ -30,7 +30,9 @@ final class RecordsRepo {
   
   // MARK: - Sync Records
   
-  public func syncRecords(completion: @escaping () -> Void) {
+  /// Used to fetch records from the server and store them in the database
+  /// - Parameter completion: completion block to be executed after fetching
+  public func fetchRecordsFromServer(completion: @escaping () -> Void) {
     syncRecordsForPage(
       token: pageOffsetToken,
       updatedAt: recordsUpdateEpoch
@@ -52,7 +54,7 @@ final class RecordsRepo {
         /// Update the page offset token
         pageOffsetToken = nextPageToken
         /// Call for next page
-        syncRecords(completion: completion)
+        fetchRecordsFromServer(completion: completion)
       } else { /// We have reached last page for api calls
         /// Update the epoch in UserDefaults
         UserDefaultsHelper.save(customValue: recordsUpdateEpoch, withKey: Constants.lastUpdatedRecordAt)
