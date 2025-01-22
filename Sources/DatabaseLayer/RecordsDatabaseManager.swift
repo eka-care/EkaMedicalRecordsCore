@@ -32,7 +32,7 @@ public final class RecordsDatabaseManager {
   // MARK: - Init
   
   private init() {
-    guard let modelURL = Bundle.module.url(forResource: RecordsDatabaseVersion.containerName, withExtension: "xcdatamodel"),
+    guard let modelURL = Bundle.module.url(forResource: RecordsDatabaseVersion.entityName, withExtension: "xcdatamodel"),
           let managedObjectModel = NSManagedObjectModel(contentsOf: modelURL) else {
       fatalError("Error loading model from bundle")
     }
