@@ -21,7 +21,9 @@ public final class RecordsRepo {
   /// The epoch timestamp of the last update that will come from backend
   var recordsUpdateEpoch: String?
   
-  init() {
+  // MARK: - Init
+  
+  public init() {
     recordsUpdateEpoch = UserDefaultsHelper.fetch(
       valueOfType: String.self,
       usingKey: Constants.lastUpdatedRecordAt
