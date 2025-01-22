@@ -24,7 +24,7 @@ public final class RecordsDatabaseManager {
   
   public let container = NSPersistentContainer(name: RecordsDatabaseVersion.containerName)
   public let backgroundContext: NSManagedObjectContext
-  public let mainContext: NSManagedObjectContext
+  public var mainContext: NSManagedObjectContext
   var batchIndex: Int = 0
   
   public static let shared = RecordsDatabaseManager()
@@ -49,6 +49,7 @@ public final class RecordsDatabaseManager {
     
     // Setup main context as child of background context
     mainContext = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
+    mainContext.automaticallyMergesChangesFromParent = true
     mainContext.parent = backgroundContext
   }
 }
