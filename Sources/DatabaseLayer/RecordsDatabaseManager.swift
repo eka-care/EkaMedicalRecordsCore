@@ -24,7 +24,7 @@ public final class RecordsDatabaseManager {
   
   public let container = NSPersistentContainer(name: RecordsDatabaseVersion.containerName)
   public let backgroundContext: NSManagedObjectContext
-  let mainContext: NSManagedObjectContext
+  public let mainContext: NSManagedObjectContext
   var batchIndex: Int = 0
   
   public static let shared = RecordsDatabaseManager()
