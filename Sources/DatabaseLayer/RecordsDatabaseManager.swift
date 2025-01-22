@@ -18,16 +18,16 @@ enum RecordsDatabaseVersion {
   static let entityName = "Record"
 }
 
-final class RecordsDatabaseManager {
+public final class RecordsDatabaseManager {
   
   // MARK: - Properties
   
-  let container = NSPersistentContainer(name: RecordsDatabaseVersion.containerName)
-  let backgroundContext: NSManagedObjectContext
+  public let container = NSPersistentContainer(name: RecordsDatabaseVersion.containerName)
+  public let backgroundContext: NSManagedObjectContext
   let mainContext: NSManagedObjectContext
   var batchIndex: Int = 0
   
-  static let shared = RecordsDatabaseManager()
+  public static let shared = RecordsDatabaseManager()
   
   // MARK: - Init
   
