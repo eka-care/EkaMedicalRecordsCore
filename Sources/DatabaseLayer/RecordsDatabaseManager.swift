@@ -24,7 +24,7 @@ public final class RecordsDatabaseManager {
   
   public let container = NSPersistentContainer(name: RecordsDatabaseVersion.containerName)
   public let backgroundContext: NSManagedObjectContext
-  public var mainContext: NSManagedObjectContext
+//  public var mainContext: NSManagedObjectContext
   var batchIndex: Int = 0
   
   public static let shared = RecordsDatabaseManager()
@@ -41,16 +41,17 @@ public final class RecordsDatabaseManager {
     
     // Setup background context
     backgroundContext = container.newBackgroundContext()
+    backgroundContext.automaticallyMergesChangesFromParent = true
     
     /**
      https://stackoverflow.com/questions/70404998/coredata-can-we-always-use-backgroundcontext-regardless-of-main-or-background
      A known good strategy is to make your main thread context be a child context of a background context. Then saves are fast and done on the background. Reads are frequently serviced from the main thread. If you have some large insertions to perform, then perform them on a background child context of the main context. As the save is percolated up the context chain, the UI remains responsive.
      */
     
-    // Setup main context as child of background context
-    mainContext = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
-    mainContext.automaticallyMergesChangesFromParent = true
-    mainContext.parent = backgroundContext
+//    // Setup main context as child of background context
+//    mainContext = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
+//    mainContext.automaticallyMergesChangesFromParent = true
+//    mainContext.parent = backgroundContext
   }
 }
 
@@ -125,35 +126,35 @@ extension RecordsDatabaseManager {
   ///   - recordID: The unique identifier of the record to be updated.
   ///   - updatedData: A closure that provides the updated data for the record.
   ///   - completion: Completion block executed after updating the record.
-  func updateRecord(
-    recordID: NSManagedObjectID,
-    updatedData: @escaping (Record) -> Void,
-    completion: @escaping () -> Void
-  ) {
-    /// This operation is done on main thread since its single item update
-    mainContext.perform { [weak self] in
-      guard let self else { return }
-      
-      do {
-        /// Fetch the record by ID
-        guard let record = try self.mainContext.existingObject(with: recordID) as? Record else {
-          debugPrint("Record not found")
-          return
-        }
-        
-        /// Apply updates
-        updatedData(record)
-        
-        /// Save the main context (automatic merge will sync changes to background context)
-        try self.mainContext.save()
-        
-        /// Call the completion block on the main thread
-        completion()
-      } catch {
-        debugPrint("Failed to update record: \(error)")
-      }
-    }
-  }
+//  func updateRecord(
+//    recordID: NSManagedObjectID,
+//    updatedData: @escaping (Record) -> Void,
+//    completion: @escaping () -> Void
+//  ) {
+//    /// This operation is done on main thread since its single item update
+//    mainContext.perform { [weak self] in
+//      guard let self else { return }
+//      
+//      do {
+//        /// Fetch the record by ID
+//        guard let record = try self.mainContext.existingObject(with: recordID) as? Record else {
+//          debugPrint("Record not found")
+//          return
+//        }
+//        
+//        /// Apply updates
+//        updatedData(record)
+//        
+//        /// Save the main context (automatic merge will sync changes to background context)
+//        try self.mainContext.save()
+//        
+//        /// Call the completion block on the main thread
+//        completion()
+//      } catch {
+//        debugPrint("Failed to update record: \(error)")
+//      }
+//    }
+//  }
 }
 
 // MARK: - Delete

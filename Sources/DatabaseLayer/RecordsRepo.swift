@@ -97,22 +97,22 @@ public final class RecordsRepo {
   
   // MARK: - Update
   
-  /// Updates a specific record in the database.
-  /// - Parameters:
-  ///   - recordID: The unique identifier of the record to be updated.
-  ///   - updatedData: A closure that provides the updated data for the record.
-  ///   - completion: Completion block executed after updating the record.
-  public func updateRecord(
-    recordID: NSManagedObjectID,
-    updatedData: @escaping (Record) -> Void,
-    completion: @escaping () -> Void
-  ) {
-    databaseManager.updateRecord(
-      recordID: recordID,
-      updatedData: updatedData,
-      completion: completion
-    )
-  }
+//  /// Updates a specific record in the database.
+//  /// - Parameters:
+//  ///   - recordID: The unique identifier of the record to be updated.
+//  ///   - updatedData: A closure that provides the updated data for the record.
+//  ///   - completion: Completion block executed after updating the record.
+//  public func updateRecord(
+//    recordID: NSManagedObjectID,
+//    updatedData: @escaping (Record) -> Void,
+//    completion: @escaping () -> Void
+//  ) {
+//    databaseManager.updateRecord(
+//      recordID: recordID,
+//      updatedData: updatedData,
+//      completion: completion
+//    )
+//  }
   
   // MARK: - Delete
   
