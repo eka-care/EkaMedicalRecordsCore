@@ -24,6 +24,9 @@ let package = Package(
       dependencies: [
         .product(name: "Alamofire", package: "Alamofire"),
         .product(name: "SwiftProtoContracts", package: "proto-contracts")
+      ],
+      resources: [
+        .process("EkaMedicalRecordsCoreSdk.xcdatamodel")
       ]
     ),
     .testTarget(
