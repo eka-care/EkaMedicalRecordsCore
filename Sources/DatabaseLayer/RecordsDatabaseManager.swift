@@ -22,7 +22,7 @@ public final class RecordsDatabaseManager {
   
   // MARK: - Properties
   
-  public let container: NSPersistentContainer
+  public var container: NSPersistentContainer
   public let backgroundContext: NSManagedObjectContext
 //  public var mainContext: NSManagedObjectContext
   var batchIndex: Int = 0
@@ -32,13 +32,10 @@ public final class RecordsDatabaseManager {
   // MARK: - Init
   
   private init() {
-    guard let modelURL = Bundle.module.url(forResource: RecordsDatabaseVersion.entityName, withExtension: "momd"),
-          let managedObjectModel = NSManagedObjectModel(contentsOf: modelURL) else {
-      fatalError("Error loading model from bundle")
-    }
-    
-    container = NSPersistentContainer(name: RecordsDatabaseVersion.containerName, managedObjectModel: managedObjectModel)
-    
+    let bundle = Bundle.module
+    let modelURL = bundle.url(forResource: RecordsDatabaseVersion.containerName, withExtension: "momd")!
+    let model = NSManagedObjectModel(contentsOf: modelURL)!
+    container = NSPersistentContainer(name: RecordsDatabaseVersion.containerName, managedObjectModel: model)
     // Loading of persistent stores
     container.loadPersistentStores { (storeDescription, error) in
       if let error {
