@@ -24,7 +24,7 @@ public final class RecordsDatabaseManager {
   
   public var container: NSPersistentContainer
   public let backgroundContext: NSManagedObjectContext
-//  public var mainContext: NSManagedObjectContext
+  public var mainContext: NSManagedObjectContext
   var batchIndex: Int = 0
   
   public static let shared = RecordsDatabaseManager()
@@ -58,10 +58,10 @@ public final class RecordsDatabaseManager {
      A known good strategy is to make your main thread context be a child context of a background context. Then saves are fast and done on the background. Reads are frequently serviced from the main thread. If you have some large insertions to perform, then perform them on a background child context of the main context. As the save is percolated up the context chain, the UI remains responsive.
      */
     
-//    // Setup main context as child of background context
-//    mainContext = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
-//    mainContext.automaticallyMergesChangesFromParent = true
-//    mainContext.parent = backgroundContext
+    // Setup main context as child of background context
+    mainContext = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
+    mainContext.automaticallyMergesChangesFromParent = true
+    mainContext.parent = backgroundContext
   }
 }
 
