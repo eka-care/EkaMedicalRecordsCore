@@ -5,7 +5,7 @@
 //  Created by Arya Vashisht on 06/01/25.
 //
 
-protocol EkaMedicalRecordsDelegate: AnyObject {}
+public protocol EkaMedicalRecordsDelegate: AnyObject {}
 
 public class InitConfigurations {
   
@@ -23,7 +23,7 @@ public class InitConfigurations {
       AuthTokenHolder.shared.refreshToken = refreshToken
     }
   }
-  weak var delegate: EkaMedicalRecordsDelegate?
+  public weak var delegate: EkaMedicalRecordsDelegate?
   
   // MARK: - Init
   
