@@ -69,7 +69,7 @@ final class FileHelper {
     print("File Url is -> \(fileURL)")
     do {
       try data.write(to: fileURL, options: .atomic)
-      return fileName
+      return fileURL
     } catch {
       print("Couldn't write data to document directory \(error)")
       return nil

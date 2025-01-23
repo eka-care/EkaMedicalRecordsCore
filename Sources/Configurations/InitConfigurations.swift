@@ -13,11 +13,14 @@ public class InitConfigurations {
   
   public static let shared = InitConfigurations()
   
+  /// Auth token for backend layer
   public var authToken: String? {
     didSet {
       AuthTokenHolder.shared.authToken = authToken
     }
   }
+  
+  /// Refresh token for backend layer
   public var refreshToken: String? {
     didSet {
       AuthTokenHolder.shared.refreshToken = refreshToken
