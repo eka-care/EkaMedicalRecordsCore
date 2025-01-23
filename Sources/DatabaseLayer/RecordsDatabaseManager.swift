@@ -100,7 +100,11 @@ extension RecordsDatabaseManager {
         })
       do {
         try backgroundContext.execute(batchRequest)
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+          guard let self else { return }
+          container.viewContext.performAndWait { [weak self] in
+            self?.container.viewContext.refreshAllObjects()
+          }
           completion()
         }
       } catch {
