@@ -43,6 +43,10 @@ public final class RecordsDatabaseManager {
       }
     }
     
+    // Configure the viewContext (main context)
+    container.viewContext.automaticallyMergesChangesFromParent = true
+    container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+    
     // Setup background context
     backgroundContext = container.newBackgroundContext()
     backgroundContext.automaticallyMergesChangesFromParent = true
