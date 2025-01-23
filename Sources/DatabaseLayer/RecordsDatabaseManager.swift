@@ -33,7 +33,7 @@ public final class RecordsDatabaseManager {
   
   private init() {
     let bundle = Bundle.module
-    let modelURL = bundle.url(forResource: RecordsDatabaseVersion.containerName, withExtension: "momd")!
+    let modelURL = bundle.url(forResource: RecordsDatabaseVersion.containerName, withExtension: "mom")!
     let model = NSManagedObjectModel(contentsOf: modelURL)!
     container = NSPersistentContainer(name: RecordsDatabaseVersion.containerName, managedObjectModel: model)
     // Loading of persistent stores
