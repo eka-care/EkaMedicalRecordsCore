@@ -26,7 +26,7 @@ let package = Package(
         .product(name: "SwiftProtoContracts", package: "proto-contracts")
       ],
       resources: [
-        .process("EkaMedicalRecordsCoreSdk.xcdatamodel")
+        .process("Resources")
       ]
     ),
     .testTarget(
