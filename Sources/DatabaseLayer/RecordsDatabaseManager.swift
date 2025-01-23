@@ -62,21 +62,6 @@ public final class RecordsDatabaseManager {
         await self.fetchPersistentHistory()
       }
     }
-//    // Setup background context
-//    backgroundContext = container.newBackgroundContext()
-//    backgroundContext.automaticallyMergesChangesFromParent = true
-//    backgroundContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-//
-//    
-//    /**
-//     https://stackoverflow.com/questions/70404998/coredata-can-we-always-use-backgroundcontext-regardless-of-main-or-background
-//     A known good strategy is to make your main thread context be a child context of a background context. Then saves are fast and done on the background. Reads are frequently serviced from the main thread. If you have some large insertions to perform, then perform them on a background child context of the main context. As the save is percolated up the context chain, the UI remains responsive.
-//     */
-//    
-//    // Setup main context as child of background context
-//    mainContext = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
-//    mainContext.automaticallyMergesChangesFromParent = true
-//    mainContext.parent = backgroundContext
   }
   
   deinit {
