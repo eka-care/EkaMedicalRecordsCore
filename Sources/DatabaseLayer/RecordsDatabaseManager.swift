@@ -50,6 +50,8 @@ public final class RecordsDatabaseManager {
     // Setup background context
     backgroundContext = container.newBackgroundContext()
     backgroundContext.automaticallyMergesChangesFromParent = true
+    backgroundContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+
     
     /**
      https://stackoverflow.com/questions/70404998/coredata-can-we-always-use-backgroundcontext-regardless-of-main-or-background
