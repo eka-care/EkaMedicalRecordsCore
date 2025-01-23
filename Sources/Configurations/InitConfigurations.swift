@@ -7,18 +7,18 @@
 
 protocol EkaMedicalRecordsDelegate: AnyObject {}
 
-class InitConfigurations {
+public class InitConfigurations {
   
   // MARK: - Properties
   
-  static let shared = InitConfigurations()
+  public static let shared = InitConfigurations()
   
-  var authToken: String? {
+  public var authToken: String? {
     didSet {
       AuthTokenHolder.shared.authToken = authToken
     }
   }
-  var refreshToken: String? {
+  public var refreshToken: String? {
     didSet {
       AuthTokenHolder.shared.refreshToken = refreshToken
     }
