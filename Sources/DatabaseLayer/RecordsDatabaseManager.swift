@@ -114,6 +114,21 @@ extension RecordsDatabaseManager {
       }
     }
   }
+  
+  /// Used to add single record to the database, this will be faster than batch insert for single record
+  func addSingleRecord(
+    from record: RecordModel
+  ) {
+    let newRecord = Record(context: container.viewContext)
+    newRecord.update(from: record)
+    do {
+      try container.viewContext.save()
+      debugPrint("Record added successfully!")
+    } catch {
+      let nsError = error as NSError
+      debugPrint("Error saving record: \(nsError), \(nsError.userInfo)")
+    }
+  }
 }
 
 // MARK: - Read
