@@ -64,6 +64,7 @@ public final class RecordsRepo {
       } else { /// We have reached last page for api calls
         /// Update the epoch in UserDefaults
         let newSyncEpoch: String = Date().getCurrentEpoch()
+        recordsUpdateEpoch = newSyncEpoch
         UserDefaultsHelper.save(customValue: newSyncEpoch, withKey: Constants.lastUpdatedRecordAt)
       }
     }
