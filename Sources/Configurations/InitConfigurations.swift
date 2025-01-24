@@ -5,7 +5,7 @@
 //  Created by Arya Vashisht on 06/01/25.
 //
 
-protocol EkaMedicalRecordsDelegate: AnyObject {}
+public protocol EkaMedicalRecordsDelegate: AnyObject {}
 
 public class InitConfigurations {
   
@@ -13,17 +13,20 @@ public class InitConfigurations {
   
   public static let shared = InitConfigurations()
   
+  /// Auth token for backend layer
   public var authToken: String? {
     didSet {
       AuthTokenHolder.shared.authToken = authToken
     }
   }
+  
+  /// Refresh token for backend layer
   public var refreshToken: String? {
     didSet {
       AuthTokenHolder.shared.refreshToken = refreshToken
     }
   }
-  weak var delegate: EkaMedicalRecordsDelegate?
+  public weak var delegate: EkaMedicalRecordsDelegate?
   
   // MARK: - Init
   
