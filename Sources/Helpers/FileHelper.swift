@@ -75,4 +75,23 @@ final class FileHelper {
       return nil
     }
   }
+  
+  /// Writing documents into local document directory
+  /// Documents are stored in Local URIs
+  static func writeMultipleDataToDocumentDirectoryAndGetFileNames(_ data: [Data], fileExtension: String) -> [String]? {
+    var recordsURL: [String] = []
+    for datum in data {
+      let fileName = UUID().uuidString + fileExtension
+      let urlRecordItem = FileHelper.getDocumentDirectoryURL().appendingPathComponent(fileName)
+      do {
+        try datum.write(to: urlRecordItem, options: .atomic)
+        recordsURL.append(fileName)
+      } catch {
+        debugPrint("Couldn't write data files to document directory \(error.localizedDescription)")
+        return nil
+      }
+    }
+    debugPrint("Record file names are \(recordsURL)")
+    return recordsURL
+  }
 }

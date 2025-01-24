@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftProtoContracts
+import UIKit
 
 /**
  This file is an adapter for the database layer. It handles any model conversion from network to database layer and vice versa.
@@ -24,6 +25,7 @@ public struct RecordModel {
   var thumbnail: String?
   var updatedAt: Date?
   var uploadDate: Date?
+  var documentURIs: [String]?
   
   init(
     documentID: String? = nil,
@@ -35,7 +37,8 @@ public struct RecordModel {
     isSmart: Bool? = nil,
     thumbnail: String? = nil,
     updatedAt: Date? = nil,
-    uploadDate: Date? = nil
+    uploadDate: Date? = nil,
+    documentURIs: [String]? = nil
   ) {
     self.documentID = documentID
     self.documentDate = documentDate
@@ -47,12 +50,17 @@ public struct RecordModel {
     self.thumbnail = thumbnail
     self.updatedAt = updatedAt
     self.uploadDate = uploadDate
+    self.documentURIs = documentURIs
   }
 }
 
 // MARK: - Model Conversion
 
 final class RecordDatabaseAdapter {
+  // MARK: - Properties
+  
+  private let thumbnailHelper = ThumbnailHelper()
+  
   /// This is to convert network array of models to database models
   func convertNetworkToDatabaseModels(
     from networkModels: [Vault_Records_Record],
@@ -72,6 +80,52 @@ final class RecordDatabaseAdapter {
     dispatchGroup.notify(queue: .main) {
       completion(insertModels)
     }
+  }
+}
+
+// MARK: - UI to Database
+
+extension RecordDatabaseAdapter {
+  /// Used to convert to the common record Model from the given images
+  /// - Parameters:
+  ///   - data: Array of items within the record
+  ///   - contentType: Type of content like for pdf it will be .pdf
+  /// - Returns: RecordModel which will be used to insert in the database
+  public func formRecordModelFromAddedData(
+    data: [Data],
+    contentType: FileType
+  ) -> RecordModel {
+    let contentTypeString: String = contentType.fileExtension
+    /// Form record local path
+    guard let recordsPath = FileHelper.writeMultipleDataToDocumentDirectoryAndGetFileNames(
+      data,
+      fileExtension: contentTypeString
+    ) else { return RecordModel() }
+    
+    /// Add document to database
+    /// Generate thumbnail for the record
+    let thumbnail = thumbnailHelper.generateThumbnail(
+      fromImageData: data.first,
+      fromPdfUrl: recordsPath.first,
+      mimeType: contentType
+    )
+    guard let thumbnail,
+          let thumbnailData = thumbnail.jpegData(compressionQuality: 1),
+          let thumbnailUrl = FileHelper.writeDataToDocumentDirectoryAndGetFileName(
+            thumbnailData,
+            fileExtension: contentType.fileExtension
+          ) else {
+      
+      debugPrint("Database entry denied as record thumbnail is not present")
+      return RecordModel()
+    }
+    
+    return RecordModel(
+      thumbnail: thumbnailUrl,
+      updatedAt: Date(), // Current date
+      uploadDate: Date(), // Current date
+      documentURIs: recordsPath
+    )
   }
 }
 

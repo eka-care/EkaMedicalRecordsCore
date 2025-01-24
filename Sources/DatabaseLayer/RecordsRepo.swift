@@ -30,6 +30,10 @@ public final class RecordsRepo {
     )
   }
   
+  /** Give a store record function that takes data and makes model that will store records
+   We need to fill both record and record meta data for each add record
+  */
+  
   // MARK: - Sync Records
   
   /// Used to fetch records from the server and store them in the database
@@ -78,6 +82,11 @@ public final class RecordsRepo {
       completion()
       debugPrint("Records added to database")
     }
+  }
+  
+  /// Used to add a single record to the database
+  public func addSingleRecord(record: RecordModel) {
+    databaseManager.addSingleRecord(from: record)
   }
   
   // MARK: - Read
