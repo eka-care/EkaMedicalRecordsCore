@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum FileType: String {
+public enum FileType: String {
   case pdf = "PDF"
   case image = "IMG"
   
@@ -32,7 +32,7 @@ enum FileType: String {
   }
 }
 
-final class FileHelper {
+public final class FileHelper {
   /// Get Document directory url
   static func getDocumentDirectoryURL() -> URL {
     let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)

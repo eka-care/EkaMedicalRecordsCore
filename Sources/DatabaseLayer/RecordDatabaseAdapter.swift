@@ -56,7 +56,7 @@ public struct RecordModel {
 
 // MARK: - Model Conversion
 
-final class RecordDatabaseAdapter {
+public final class RecordDatabaseAdapter {
   // MARK: - Properties
   
   private let thumbnailHelper = ThumbnailHelper()

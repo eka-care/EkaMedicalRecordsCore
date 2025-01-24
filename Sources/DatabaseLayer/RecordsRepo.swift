@@ -14,7 +14,7 @@ public final class RecordsRepo {
   // MARK: - Properties
   
   public let databaseManager = RecordsDatabaseManager.shared
-  let databaseAdapter = RecordDatabaseAdapter()
+  public let databaseAdapter = RecordDatabaseAdapter()
   let service: RecordsProvider = RecordsApiService()
   /// The offset token for getting the next page of records
   var pageOffsetToken: String?
