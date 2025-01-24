@@ -119,10 +119,10 @@ extension RecordsDatabaseManager {
   func addSingleRecord(
     from record: RecordModel
   ) {
-    let newRecord = Record(context: container.viewContext)
+    let newRecord = Record(context: backgroundContext)
     newRecord.update(from: record)
     do {
-      try container.viewContext.save()
+      try backgroundContext.save()
       debugPrint("Record added successfully!")
     } catch {
       let nsError = error as NSError
