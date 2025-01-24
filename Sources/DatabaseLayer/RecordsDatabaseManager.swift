@@ -22,40 +22,52 @@ public final class RecordsDatabaseManager {
   
   // MARK: - Properties
   
-  public var container: NSPersistentContainer
-  public let backgroundContext: NSManagedObjectContext
-//  public var mainContext: NSManagedObjectContext
-  var batchIndex: Int = 0
-  
-  public static let shared = RecordsDatabaseManager()
-  
-  // MARK: - Init
-  
-  private init() {
+  public lazy var container: NSPersistentContainer = {
     let bundle = Bundle.module
     let modelURL = bundle.url(forResource: RecordsDatabaseVersion.containerName, withExtension: "mom")!
     let model = NSManagedObjectModel(contentsOf: modelURL)!
-    container = NSPersistentContainer(name: RecordsDatabaseVersion.containerName, managedObjectModel: model)
+    let container = NSPersistentContainer(name: RecordsDatabaseVersion.containerName, managedObjectModel: model)
+    let description = container.persistentStoreDescriptions.first!
+    description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
+    description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
     // Loading of persistent stores
     container.loadPersistentStores { (storeDescription, error) in
       if let error {
         fatalError("Failed to load store: \(error)")
       }
     }
-    
-    // Setup background context
-    backgroundContext = container.newBackgroundContext()
-    backgroundContext.automaticallyMergesChangesFromParent = true
-    
-    /**
-     https://stackoverflow.com/questions/70404998/coredata-can-we-always-use-backgroundcontext-regardless-of-main-or-background
-     A known good strategy is to make your main thread context be a child context of a background context. Then saves are fast and done on the background. Reads are frequently serviced from the main thread. If you have some large insertions to perform, then perform them on a background child context of the main context. As the save is percolated up the context chain, the UI remains responsive.
-     */
-    
-//    // Setup main context as child of background context
-//    mainContext = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
-//    mainContext.automaticallyMergesChangesFromParent = true
-//    mainContext.parent = backgroundContext
+    // Configure the viewContext (main context)
+    container.viewContext.automaticallyMergesChangesFromParent = true
+    container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+    return container
+  }()
+  public lazy var backgroundContext: NSManagedObjectContext = {
+    newTaskContext()
+  }()
+  var batchIndex: Int = 0
+  
+  public static let shared = RecordsDatabaseManager()
+  private var notificationToken: NSObjectProtocol?
+  /// A peristent history token used for fetching transactions from the store.
+  private var lastToken: NSPersistentHistoryToken?
+  
+  // MARK: - Init
+  
+  private init() {
+    // Observe Core Data remote change notifications on the queue where the changes were made.
+    notificationToken = NotificationCenter.default.addObserver(forName: .NSPersistentStoreRemoteChange, object: nil, queue: nil) { [weak self] note in
+      guard let self else { return }
+      debugPrint("Received a persistent store remote change notification.")
+      Task {
+        await self.fetchPersistentHistory()
+      }
+    }
+  }
+  
+  deinit {
+    if let observer = notificationToken {
+      NotificationCenter.default.removeObserver(observer)
+    }
   }
 }
 
@@ -100,6 +112,21 @@ extension RecordsDatabaseManager {
       } catch {
         debugPrint("Batch insert failed: \(error)")
       }
+    }
+  }
+  
+  /// Used to add single record to the database, this will be faster than batch insert for single record
+  func addSingleRecord(
+    from record: RecordModel
+  ) {
+    let newRecord = Record(context: container.viewContext)
+    newRecord.update(from: record)
+    do {
+      try container.viewContext.save()
+      debugPrint("Record added successfully!")
+    } catch {
+      let nsError = error as NSError
+      debugPrint("Error saving record: \(nsError), \(nsError.userInfo)")
     }
   }
 }
@@ -188,3 +215,59 @@ extension RecordsDatabaseManager {
   }
 }
 
+// MARK: - Fetch History
+
+extension RecordsDatabaseManager {
+  func fetchPersistentHistory() async {
+    do {
+      try await fetchPersistentHistoryTransactionsAndChanges()
+    } catch {
+      debugPrint("\(error.localizedDescription)")
+    }
+  }
+  
+  /// Creates and configures a private queue context.
+  func newTaskContext() -> NSManagedObjectContext  {
+    // Create a private queue context.
+    /// - Tag: newBackgroundContext
+    let taskContext = container.newBackgroundContext()
+    taskContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+    // Set unused undoManager to nil for macOS (it is nil by default on iOS)
+    // to reduce resource requirements.
+    taskContext.undoManager = nil
+    return taskContext
+  }
+  
+  func fetchPersistentHistoryTransactionsAndChanges() async throws {
+    backgroundContext.name = "persistentHistoryContext"
+    debugPrint("Start fetching persistent history changes from the store...")
+    
+    try await backgroundContext.perform { [weak self] in
+      guard let self else { return }
+      // Execute the persistent history change since the last transaction.
+      /// - Tag: fetchHistory
+      let changeRequest = NSPersistentHistoryChangeRequest.fetchHistory(after: self.lastToken)
+      let historyResult = try backgroundContext.execute(changeRequest) as? NSPersistentHistoryResult
+      if let history = historyResult?.result as? [NSPersistentHistoryTransaction],
+         !history.isEmpty {
+        self.mergePersistentHistoryChanges(from: history)
+        return
+      }
+    }
+    
+    debugPrint("Finished merging history changes.")
+  }
+  
+  private func mergePersistentHistoryChanges(from history: [NSPersistentHistoryTransaction]) {
+    debugPrint("Received \(history.count) persistent history transactions.")
+    // Update view context with objectIDs from history change request.
+    /// - Tag: mergeChanges
+    let viewContext = container.viewContext
+    viewContext.perform {
+      for transaction in history {
+        viewContext.mergeChanges(fromContextDidSave: transaction.objectIDNotification())
+        self.lastToken = transaction.token
+      }
+    }
+  }
+}

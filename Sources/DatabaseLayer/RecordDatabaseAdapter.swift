@@ -23,6 +23,7 @@ public struct RecordModel {
   var isSmart: Bool?
   var thumbnail: String?
   var updatedAt: Date?
+  var uploadDate: Date?
   
   init(
     documentID: String? = nil,
@@ -33,7 +34,8 @@ public struct RecordModel {
     isAnalyzing: Bool? = nil,
     isSmart: Bool? = nil,
     thumbnail: String? = nil,
-    updatedAt: Date? = nil
+    updatedAt: Date? = nil,
+    uploadDate: Date? = nil
   ) {
     self.documentID = documentID
     self.documentDate = documentDate
@@ -44,6 +46,7 @@ public struct RecordModel {
     self.isSmart = isSmart
     self.thumbnail = thumbnail
     self.updatedAt = updatedAt
+    self.uploadDate = uploadDate
   }
 }
 
@@ -83,6 +86,9 @@ extension RecordDatabaseAdapter {
     var insertModel = RecordModel()
     if networkModel.item.metadata.hasDocumentDate {
       insertModel.documentDate = networkModel.item.metadata.documentDate.toDate()
+    }
+    if networkModel.item.hasUploadDate {
+      insertModel.uploadDate = networkModel.item.uploadDate.toDate()
     }
     insertModel.documentHash = UUID().uuidString /// To update ui
     insertModel.documentID = networkModel.item.documentID
