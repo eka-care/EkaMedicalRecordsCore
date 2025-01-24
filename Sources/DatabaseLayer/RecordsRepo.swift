@@ -63,7 +63,8 @@ public final class RecordsRepo {
         fetchRecordsFromServer(completion: completion)
       } else { /// We have reached last page for api calls
         /// Update the epoch in UserDefaults
-        UserDefaultsHelper.save(customValue: recordsUpdateEpoch, withKey: Constants.lastUpdatedRecordAt)
+        let newSyncEpoch: String = Date().getCurrentEpoch()
+        UserDefaultsHelper.save(customValue: newSyncEpoch, withKey: Constants.lastUpdatedRecordAt)
       }
     }
   }
