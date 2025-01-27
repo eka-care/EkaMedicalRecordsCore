@@ -127,7 +127,8 @@ extension RecordDatabaseAdapter {
       thumbnail: thumbnailUrl,
       updatedAt: Date(), // Current date
       uploadDate: Date(), // Current date
-      documentURIs: recordsPath
+      documentURIs: recordsPath,
+      contentType: contentType.fileExtension
     )
   }
 }
