@@ -6,6 +6,7 @@
 //
 
 import SwiftProtoContracts
+import Foundation
 
 protocol RecordsProvider {
   var networkService: Networking { get }
@@ -15,6 +16,20 @@ protocol RecordsProvider {
     token: String?,
     updatedAt: String?,
     _ completion: @escaping (Result<Vault_Records_RecordsAPIResponse, ProtoError>, RequestMetadata) -> Void
+  )
+  /// Upload records v3
+  func uploadRecords(
+    uploadRequest request: DocUploadRequest,
+    _ completion: @escaping (Result<DocUploadFormsResponse, Error>, Int?) -> Void
+  )
+  /// submitting documents
+  func submitDocuments(
+    file: Data,
+    fileName: String,
+    mimeType: EkaFileMimeType,
+    urlString: String,
+    formFields: DocUploadFormsResponse.Fields,
+    _ completion: @escaping (Result<Bool, Error>, Int?) -> Void
   )
 }
 
@@ -32,5 +47,25 @@ extension RecordsProvider {
       ),
       completion: completion
     )
+  }
+  
+  /// Upload Records v3
+  func uploadRecords(
+    uploadRequest request: DocUploadRequest,
+    _ completion: @escaping (Result<DocUploadFormsResponse, Error>, Int?) -> Void
+  ) {
+    networkService.execute(RecordsEndpoint.uploadRecords(request: request), completion: completion)
+  }
+  
+  /// Submitting documents
+  func submitDocuments(
+    file: Data,
+    fileName: String,
+    mimeType: EkaFileMimeType,
+    urlString: String,
+    formFields: DocUploadFormsResponse.Fields,
+    _ completion: @escaping (Result<Bool, Error>, Int?) -> Void
+  ) {
+    networkService.execute(RecordsEndpoint.submitDocuments(file: file, fileName: fileName, mimeType: mimeType, urlString: urlString, formFields: formFields), completion: completion)
   }
 }

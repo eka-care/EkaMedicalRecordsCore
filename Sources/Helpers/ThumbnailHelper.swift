@@ -31,19 +31,17 @@ final class ThumbnailHelper {
   func generateThumbnail(
     fromImageData data: Data? = nil,
     fromPdfUrl pdfFileName: String? = nil,
-    mimeType: EkaFileMimeType
+    mimeType: FileType
   ) -> UIImage? {
     guard let data else { return nil}
     var image: UIImage?
     switch mimeType {
-    case .imageJpg:
-      image = UIImage(data: data)
     case .pdf:
       guard let pdfFileName else { return nil }
       let pdfUrl = FileHelper.getDocumentDirectoryURL().appendingPathComponent(pdfFileName)
       image = generatePdfThumbnail(for: pdfUrl, atPage: 0)
-    default:
-      break
+    case .image:
+      image = UIImage(data: data)
     }
     guard let image else {
       return nil

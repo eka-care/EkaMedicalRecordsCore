@@ -23,38 +23,42 @@ public final class RecordsDatabaseManager {
   // MARK: - Properties
   
   public lazy var container: NSPersistentContainer = {
+    /// Loading model from package resources
     let bundle = Bundle.module
     let modelURL = bundle.url(forResource: RecordsDatabaseVersion.containerName, withExtension: "mom")!
     let model = NSManagedObjectModel(contentsOf: modelURL)!
     let container = NSPersistentContainer(name: RecordsDatabaseVersion.containerName, managedObjectModel: model)
+    
+    /// Setting notification tracking
     let description = container.persistentStoreDescriptions.first!
     description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
     description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
-    // Loading of persistent stores
+    /// Loading of persistent stores
     container.loadPersistentStores { (storeDescription, error) in
       if let error {
         fatalError("Failed to load store: \(error)")
       }
     }
-    // Configure the viewContext (main context)
+    /// Configure the viewContext (main context)
     container.viewContext.automaticallyMergesChangesFromParent = true
     container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
     return container
   }()
+  /// Background context for heavy database operations
   public lazy var backgroundContext: NSManagedObjectContext = {
     newTaskContext()
   }()
-  var batchIndex: Int = 0
-  
   public static let shared = RecordsDatabaseManager()
   private var notificationToken: NSObjectProtocol?
   /// A peristent history token used for fetching transactions from the store.
   private var lastToken: NSPersistentHistoryToken?
+  /// Current batch index for batch insert
+  var batchIndex: Int = 0
   
   // MARK: - Init
   
   private init() {
-    // Observe Core Data remote change notifications on the queue where the changes were made.
+    /// Observe Core Data remote change notifications on the queue where the changes were made.
     notificationToken = NotificationCenter.default.addObserver(forName: .NSPersistentStoreRemoteChange, object: nil, queue: nil) { [weak self] note in
       guard let self else { return }
       debugPrint("Received a persistent store remote change notification.")
@@ -123,10 +127,38 @@ extension RecordsDatabaseManager {
     newRecord.update(from: record)
     do {
       try container.viewContext.save()
+      /// Add record meta data after saving record entity
+      addRecordMetaData(
+        record: newRecord,
+        recordModel: record
+      )
       debugPrint("Record added successfully!")
     } catch {
       let nsError = error as NSError
       debugPrint("Error saving record: \(nsError), \(nsError.userInfo)")
+    }
+  }
+  
+  /// Used to add record meta data as a one to many relationship to record entity
+  /// - Parameters:
+  ///   - record: Entity Model to which meta data is to be attached
+  ///   - recordModel: Record Model that has all the data
+  private func addRecordMetaData(
+    record: Record,
+    recordModel: RecordModel
+  ) {
+    guard let documentURIs = recordModel.documentURIs else { return }
+    documentURIs.forEach { uriPath in
+      let recordMeta = RecordMeta(context: container.viewContext)
+      recordMeta.documentURI = uriPath
+      record.addToToRecordMeta(recordMeta)
+    }
+    do {
+      try container.viewContext.save()
+      debugPrint("Record meta data added successfully!")
+    } catch {
+      let nsError = error as NSError
+      debugPrint("Error saving record meta data: \(nsError), \(nsError.userInfo)")
     }
   }
 }
@@ -191,11 +223,8 @@ extension RecordsDatabaseManager {
 // MARK: - Delete
 
 extension RecordsDatabaseManager {
-  func deleteRecord() {
-    
-  }
   
-  /// Used to delete records fot the given fetch request
+  /// Used to delete records for the given fetch request
   /// - Parameters:
   ///   - request: fetch request for records that are to be deleted
   ///   - completion: closure executed after deletion
@@ -211,6 +240,17 @@ extension RecordsDatabaseManager {
       } catch {
         debugPrint("There was an error deleting entity")
       }
+    }
+  }
+  
+  /// Used to delete a given record
+  /// - Parameter record: record object that is to be deleted
+  func deleteRecord(record: Record) {
+    container.viewContext.delete(record)
+    do {
+      try container.viewContext.save()
+    } catch {
+      debugPrint("Error deleting record: \(error)")
     }
   }
 }
