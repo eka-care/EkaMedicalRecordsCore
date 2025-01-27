@@ -40,6 +40,21 @@ public final class FileHelper {
     return documentsDirectory
   }
   
+  /// Used to get file size in bytes from a url
+  static func getFileSizeInBytes(from url: URL) -> Int? {
+    do {
+      let fileAttributes = try FileManager.default.attributesOfItem(atPath: url.path)
+      if let fileSize = fileAttributes[.size] as? NSNumber {
+        return fileSize.intValue
+      } else {
+        return nil
+      }
+    } catch {
+      print("Error: \(error)")
+      return nil
+    }
+  }
+  
   /// To Download data from URL
   static func downloadData(
     from url: URL,
@@ -93,5 +108,21 @@ public final class FileHelper {
     }
     debugPrint("Record file names are \(recordsURL)")
     return recordsURL
+  }
+  
+  /// Used to update file mime type from a given string
+  static func updateFileMimeType(fileExtension: String) -> EkaFileMimeType {
+    switch fileExtension {
+    case ".pdf":
+      return .pdf
+    case ".mp4":
+      return .video
+    case ".jpg", "jpeg", "jpg", ".jpeg", "png", ".png", "bpm", ".bpm", "tiff", ".tiff":
+      return .imageJpg
+    case ".m4a":
+      return .audio
+    default:
+      return .pdf
+    }
   }
 }
