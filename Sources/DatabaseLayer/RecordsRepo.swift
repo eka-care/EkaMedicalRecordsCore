@@ -149,4 +149,10 @@ public final class RecordsRepo {
       completion: completion
     )
   }
+  
+  public func deleteRecord(
+    record: Record
+  ) {
+    databaseManager.deleteRecord(record: record)
+  }
 }
