@@ -223,11 +223,8 @@ extension RecordsDatabaseManager {
 // MARK: - Delete
 
 extension RecordsDatabaseManager {
-  func deleteRecord() {
-    
-  }
   
-  /// Used to delete records fot the given fetch request
+  /// Used to delete records for the given fetch request
   /// - Parameters:
   ///   - request: fetch request for records that are to be deleted
   ///   - completion: closure executed after deletion
@@ -243,6 +240,17 @@ extension RecordsDatabaseManager {
       } catch {
         debugPrint("There was an error deleting entity")
       }
+    }
+  }
+  
+  /// Used to delete a given record
+  /// - Parameter record: record object that is to be deleted
+  func deleteRecord(record: Record) {
+    container.viewContext.delete(record)
+    do {
+      try container.viewContext.save()
+    } catch {
+      debugPrint("Error deleting record: \(error)")
     }
   }
 }
