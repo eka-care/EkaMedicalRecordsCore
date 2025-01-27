@@ -59,5 +59,41 @@ extension RecordsRepo {
 
 // Upload
 extension RecordsRepo {
-  
+  /// Upload Record to V3
+  /// - Parameters:
+  ///   - tags: tags for documents Eg: - kidney, blood test etc
+  ///   - recordType: Record Type Eg: Lab Test, Prescription, Insurance etc
+  ///   - recordURLs: URLs of the documents to be saved
+  ///   - documentDate: Document for the record
+  ///   - contentType: Extension type of file Eg: .jpeg, .pdf
+  ///   - completion: Returns docUploadResponse and Record Upload Error
+  func uploadRecordsV3(
+    tags: [String]? = nil,
+    recordType: String? = nil,
+    recordURLs: [String]?,
+    documentDate: String? = nil,
+    contentType: String,
+    isLinkedWithAbha: Bool? = false,
+    completion: @escaping (DocUploadFormsResponse?, RecordUploadErrorType?) -> Void
+  ) {
+    guard let recordURLs,
+          let documentsMetaData = RecordUploadManager.formDocumentsMetaData(recordsPath: recordURLs, contentType: contentType) else { return }
+    
+    uploadManager.uploadRecordsToVault(
+      nestedFiles: documentsMetaData,
+      tags: tags,
+      recordType: recordType,
+      documentDate: documentDate,
+      isLinkedWithAbha: isLinkedWithAbha
+    ) { [weak self] response, error in
+      guard let self else { return }
+      if let error {
+        completion(nil, error)
+        return
+      }
+      if let response {
+        completion(response, error)
+      }
+    }
+  }
 }

@@ -15,6 +15,7 @@ public final class RecordsRepo {
   
   public let databaseManager = RecordsDatabaseManager.shared
   public let databaseAdapter = RecordDatabaseAdapter()
+  let uploadManager = RecordUploadManager()
   let service: RecordsProvider = RecordsApiService()
   /// The offset token for getting the next page of records
   var pageOffsetToken: String?
@@ -82,13 +83,21 @@ public final class RecordsRepo {
   ) {
     databaseManager.addRecords(from: records) {
       completion()
-      debugPrint("Records added to database")
+      debugPrint("Record added to database")
     }
   }
   
   /// Used to add a single record to the database
+  /// - Parameter record: record to be added
   public func addSingleRecord(record: RecordModel) {
     databaseManager.addSingleRecord(from: record)
+    if let contentType = record.contentType {
+      uploadRecordsV3(
+        recordURLs: record.documentURIs,
+        documentDate: record.documentDate?.toUSEnglishString(),
+        contentType: contentType
+      ) { uploadFormsResponse, error in}
+    }
   }
   
   // MARK: - Read

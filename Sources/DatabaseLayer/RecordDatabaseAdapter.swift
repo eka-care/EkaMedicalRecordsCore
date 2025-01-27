@@ -26,6 +26,7 @@ public struct RecordModel {
   var updatedAt: Date?
   var uploadDate: Date?
   var documentURIs: [String]?
+  var contentType: String?
   
   init(
     documentID: String? = nil,
@@ -38,7 +39,8 @@ public struct RecordModel {
     thumbnail: String? = nil,
     updatedAt: Date? = nil,
     uploadDate: Date? = nil,
-    documentURIs: [String]? = nil
+    documentURIs: [String]? = nil,
+    contentType: String? = nil
   ) {
     self.documentID = documentID
     self.documentDate = documentDate
@@ -51,6 +53,7 @@ public struct RecordModel {
     self.updatedAt = updatedAt
     self.uploadDate = uploadDate
     self.documentURIs = documentURIs
+    self.contentType = contentType
   }
 }
 
