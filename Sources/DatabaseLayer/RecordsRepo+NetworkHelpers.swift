@@ -85,14 +85,32 @@ extension RecordsRepo {
       recordType: recordType,
       documentDate: documentDate,
       isLinkedWithAbha: isLinkedWithAbha
-    ) { [weak self] response, error in
-      guard let self else { return }
+    ) { response, error in
       if let error {
         completion(nil, error)
         return
       }
       if let response {
         completion(response, error)
+      }
+    }
+  }
+}
+
+// Delete
+
+extension RecordsRepo {
+  /// Delete record from v3 network
+  func deleteRecordV3(
+    documentID: String?
+  ) {
+    guard let documentID else { return }
+    service.delete(documentId: documentID) { result, statusCode in
+      switch result {
+      case .success:
+        debugPrint("Record deleted successfully from v3")
+      case .failure(let error):
+        debugPrint("Failed to delete record \(error.localizedDescription)")
       }
     }
   }

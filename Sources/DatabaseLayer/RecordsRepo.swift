@@ -90,7 +90,9 @@ public final class RecordsRepo {
   /// Used to add a single record to the database
   /// - Parameter record: record to be added
   public func addSingleRecord(record: RecordModel) {
+    /// Add in database
     databaseManager.addSingleRecord(from: record)
+    /// Upload to vault
     if let contentType = record.contentType {
       uploadRecordsV3(
         recordURLs: record.documentURIs,
@@ -153,6 +155,8 @@ public final class RecordsRepo {
   public func deleteRecord(
     record: Record
   ) {
+    /// Delete from database
     databaseManager.deleteRecord(record: record)
+    deleteRecordV3(documentID: record.documentID)
   }
 }

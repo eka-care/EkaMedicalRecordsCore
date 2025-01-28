@@ -18,6 +18,8 @@ enum RecordsEndpoint {
   case uploadRecords(request: DocUploadRequest)
   /// Submit documents
   case submitDocuments(file: Data, fileName: String, mimeType: EkaFileMimeType, urlString: String, formFields: DocUploadFormsResponse.Fields)
+  /// delete
+  case delete(documentId: String)
 }
 
 extension RecordsEndpoint: RequestProvider {
@@ -89,6 +91,14 @@ extension RecordsEndpoint: RequestProvider {
         interceptor: NetworkRequestInterceptor(),
         fileManager: .default,
         requestModifier: nil
+      )
+      .validate()
+      /// delete
+    case .delete(let documentID):
+      return AF.request(
+        "\(DomainConfigurations.vaultURL)/api/v1/docs/\(documentID)",
+        method: .delete,
+        interceptor: NetworkRequestInterceptor()
       )
       .validate()
     }

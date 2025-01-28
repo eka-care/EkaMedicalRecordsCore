@@ -31,6 +31,11 @@ protocol RecordsProvider {
     formFields: DocUploadFormsResponse.Fields,
     _ completion: @escaping (Result<Bool, Error>, Int?) -> Void
   )
+  /// delete file
+  func delete(
+    documentId: String,
+    _ completion: @escaping (Result<Bool, Error>, Int?) -> Void
+  )
 }
 
 extension RecordsProvider {
@@ -67,5 +72,13 @@ extension RecordsProvider {
     _ completion: @escaping (Result<Bool, Error>, Int?) -> Void
   ) {
     networkService.execute(RecordsEndpoint.submitDocuments(file: file, fileName: fileName, mimeType: mimeType, urlString: urlString, formFields: formFields), completion: completion)
+  }
+  
+  /// delete file
+  func delete(
+    documentId: String,
+    _ completion: @escaping (Result<Bool, Error>, Int?) -> Void
+  ) {
+    networkService.execute(RecordsEndpoint.delete(documentId: documentId), completion: completion)
   }
 }
