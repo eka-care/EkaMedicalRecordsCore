@@ -101,6 +101,7 @@ extension RecordsRepo {
 
 extension RecordsRepo {
   /// Delete record from v3 network
+  /// - Parameter documentID: documentID of the document to be deleted
   func deleteRecordV3(
     documentID: String?
   ) {
