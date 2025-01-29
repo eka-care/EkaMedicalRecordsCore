@@ -42,7 +42,8 @@ public final class RecordsRepo {
   public func fetchRecordsFromServer(completion: @escaping () -> Void) {
     syncRecordsForPage(
       token: pageOffsetToken,
-      updatedAt: recordsUpdateEpoch
+      updatedAt: recordsUpdateEpoch,
+      oid: InitConfigurations.shared.filterOID
     ) { [weak self] nextPageToken, recordItems in
       guard let self else { return }
       /// Add records to the database in batches

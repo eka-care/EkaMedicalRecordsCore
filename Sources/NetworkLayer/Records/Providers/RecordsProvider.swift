@@ -43,12 +43,14 @@ extension RecordsProvider {
   func fetchRecords(
     token: String?,
     updatedAt: String?,
+    oid: String?,
     _ completion: @escaping (Result<Vault_Records_RecordsAPIResponse, ProtoError>, RequestMetadata) -> Void
   ) {
     networkService.executeProto(
       RecordsEndpoint.fetchRecords(
         token: token,
-        updatedAt: updatedAt
+        updatedAt: updatedAt,
+        oid: oid
       ),
       completion: completion
     )

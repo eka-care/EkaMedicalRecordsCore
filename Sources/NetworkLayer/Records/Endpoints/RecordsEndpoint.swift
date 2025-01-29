@@ -12,7 +12,8 @@ enum RecordsEndpoint {
   /// fetch records
   case fetchRecords(
     token: String?,
-    updatedAt: String?
+    updatedAt: String?,
+    oid: String?
   )
   /// upload records v3
   case uploadRecords(request: DocUploadRequest)
@@ -28,7 +29,8 @@ extension RecordsEndpoint: RequestProvider {
       /// Fetch records
     case .fetchRecords(
       let token,
-      let updatedAt
+      let updatedAt,
+      let oid
     ):
       var params = [String: String]()
       
@@ -40,13 +42,12 @@ extension RecordsEndpoint: RequestProvider {
         params["u_at__gt"] = updatedAt
       }
       
-//      if let oid {
-//        params["oid"] = oid
-//      }
+      if let oid {
+        params["oid"] = oid
+      }
       
       return AF.request(
-        "\(DomainConfigurations.vaultURL)/api/v4/docs",
-//        "\(DomainConfigurations.vaultURL)api/d/v1/docs", /// This is to be implemented
+        "\(DomainConfigurations.vaultURL)api/d/v1/docs",
         method: .get,
         parameters: params,
         encoding: URLEncoding.queryString,

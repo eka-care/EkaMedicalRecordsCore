@@ -15,17 +15,19 @@ extension RecordsRepo {
   func syncRecordsForPage(
     token: String?,
     updatedAt: String?,
+    oid: String?,
     completion: @escaping ((String?), [Vault_Records_Record]) -> Void
   ) {
     service.fetchRecords(
       token: token,
-      updatedAt: updatedAt
+      updatedAt: updatedAt,
+      oid: oid
     ) { [weak self] result, metaData in
       guard let self else { return }
       switch result {
       case .success(let response):
-        /// Store the epoch in var first, update the UserDefaults ony once the last page is reached
-        recordsUpdateEpoch = metaData.allHeaders?["Eka-Uat"]
+//        /// Store the epoch in var first, update the UserDefaults ony once the last page is reached
+//        recordsUpdateEpoch = metaData.allHeaders?["Eka-Uat"]
         guard let responseType = response.result else { return }
         switch responseType {
         case .response(let recordsResponse):

@@ -26,6 +26,8 @@ public class InitConfigurations {
       AuthTokenHolder.shared.refreshToken = refreshToken
     }
   }
+  
+  public var filterOID: String?
   public weak var delegate: EkaMedicalRecordsDelegate?
   
   // MARK: - Init
