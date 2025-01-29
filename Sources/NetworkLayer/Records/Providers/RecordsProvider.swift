@@ -15,8 +15,10 @@ protocol RecordsProvider {
   func fetchRecords(
     token: String?,
     updatedAt: String?,
+    oid: String?,
     _ completion: @escaping (Result<Vault_Records_RecordsAPIResponse, ProtoError>, RequestMetadata) -> Void
   )
+  
   /// Upload records v3
   func uploadRecords(
     uploadRequest request: DocUploadRequest,
