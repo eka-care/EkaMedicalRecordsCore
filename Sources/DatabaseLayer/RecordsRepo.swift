@@ -90,7 +90,9 @@ public final class RecordsRepo {
   /// Used to add a single record to the database
   /// - Parameter record: record to be added
   public func addSingleRecord(record: RecordModel) {
+    /// Add in database
     databaseManager.addSingleRecord(from: record)
+    /// Upload to vault
     if let contentType = record.contentType {
       uploadRecordsV3(
         recordURLs: record.documentURIs,
@@ -150,9 +152,16 @@ public final class RecordsRepo {
     )
   }
   
+  /// Used to delete a specific record from the database
+  /// - Parameter record: record to be deleted
   public func deleteRecord(
     record: Record
   ) {
+    /// We need to store it before deleting from database as once document is deleted we can't get the documentID
+    let documentID = record.documentID
+    /// Delete from database
     databaseManager.deleteRecord(record: record)
+    /// Delete from vault v3
+    deleteRecordV3(documentID: documentID)
   }
 }
