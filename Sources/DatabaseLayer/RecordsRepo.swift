@@ -43,7 +43,7 @@ public final class RecordsRepo {
     syncRecordsForPage(
       token: pageOffsetToken,
       updatedAt: recordsUpdateEpoch,
-      oid: InitConfigurations.shared.filterOID
+      oid: CoreInitConfigurations.shared.oid
     ) { [weak self] nextPageToken, recordItems in
       guard let self else { return }
       /// Add records to the database in batches

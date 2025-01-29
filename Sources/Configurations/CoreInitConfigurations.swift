@@ -5,13 +5,11 @@
 //  Created by Arya Vashisht on 06/01/25.
 //
 
-public protocol EkaMedicalRecordsDelegate: AnyObject {}
-
-public class InitConfigurations {
+public class CoreInitConfigurations {
   
   // MARK: - Properties
   
-  public static let shared = InitConfigurations()
+  public static let shared = CoreInitConfigurations()
   
   /// Auth token for backend layer
   public var authToken: String? {
@@ -27,8 +25,8 @@ public class InitConfigurations {
     }
   }
   
-  public var filterOID: String?
-  public weak var delegate: EkaMedicalRecordsDelegate?
+  /// Filter OID for records
+  public var oid: String?
   
   // MARK: - Init
   
