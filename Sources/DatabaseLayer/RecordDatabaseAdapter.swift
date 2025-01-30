@@ -171,6 +171,8 @@ extension RecordDatabaseAdapter {
         insertModel.thumbnail = localFileName
         completion(insertModel)
       }
+    } else {
+      completion(insertModel)
     }
   }
   
