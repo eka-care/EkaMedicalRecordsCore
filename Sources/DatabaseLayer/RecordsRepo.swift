@@ -87,15 +87,18 @@ public final class RecordsRepo {
   /// Used to add a single record to the database
   /// - Parameter record: record to be added
   public func addSingleRecord(record: RecordModel) {
-    /// Add in database
-    databaseManager.addSingleRecord(from: record)
+    /// Add in database and store it in addedRecord
+    var addedRecord = databaseManager.addSingleRecord(from: record)
     /// Upload to vault
     if let contentType = record.contentType {
       uploadRecordsV3(
         recordURLs: record.documentURIs,
         documentDate: record.documentDate?.toUSEnglishString(),
         contentType: contentType
-      ) { uploadFormsResponse, error in}
+      ) { uploadFormsResponse, error in
+        /// Update document id
+        addedRecord.documentID = uploadFormsResponse?.batchResponses?.first?.documentID
+      }
     }
   }
   
