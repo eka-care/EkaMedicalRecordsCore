@@ -188,38 +188,22 @@ extension RecordsDatabaseManager {
 extension RecordsDatabaseManager {
   /// Updates a specific record in the database.
   /// - Parameters:
-  ///   - recordID: The unique identifier of the record to be updated.
-  ///   - updatedData: A closure that provides the updated data for the record.
-  ///   - completion: Completion block executed after updating the record.
-//  func updateRecord(
-//    recordID: NSManagedObjectID,
-//    updatedData: @escaping (Record) -> Void,
-//    completion: @escaping () -> Void
-//  ) {
-//    /// This operation is done on main thread since its single item update
-//    mainContext.perform { [weak self] in
-//      guard let self else { return }
-//      
-//      do {
-//        /// Fetch the record by ID
-//        guard let record = try self.mainContext.existingObject(with: recordID) as? Record else {
-//          debugPrint("Record not found")
-//          return
-//        }
-//        
-//        /// Apply updates
-//        updatedData(record)
-//        
-//        /// Save the main context (automatic merge will sync changes to background context)
-//        try self.mainContext.save()
-//        
-//        /// Call the completion block on the main thread
-//        completion()
-//      } catch {
-//        debugPrint("Failed to update record: \(error)")
-//      }
-//    }
-//  }
+  ///   - recordID: The unique identifier of the record to be updated
+  func updateRecord(
+    recordID: NSManagedObjectID,
+    updatedRecord: RecordModel
+  ) {
+    do {
+      guard let record = try container.viewContext.existingObject(with: recordID) as? Record else {
+        debugPrint("Record not found")
+        return
+      }
+      record.documentID = updatedRecord.documentID
+      try container.viewContext.save()
+    } catch {
+      debugPrint("Failed to update record: \(error)")
+    }
+  }
 }
 
 // MARK: - Delete

@@ -95,9 +95,11 @@ public final class RecordsRepo {
         recordURLs: record.documentURIs,
         documentDate: record.documentDate?.toUSEnglishString(),
         contentType: contentType
-      ) { uploadFormsResponse, error in
-        /// Update document id
-        addedRecord.documentID = uploadFormsResponse?.batchResponses?.first?.documentID
+      ) { [weak self] uploadFormsResponse, error in
+        guard let self else { return }
+        /// Update the database with document id
+        let updatedRecordModel = RecordModel(documentID: uploadFormsResponse?.batchResponses?.first?.documentID)
+        updateRecord(recordID: addedRecord.objectID, updatedRecord: updatedRecordModel)
       }
     }
   }
@@ -119,22 +121,16 @@ public final class RecordsRepo {
   
   // MARK: - Update
   
-//  /// Updates a specific record in the database.
-//  /// - Parameters:
-//  ///   - recordID: The unique identifier of the record to be updated.
-//  ///   - updatedData: A closure that provides the updated data for the record.
-//  ///   - completion: Completion block executed after updating the record.
-//  public func updateRecord(
-//    recordID: NSManagedObjectID,
-//    updatedData: @escaping (Record) -> Void,
-//    completion: @escaping () -> Void
-//  ) {
-//    databaseManager.updateRecord(
-//      recordID: recordID,
-//      updatedData: updatedData,
-//      completion: completion
-//    )
-//  }
+  /// Updates a specific record in the database.
+  /// - Parameters:
+  ///   - recordID: The unique identifier of the record to be updated.
+  ///   - updatedRecord: The updated model data
+  public func updateRecord(
+    recordID: NSManagedObjectID,
+    updatedRecord: RecordModel
+  ) {
+    databaseManager.updateRecord(recordID: recordID, updatedRecord: updatedRecord)
+  }
   
   // MARK: - Delete
   
