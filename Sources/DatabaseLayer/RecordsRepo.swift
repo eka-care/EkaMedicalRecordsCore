@@ -88,7 +88,7 @@ public final class RecordsRepo {
   /// - Parameter record: record to be added
   public func addSingleRecord(record: RecordModel) {
     /// Add in database and store it in addedRecord
-    var addedRecord = databaseManager.addSingleRecord(from: record)
+    let addedRecord = databaseManager.addSingleRecord(from: record)
     /// Upload to vault
     if let contentType = record.contentType {
       uploadRecordsV3(
@@ -98,8 +98,10 @@ public final class RecordsRepo {
       ) { [weak self] uploadFormsResponse, error in
         guard let self else { return }
         /// Update the database with document id
-        let updatedRecordModel = RecordModel(documentID: uploadFormsResponse?.batchResponses?.first?.documentID)
-        updateRecord(recordID: addedRecord.objectID, updatedRecord: updatedRecordModel)
+        databaseManager.updateRecord(
+          recordID: addedRecord.objectID,
+          documentID: uploadFormsResponse?.batchResponses?.first?.documentID
+        )
       }
     }
   }
@@ -125,12 +127,12 @@ public final class RecordsRepo {
   /// - Parameters:
   ///   - recordID: The unique identifier of the record to be updated.
   ///   - updatedRecord: The updated model data
-  public func updateRecord(
-    recordID: NSManagedObjectID,
-    updatedRecord: RecordModel
-  ) {
-    databaseManager.updateRecord(recordID: recordID, updatedRecord: updatedRecord)
-  }
+//  public func updateRecord(
+//    recordID: NSManagedObjectID,
+//    updatedRecord: RecordModel
+//  ) {
+//    databaseManager.updateRecord(recordID: recordID, updatedRecord: updatedRecord)
+//  }
   
   // MARK: - Delete
   

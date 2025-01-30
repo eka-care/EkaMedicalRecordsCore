@@ -191,14 +191,14 @@ extension RecordsDatabaseManager {
   ///   - recordID: The unique identifier of the record to be updated
   func updateRecord(
     recordID: NSManagedObjectID,
-    updatedRecord: RecordModel
+    documentID: String?
   ) {
     do {
       guard let record = try container.viewContext.existingObject(with: recordID) as? Record else {
         debugPrint("Record not found")
         return
       }
-      record.documentID = updatedRecord.documentID
+      record.documentID = documentID
       try container.viewContext.save()
     } catch {
       debugPrint("Failed to update record: \(error)")
