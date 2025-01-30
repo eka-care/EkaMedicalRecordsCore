@@ -22,6 +22,7 @@ public struct RecordModel {
   var hasSyncedEdit: Bool?
   var isAnalyzing: Bool?
   var isSmart: Bool?
+  var oid: String?
   var thumbnail: String?
   var updatedAt: Date?
   var uploadDate: Date?
@@ -36,6 +37,7 @@ public struct RecordModel {
     hasSyncedEdit: Bool? = nil,
     isAnalyzing: Bool? = nil,
     isSmart: Bool? = nil,
+    oid: String? = nil,
     thumbnail: String? = nil,
     updatedAt: Date? = nil,
     uploadDate: Date? = nil,
@@ -49,6 +51,7 @@ public struct RecordModel {
     self.hasSyncedEdit = hasSyncedEdit
     self.isAnalyzing = isAnalyzing
     self.isSmart = isSmart
+    self.oid = oid
     self.thumbnail = thumbnail
     self.updatedAt = updatedAt
     self.uploadDate = uploadDate

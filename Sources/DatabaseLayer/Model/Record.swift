@@ -23,5 +23,7 @@ extension Record {
     thumbnail = record.thumbnail
     updatedAt = record.updatedAt
     uploadDate = record.uploadDate
+    /// Get oid from the passed value
+    oid = CoreInitConfigurations.shared.oid
   }
 }
