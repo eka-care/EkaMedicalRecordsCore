@@ -137,8 +137,8 @@ extension RecordsDatabaseManager {
     } catch {
       let nsError = error as NSError
       debugPrint("Error saving record: \(nsError), \(nsError.userInfo)")
+      return newRecord
     }
-    return nil
   }
   
   /// Used to add record meta data as a one to many relationship to record entity
