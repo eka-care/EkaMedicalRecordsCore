@@ -11,7 +11,7 @@ public enum FileType: String {
   case pdf = "PDF"
   case image = "IMG"
   
-  var fileExtension: String {
+  public var fileExtension: String {
     switch self {
     case .pdf:
       return ".pdf"
@@ -20,7 +20,7 @@ public enum FileType: String {
     }
   }
   
-  static func getTypeFromFileExtension(fileExtension: String) -> FileType? {
+  public static func getTypeFromFileExtension(fileExtension: String) -> FileType? {
     switch fileExtension {
     case ".pdf":
       return .pdf

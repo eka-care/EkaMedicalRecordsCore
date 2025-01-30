@@ -31,10 +31,6 @@ public final class RecordsRepo {
     )
   }
   
-  /** Give a store record function that takes data and makes model that will store records
-   We need to fill both record and record meta data for each add record
-  */
-  
   // MARK: - Sync Records
   
   /// Used to fetch records from the server and store them in the database
