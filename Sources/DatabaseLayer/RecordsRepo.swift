@@ -157,12 +157,3 @@ public final class RecordsRepo {
     deleteRecordV3(documentID: documentID)
   }
 }
-
-// MARK: - Updated At Entity
-
-extension RecordsRepo {
-  /// Store updated at token for the given ownerID and filterID
-  func addUpdatedAtForGivenIds() {
-    
-  }
-}

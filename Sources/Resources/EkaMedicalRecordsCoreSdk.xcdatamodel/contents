@@ -21,9 +21,4 @@
         <attribute name="mimeType" optional="YES" attributeType="String"/>
         <relationship name="toRecord" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Record" inverseName="toRecordMeta" inverseEntity="Record"/>
     </entity>
-    <entity name="UpdatedAt" representedClassName="UpdatedAt" syncable="YES" codeGenerationType="class">
-        <attribute name="filterID" optional="YES" attributeType="String"/>
-        <attribute name="ownerID" optional="YES" attributeType="String"/>
-        <attribute name="updatedAt" optional="YES" attributeType="String"/>
-    </entity>
 </model>
