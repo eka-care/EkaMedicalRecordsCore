@@ -28,6 +28,15 @@ public final class RecordsRepo {
   
   // MARK: - Sync Records
   
+  /// Used to get update token and start fetching records
+  public func getUpdatedAtAndStartFetchRecords() {
+    fetchLatestRecordUpdatedAtString { [weak self] updatedAt in
+      guard let self else { return }
+      recordsUpdateEpoch = updatedAt
+      fetchRecordsFromServer {}
+    }
+  }
+  
   /// Used to fetch records from the server and store them in the database
   /// - Parameter completion: completion block to be executed after fetching
   public func fetchRecordsFromServer(completion: @escaping () -> Void) {
@@ -54,10 +63,6 @@ public final class RecordsRepo {
         pageOffsetToken = nextPageToken
         /// Call for next page
         fetchRecordsFromServer(completion: completion)
-      } else { /// We have reached last page for api calls
-        /// Update the epoch in UserDefaults
-        let newSyncEpoch: String = Date().getCurrentEpoch()
-        recordsUpdateEpoch = newSyncEpoch
       }
     }
   }
@@ -155,5 +160,33 @@ public final class RecordsRepo {
     databaseManager.deleteRecord(record: record)
     /// Delete from vault v3
     deleteRecordV3(documentID: documentID)
+  }
+}
+
+extension RecordsRepo {
+  
+  /// Used to fetch updated at for the latest
+  private func fetchLatestRecordUpdatedAtString(completion: @escaping (String?) -> Void) {
+    fetchLatestRecord { [weak self] record in
+      guard let self else { return }
+      let updatedAt = fetchUpdatedAtFromRecord(record: record)
+      completion(updatedAt)
+    }
+  }
+  
+  /// Used to fetch the latest document synced to server
+  private func fetchLatestRecord(completion: @escaping (Record?) -> Void) {
+    guard let oid = CoreInitConfigurations.shared.filterID else { return }
+    databaseManager.fetchRecords(
+      fetchRequest: QueryHelper.fetchLastUpdatedAt(oid: oid)
+    ) { records in
+      completion(records.first)
+    }
+  }
+  
+  /// Get last updated at in string format from a record model
+  private func fetchUpdatedAtFromRecord(record: Record?) -> String? {
+    let updatedAt = record?.updatedAt
+    return updatedAt?.getCurrentEpoch()
   }
 }
