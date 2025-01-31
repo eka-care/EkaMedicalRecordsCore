@@ -24,6 +24,6 @@ extension Record {
     updatedAt = record.updatedAt
     uploadDate = record.uploadDate
     /// Get oid from the passed value
-    oid = CoreInitConfigurations.shared.oid
+    oid = CoreInitConfigurations.shared.filterID
   }
 }

@@ -10,8 +10,12 @@ import Foundation
 public struct PredicateHelper {
   
   /// Predicate for exact match of a string value
-  public static func equals<T>(_ key: String, value: T) -> NSPredicate {
-    return NSPredicate(format: "%K == %@", key, value as! CVarArg)
+  public static func equals<T>(_ key: String, value: T?) -> NSPredicate {
+    if let unwrappedValue = value as? CVarArg {
+      return NSPredicate(format: "%K == %@", key, unwrappedValue)
+    } else {
+      return NSPredicate(format: "%K == nil", key)
+    }
   }
   
   /// Predicate for checking if a number is greater than or equal to a given value

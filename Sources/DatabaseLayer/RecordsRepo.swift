@@ -24,12 +24,7 @@ public final class RecordsRepo {
   
   // MARK: - Init
   
-  public init() {
-    recordsUpdateEpoch = UserDefaultsHelper.fetch(
-      valueOfType: String.self,
-      usingKey: Constants.lastUpdatedRecordAt
-    )
-  }
+  public init() {}
   
   // MARK: - Sync Records
   
@@ -39,7 +34,7 @@ public final class RecordsRepo {
     syncRecordsForPage(
       token: pageOffsetToken,
       updatedAt: recordsUpdateEpoch,
-      oid: CoreInitConfigurations.shared.oid
+      oid: CoreInitConfigurations.shared.filterID
     ) { [weak self] nextPageToken, recordItems in
       guard let self else { return }
       /// Add records to the database in batches
@@ -63,7 +58,6 @@ public final class RecordsRepo {
         /// Update the epoch in UserDefaults
         let newSyncEpoch: String = Date().getCurrentEpoch()
         recordsUpdateEpoch = newSyncEpoch
-        UserDefaultsHelper.save(customValue: newSyncEpoch, withKey: Constants.lastUpdatedRecordAt)
       }
     }
   }
@@ -161,5 +155,14 @@ public final class RecordsRepo {
     databaseManager.deleteRecord(record: record)
     /// Delete from vault v3
     deleteRecordV3(documentID: documentID)
+  }
+}
+
+// MARK: - Updated At Entity
+
+extension RecordsRepo {
+  /// Store updated at token for the given ownerID and filterID
+  func addUpdatedAtForGivenIds() {
+    
   }
 }

@@ -25,8 +25,11 @@ public class CoreInitConfigurations {
     }
   }
   
-  /// Filter OID for records
-  public var oid: String?
+  /// Filter ID for records
+  public var filterID: String?
+  
+  /// Owner ID for records
+  public var ownerID: String?
   
   // MARK: - Init
   

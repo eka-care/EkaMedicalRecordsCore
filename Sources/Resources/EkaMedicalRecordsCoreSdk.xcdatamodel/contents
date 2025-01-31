@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23231" systemVersion="24A348" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="Record" representedClassName="Record" syncable="YES" codeGenerationType="class">
+        <attribute name="bid" optional="YES" attributeType="String"/>
         <attribute name="documentDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="documentHash" optional="YES" attributeType="String"/>
         <attribute name="documentID" optional="YES" attributeType="String"/>
@@ -19,5 +20,10 @@
         <attribute name="documentURI" optional="YES" attributeType="String" customClassName="[String]"/>
         <attribute name="mimeType" optional="YES" attributeType="String"/>
         <relationship name="toRecord" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Record" inverseName="toRecordMeta" inverseEntity="Record"/>
+    </entity>
+    <entity name="UpdatedAt" representedClassName="UpdatedAt" syncable="YES" codeGenerationType="class">
+        <attribute name="filterID" optional="YES" attributeType="String"/>
+        <attribute name="ownerID" optional="YES" attributeType="String"/>
+        <attribute name="updatedAt" optional="YES" attributeType="String"/>
     </entity>
 </model>

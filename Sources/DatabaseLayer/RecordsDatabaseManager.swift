@@ -297,3 +297,21 @@ extension RecordsDatabaseManager {
     }
   }
 }
+
+// MARK: - Updated At Entity
+
+extension RecordsDatabaseManager {
+  /// Used to save updated at token for an oid
+//  func saveUpdatedAtTokenForOid(
+//    ownerID: String,
+//    filterID: String,
+//    updatedAt: String
+//  ) {
+//    let updatedAtModel = UpdatedAt(context: container.viewContext)
+//    do {
+//      container.viewContext.save()
+//    } catch {
+//
+//    }
+//  }
+}
