@@ -28,14 +28,14 @@ extension Record {
   }
   
   /// Used to get local paths of file
-  public func getLocalPathsOfFile(from record: Record) -> [String] {
-    let recordMetaDataItems = getMetaDataItems(from: record)
+  public func getLocalPathsOfFile() -> [String] {
+    let recordMetaDataItems = getMetaDataItems()
     let paths = recordMetaDataItems.compactMap { $0.documentURI }
     return paths
   }
   
   /// Used to get meta data items from a given record object
-  public func getMetaDataItems(from record: Record) -> [RecordMeta] {
-    return record.toRecordMeta?.allObjects as? [RecordMeta] ?? []
+  public func getMetaDataItems() -> [RecordMeta] {
+    return toRecordMeta?.allObjects as? [RecordMeta] ?? []
   }
 }
