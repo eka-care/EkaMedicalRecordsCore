@@ -22,7 +22,7 @@ public final class RecordsDatabaseManager {
   
   // MARK: - Properties
   
-  public lazy var container: NSPersistentContainer = {
+  public var container: NSPersistentContainer = {
     /// Loading model from package resources
     let bundle = Bundle.module
     let modelURL = bundle.url(forResource: RecordsDatabaseVersion.containerName, withExtension: "mom")!
