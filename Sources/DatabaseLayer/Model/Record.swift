@@ -26,4 +26,16 @@ extension Record {
     /// Get oid from the passed value
     oid = CoreInitConfigurations.shared.filterID
   }
+  
+  /// Used to get local paths of file
+  func getLocalPathsOfFile(from record: Record) -> [String] {
+    let recordMetaDataItems = getMetaDataItems(from: record)
+    let paths = recordMetaDataItems.compactMap { $0.documentURI }
+    return paths
+  }
+  
+  /// Used to get meta data items from a given record object
+  func getMetaDataItems(from record: Record) -> [RecordMeta] {
+    return record.toRecordMeta?.allObjects as? [RecordMeta] ?? []
+  }
 }
