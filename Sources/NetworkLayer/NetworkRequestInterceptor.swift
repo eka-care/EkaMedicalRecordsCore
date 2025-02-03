@@ -116,15 +116,12 @@ extension NetworkRequestInterceptor {
       urlRequest.headers.add(name: "Accept", value: "application/x-protobuf")
     }
     
-    urlRequest.headers.add(name: "client-id", value: "patient-app-ios")
+    urlRequest.headers.add(name: "client-id", value: "doctor-app-ios")
+    urlRequest.headers.add(name: "flavour", value: UIDevice.current.userInterfaceIdiom == .phone ? "io" : "ip")
+    urlRequest.headers.add(name: "locale", value: String(Locale.preferredLanguages.first?.prefix(2) ?? "en"))
     
     /// Device information
     urlRequest.headers.add(name: "make", value: "Apple")
-//    urlRequest.headers.add(name: "model", value: Device.current.model ?? "")
-//    urlRequest.headers.add(name: "model-version", value: Device.current.description)
-//    
-    urlRequest.headers.add(name: "flavour", value: "ios")
-    urlRequest.headers.add(name: "locale", value: Locale.current.languageCode ?? "en")
     
     if let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String {
       urlRequest.headers.add(name: "version", value: appVersion)
@@ -139,6 +136,34 @@ extension NetworkRequestInterceptor {
         urlRequest.headers.add(name: "auth", value: accessToken)
       }
     }
+    
+//    if isProto {
+//      urlRequest.headers.add(name: "Accept", value: "application/x-protobuf")
+//    }
+//    
+//    urlRequest.headers.add(name: "client-id", value: "patient-app-ios")
+//    
+//    /// Device information
+//    urlRequest.headers.add(name: "make", value: "Apple")
+////    urlRequest.headers.add(name: "model", value: Device.current.model ?? "")
+////    urlRequest.headers.add(name: "model-version", value: Device.current.description)
+////    
+//    urlRequest.headers.add(name: "flavour", value: "ios")
+//    urlRequest.headers.add(name: "locale", value: Locale.current.languageCode ?? "en")
+//    
+//    if let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String {
+//      urlRequest.headers.add(name: "version", value: appVersion)
+//    }
+//    
+//    let deviceID = UIDevice.current.identifierForVendor?.uuidString
+//    urlRequest.headers.add(name: "device-id", value: deviceID!)
+//    
+//    if addAuthHeader {
+//      if let accessToken = AuthTokenHolder.shared.authToken {
+//        /// Set the Authorization header value using the access token.
+//        urlRequest.headers.add(name: "auth", value: accessToken)
+//      }
+//    }
   }
   
 }
