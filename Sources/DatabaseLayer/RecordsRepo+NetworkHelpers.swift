@@ -108,7 +108,10 @@ extension RecordsRepo {
     documentID: String?
   ) {
     guard let documentID else { return }
-    service.delete(documentId: documentID) { result, statusCode in
+    service.delete(
+      documentId: documentID,
+      oid: CoreInitConfigurations.shared.filterID
+    ) { result, statusCode in
       switch result {
       case .success:
         debugPrint("Record deleted successfully from v3")
