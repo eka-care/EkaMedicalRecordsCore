@@ -120,18 +120,10 @@ public final class RecordsRepo {
     )
   }
   
-  // MARK: - Update
-  
-  /// Updates a specific record in the database.
-  /// - Parameters:
-  ///   - recordID: The unique identifier of the record to be updated.
-  ///   - updatedRecord: The updated model data
-//  public func updateRecord(
-//    recordID: NSManagedObjectID,
-//    updatedRecord: RecordModel
-//  ) {
-//    databaseManager.updateRecord(recordID: recordID, updatedRecord: updatedRecord)
-//  }
+  /// Used to fetch record meta data
+  public func fetchRecordMetaData(record: Record) {
+    
+  }
   
   // MARK: - Delete
   
