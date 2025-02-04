@@ -20,7 +20,10 @@ enum RecordsEndpoint {
   /// Submit documents
   case submitDocuments(file: Data, fileName: String, mimeType: EkaFileMimeType, urlString: String, formFields: DocUploadFormsResponse.Fields)
   /// delete
-  case delete(documentId: String)
+  case delete(
+    documentId: String,
+    oid: String?
+  )
 }
 
 extension RecordsEndpoint: RequestProvider {
@@ -95,10 +98,18 @@ extension RecordsEndpoint: RequestProvider {
       )
       .validate()
       /// delete
-    case .delete(let documentID):
+    case .delete(let documentID, let oid):
+      var params = [String: String]()
+      
+      if let oid {
+        params["oid"] = oid
+      }
+      
       return AF.request(
         "\(DomainConfigurations.vaultURL)/api/v1/docs/\(documentID)",
         method: .delete,
+        parameters: params,
+        encoding: URLEncoding.queryString,
         interceptor: NetworkRequestInterceptor()
       )
       .validate()
