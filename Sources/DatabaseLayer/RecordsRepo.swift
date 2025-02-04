@@ -85,7 +85,10 @@ public final class RecordsRepo {
   
   /// Used to add a single record to the database
   /// - Parameter record: record to be added
-  public func addSingleRecord(record: RecordModel) {
+  public func addSingleRecord(
+    record: RecordModel,
+    completion didUploadRecord: @escaping () -> Void
+  ) {
     /// Add in database and store it in addedRecord
     let addedRecord = databaseManager.addSingleRecord(from: record)
     /// Upload to vault
@@ -101,6 +104,7 @@ public final class RecordsRepo {
           recordID: addedRecord.objectID,
           documentID: uploadFormsResponse?.batchResponses?.first?.documentID
         )
+        didUploadRecord()
       }
     }
   }
