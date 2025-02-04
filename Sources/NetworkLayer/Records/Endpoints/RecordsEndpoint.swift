@@ -24,6 +24,11 @@ enum RecordsEndpoint {
     documentId: String,
     oid: String?
   )
+  /// Fetch doc details
+  case fetchDocDetails(
+    documentID: String,
+    oid: String
+  )
 }
 
 extension RecordsEndpoint: RequestProvider {
@@ -110,6 +115,20 @@ extension RecordsEndpoint: RequestProvider {
         method: .delete,
         parameters: params,
         encoding: URLEncoding.queryString,
+        interceptor: NetworkRequestInterceptor()
+      )
+      .validate()
+      
+      /// Fetch doc details
+    case .fetchDocDetails(let documentID, let patientOID):
+      var params = [String: String]()
+      
+      params["oid"] = patientOID
+      
+      return AF.request(
+        "\(DomainConfigurations.vaultURL)/api/v1/docs/\(documentID)",
+        method: .get,
+        parameters: params,
         interceptor: NetworkRequestInterceptor()
       )
       .validate()

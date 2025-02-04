@@ -109,6 +109,43 @@ public final class RecordsRepo {
     }
   }
   
+  /// Used to get smart report info
+  /// - Parameters:
+  ///   - record: record for which smart report info is to be extracted
+  ///   - completion: smart report info
+  public func getSmartReport(
+    for record: Record,
+    completion: @escaping (SmartReportInfo?) -> Void
+  ) {
+    /// If smart report info is present in database fetch from there
+    if let smartReportInfo = databaseManager.fetchSmartReportData(from: record) {
+      completion(smartReportInfo)
+    } else { /// else fetch from network store in database and fetch from there
+      getFileDetails(record: record) { [weak self] docResponse in
+        guard let self else { return }
+        /// Get documentURIs
+        fetchDocumentURIs(files: docResponse?.files) { [weak self] documentURIs in
+          guard let self else { return }
+          databaseManager.addFileDetails(
+            to: record,
+            documentURIs: documentURIs,
+            smartReportData: <#T##Data#>
+          )
+        }
+      }
+    }
+  }
+  
+  /// Used to get file details and save in database
+  /// This will have both smart report and original record
+  private func getFileDetails(
+    record: Record,
+    completion: @escaping (DocFetchResponse?) -> Void
+  ) {
+    guard let documentID = record.documentID else { return }
+    fetchFileDetails(documentID: documentID, completion: completion)
+  }
+    
   // MARK: - Read
   
   /// Used to fetch record entity items
@@ -122,11 +159,6 @@ public final class RecordsRepo {
       fetchRequest: fetchRequest,
       completion: completion
     )
-  }
-  
-  /// Used to fetch record meta data
-  public func fetchRecordMetaData(record: Record) {
-    
   }
   
   // MARK: - Delete
