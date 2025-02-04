@@ -147,12 +147,14 @@ extension RecordsDatabaseManager {
   func addFileDetails(
     to record: Record,
     documentURIs: [String],
-    smartReportData: Data
+    smartReportData: Data?
   ) {
     /// Add record meta data to database
     addRecordMetaData(to: record, documentURIs: documentURIs)
     /// Add smart report data to database
-    addSmartReport(to: record, smartReportData: smartReportData)
+    if let smartReportData {
+      addSmartReport(to: record, smartReportData: smartReportData)
+    }
   }
   
   /// Used to add record meta data as a one to many relationship to record entity

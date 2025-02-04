@@ -129,8 +129,9 @@ public final class RecordsRepo {
           databaseManager.addFileDetails(
             to: record,
             documentURIs: documentURIs,
-            smartReportData: <#T##Data#>
+            smartReportData: databaseAdapter.serializeSmartReportInfo(smartReport: docResponse?.smartReport)
           )
+          completion(docResponse?.smartReport)
         }
       }
     }
