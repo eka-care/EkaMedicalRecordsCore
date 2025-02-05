@@ -85,7 +85,7 @@ struct MaskedFile: Codable {
 
 // MARK: - SmartReport
 public struct SmartReportInfo: Codable {
-  let verified, unverified: [Verified]?
+  public let verified, unverified: [Verified]?
 }
 
 // MARK: - Verified
