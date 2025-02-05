@@ -114,8 +114,8 @@ public final class RecordsRepo {
     for record: Record,
     completion: @escaping (_ documentURIs: [String], _ reportInfo: SmartReportInfo?) -> Void
   ) {
-    /// If local documents are not present or record is analysing fetch from network and fill
-    if record.toRecordMeta?.count == 0 || record.isAnalyzing {
+    /// If local documents are not present or smart report is not present fetch from network and fill
+    if (record.toRecordMeta?.count == 0) || (record.toSmartReport == nil) {
       fillRecordMetaDataFromNetwork(record: record, completion: completion)
     } else { /// if local documents are present give data from there
       let documentURIs = record.getLocalPathsOfFile()
@@ -124,6 +124,7 @@ public final class RecordsRepo {
     }
   }
   
+  /// Used to fill record meta data like document uris and smart report from network
   private func fillRecordMetaDataFromNetwork(
     record: Record,
     completion: @escaping (_ documentURIs: [String], _ reportInfo: SmartReportInfo?) -> Void
