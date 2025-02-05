@@ -133,6 +133,10 @@ public final class RecordsRepo {
     /// If local documents are not present or record is analysing fetch from network and fill
     if record.toRecordMeta?.count == 0 || record.isAnalyzing {
       fillRecordMetaDataFromNetwork(record: record, completion: completion)
+    } else { /// if local documents are present give data from there
+      let documentURIs = record.getMetaDataItems().compactMap { $0.documentURI }
+      let smartReport = databaseManager.fetchSmartReportData(from: record)
+      completion(documentURIs, smartReport)
     }
   }
   
