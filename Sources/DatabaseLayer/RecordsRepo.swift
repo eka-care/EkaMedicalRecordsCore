@@ -171,6 +171,35 @@ public final class RecordsRepo {
     )
   }
   
+  // MARK: - Update
+  
+  /// Used to update record
+  /// - Parameters:
+  ///   - recordID: object Id of the record
+  ///   - documentID: document id of the record
+  ///   - documentDate: document date of the record
+  ///   - documentType: document type of the record
+  public func updateRecord(
+    recordID: NSManagedObjectID,
+    documentID: String? = nil,
+    documentDate: Date? = nil,
+    documentType: Int? = nil
+  ) {
+    /// Update in database
+    databaseManager.updateRecord(
+      recordID: recordID,
+      documentID: documentID,
+      documentDate: documentDate,
+      documentType: documentType
+    )
+    /// Update call
+    editDocument(
+      documentID: documentID,
+      documentDate: documentDate,
+      documentType: documentType
+    )
+  }
+  
   // MARK: - Delete
   
   /// Used to delete records fot the given fetch request

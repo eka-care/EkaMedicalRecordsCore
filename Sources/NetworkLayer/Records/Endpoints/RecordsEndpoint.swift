@@ -29,6 +29,12 @@ enum RecordsEndpoint {
     documentID: String,
     oid: String
   )
+  /// Edit document details
+  case editDocDetails(
+    documentID: String,
+    filterOID: String,
+    request: DocUpdateRequest
+  )
 }
 
 extension RecordsEndpoint: RequestProvider {
@@ -129,6 +135,20 @@ extension RecordsEndpoint: RequestProvider {
         "\(DomainConfigurations.vaultURL)/api/v1/docs/\(documentID)",
         method: .get,
         parameters: params,
+        interceptor: NetworkRequestInterceptor()
+      )
+      .validate()
+      
+    case .editDocDetails(
+      let documentID,
+      let filterOID,
+      let request
+    ):
+      return AF.request(
+        "\(DomainConfigurations.vaultURL)/api/d/v1/docs/\(documentID)?oid=\(filterOID)",
+        method: .patch,
+        parameters: request,
+        encoder: JSONParameterEncoder.default,
         interceptor: NetworkRequestInterceptor()
       )
       .validate()

@@ -233,9 +233,14 @@ extension RecordsDatabaseManager {
   /// Updates a specific record in the database.
   /// - Parameters:
   ///   - recordID: The unique identifier of the record to be updated
+  ///   - documentID: documentID of the record
+  ///   - documentDate: documentDate of the record
+  ///   - documentType: documentType of the record
   func updateRecord(
     recordID: NSManagedObjectID,
-    documentID: String?
+    documentID: String? = nil,
+    documentDate: Date? = nil,
+    documentType: Int? = nil
   ) {
     do {
       guard let record = try container.viewContext.existingObject(with: recordID) as? Record else {
@@ -243,6 +248,10 @@ extension RecordsDatabaseManager {
         return
       }
       record.documentID = documentID
+      record.documentDate = documentDate
+      if let documentType {
+        record.documentType = Int64(documentType)
+      }
       try container.viewContext.save()
     } catch {
       debugPrint("Failed to update record: \(error)")
