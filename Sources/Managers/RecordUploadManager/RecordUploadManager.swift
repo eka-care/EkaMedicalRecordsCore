@@ -200,7 +200,7 @@ final class RecordUploadManager {
       tags: tags,
       shareable: false,
       fileContentTypes: filesMetaData,
-      patientOID: nil,
+      patientOID: CoreInitConfigurations.shared.filterID,
       saId: nil,
       isEncrypted: false,
       isLinkedWithAbha: isLinkedWithAbha
