@@ -134,7 +134,7 @@ public final class RecordsRepo {
     if record.toRecordMeta?.count == 0 || record.isAnalyzing {
       fillRecordMetaDataFromNetwork(record: record, completion: completion)
     } else { /// if local documents are present give data from there
-      let documentURIs = record.getMetaDataItems().compactMap { $0.documentURI }
+      let documentURIs = record.getLocalPathsOfFile()
       let smartReport = databaseManager.fetchSmartReportData(from: record)
       completion(documentURIs, smartReport)
     }
