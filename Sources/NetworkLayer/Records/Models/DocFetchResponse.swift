@@ -91,14 +91,14 @@ public struct SmartReportInfo: Codable {
 // MARK: - Verified
 public struct Verified: Codable, Hashable, Identifiable {
   public let id = UUID()
-  let name, value, unit: String?
-  let vitalID: String?
-  let ekaID: String?
-  let isResultEditable: Bool?
-  let pageNum, fileIndex: Int?
-  let coordinates: [Coordinate]?
-  let range, result, resultID, displayResult: String?
-  let date: Int?
+  public let name, value, unit: String?
+  public let vitalID: String?
+  public let ekaID: String?
+  public let isResultEditable: Bool?
+  public let pageNum, fileIndex: Int?
+  public let coordinates: [Coordinate]?
+  public let range, result, resultID, displayResult: String?
+  public let date: Int?
   
   enum CodingKeys: String, CodingKey {
     case name, value, unit, date
@@ -122,7 +122,7 @@ public struct Verified: Codable, Hashable, Identifiable {
 }
 
 // MARK: - Coordinate
-struct Coordinate: Codable, Hashable {
-  let x: Double?
-  let y: Double?
+public struct Coordinate: Codable, Hashable {
+  public let x: Double?
+  public let y: Double?
 }
