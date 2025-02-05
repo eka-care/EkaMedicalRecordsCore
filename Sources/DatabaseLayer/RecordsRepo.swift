@@ -109,22 +109,6 @@ public final class RecordsRepo {
     }
   }
   
-//  /// Used to get smart report info
-//  /// - Parameters:
-//  ///   - record: record for which smart report info is to be extracted
-//  ///   - completion: smart report info
-//  public func getSmartReport(
-//    for record: Record,
-//    completion: @escaping (SmartReportInfo?) -> Void
-//  ) {
-//    /// If smart report info is present in database fetch from there
-//    if let smartReportInfo = databaseManager.fetchSmartReportData(from: record) {
-//      completion(smartReportInfo)
-//    } else { /// else fetch from network store in database and fetch from there
-
-//    }
-//  }
-  
   /// Used to fetch record meta data
   public func fetchRecordMetaData(
     for record: Record,
