@@ -15,10 +15,15 @@
         <attribute name="updatedAt" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="uploadDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <relationship name="toRecordMeta" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RecordMeta" inverseName="toRecord" inverseEntity="RecordMeta"/>
+        <relationship name="toSmartReport" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="SmartReport" inverseName="toRecord" inverseEntity="SmartReport"/>
     </entity>
     <entity name="RecordMeta" representedClassName="RecordMeta" syncable="YES" codeGenerationType="class">
         <attribute name="documentURI" optional="YES" attributeType="String" customClassName="[String]"/>
         <attribute name="mimeType" optional="YES" attributeType="String"/>
         <relationship name="toRecord" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Record" inverseName="toRecordMeta" inverseEntity="Record"/>
+    </entity>
+    <entity name="SmartReport" representedClassName="SmartReport" syncable="YES" codeGenerationType="class">
+        <attribute name="data" optional="YES" attributeType="Binary"/>
+        <relationship name="toRecord" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Record" inverseName="toSmartReport" inverseEntity="Record"/>
     </entity>
 </model>
