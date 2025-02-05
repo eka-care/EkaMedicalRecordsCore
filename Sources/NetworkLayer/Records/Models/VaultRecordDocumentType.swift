@@ -7,7 +7,7 @@
 
 import SwiftProtoContracts
 
-extension Vault_Records_DocumentType {
+public extension Vault_Records_DocumentType {
   var title: String {
     switch self {
     case .typeUnspecified: return "Unspecified"
@@ -44,9 +44,5 @@ extension Vault_Records_DocumentType {
     case .typeOther:
       return "ot"
     }
-  }
-  
-  static func getTitle() -> String? {
-    
   }
 }

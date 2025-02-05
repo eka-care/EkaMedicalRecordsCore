@@ -54,7 +54,7 @@ protocol RecordsProvider {
     documentId id: String,
     filterOID: String,
     request: DocUpdateRequest,
-    _ completion: @escaping (Result<Bool, Error>) -> Void
+    _ completion: @escaping (Result<Bool, Error>, Int?) -> Void
   )
 }
 

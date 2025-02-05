@@ -214,7 +214,7 @@ extension RecordsRepo {
     service.editDocumentDetails(
       documentId: documentID,
       filterOID: filterID,
-      request: request) { result in
+      request: request) { result, statusCode in
         switch result {
         case .success:
           debugPrint("Updated document")
