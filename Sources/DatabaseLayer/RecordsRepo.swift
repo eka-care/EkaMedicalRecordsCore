@@ -109,30 +109,50 @@ public final class RecordsRepo {
     }
   }
   
-  /// Used to get smart report info
-  /// - Parameters:
-  ///   - record: record for which smart report info is to be extracted
-  ///   - completion: smart report info
-  public func getSmartReport(
+//  /// Used to get smart report info
+//  /// - Parameters:
+//  ///   - record: record for which smart report info is to be extracted
+//  ///   - completion: smart report info
+//  public func getSmartReport(
+//    for record: Record,
+//    completion: @escaping (SmartReportInfo?) -> Void
+//  ) {
+//    /// If smart report info is present in database fetch from there
+//    if let smartReportInfo = databaseManager.fetchSmartReportData(from: record) {
+//      completion(smartReportInfo)
+//    } else { /// else fetch from network store in database and fetch from there
+
+//    }
+//  }
+  
+  /// Used to fetch record meta data
+  public func fetchRecordMetaData(
     for record: Record,
-    completion: @escaping (SmartReportInfo?) -> Void
+    completion: @escaping (_ documentURIs: [String], _ reportInfo: SmartReportInfo?) -> Void
   ) {
-    /// If smart report info is present in database fetch from there
-    if let smartReportInfo = databaseManager.fetchSmartReportData(from: record) {
-      completion(smartReportInfo)
-    } else { /// else fetch from network store in database and fetch from there
-      getFileDetails(record: record) { [weak self] docResponse in
+    /// If local documents are not present or record is analysing fetch from network and fill
+    if record.toRecordMeta?.count == 0 || record.isAnalyzing {
+      fillRecordMetaDataFromNetwork(record: record, completion: completion)
+    }
+  }
+  
+  private func fillRecordMetaDataFromNetwork(
+    record: Record,
+    completion: @escaping (_ documentURIs: [String], _ reportInfo: SmartReportInfo?) -> Void
+  ) {
+    getFileDetails(record: record) { [weak self] docResponse in
+      guard let self else { return }
+      /// Get documentURIs
+      fetchDocumentURIs(files: docResponse?.files) { [weak self] documentURIs in
         guard let self else { return }
-        /// Get documentURIs
-        fetchDocumentURIs(files: docResponse?.files) { [weak self] documentURIs in
-          guard let self else { return }
-          databaseManager.addFileDetails(
-            to: record,
-            documentURIs: documentURIs,
-            smartReportData: databaseAdapter.serializeSmartReportInfo(smartReport: docResponse?.smartReport)
-          )
-          completion(docResponse?.smartReport)
-        }
+        databaseManager.addFileDetails(
+          to: record,
+          documentURIs: documentURIs,
+          smartReportData: databaseAdapter.serializeSmartReportInfo(smartReport: docResponse?.smartReport)
+        )
+        let documentURIs = record.toRecordMeta?.allObjects.compactMap { ($0 as? RecordMeta)?.documentURI } ?? []
+        let smartReport = databaseManager.fetchSmartReportData(from: record)
+        completion(documentURIs, smartReport)
       }
     }
   }
