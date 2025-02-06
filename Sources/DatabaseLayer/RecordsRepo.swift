@@ -138,7 +138,7 @@ public final class RecordsRepo {
         guard let self else { return }
         databaseManager.addFileDetails(
           to: record,
-          documentURIs: documentURIs,
+          documentURIs: record.toRecordMeta?.count == 0 ? documentURIs : [], /// update document uris only if they are not already present
           smartReportData: databaseAdapter.serializeSmartReportInfo(smartReport: docResponse?.smartReport)
         )
         let documentURIs = record.toRecordMeta?.allObjects.compactMap { ($0 as? RecordMeta)?.documentURI } ?? []
