@@ -31,9 +31,6 @@ public class CoreInitConfigurations {
   /// Owner ID for records
   public var ownerID: String?
   
-  /// Owner name for records
-  public var ownerName: String?
-  
   // MARK: - Init
   
   private init() {}
