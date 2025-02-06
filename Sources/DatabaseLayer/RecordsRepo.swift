@@ -29,11 +29,11 @@ public final class RecordsRepo {
   // MARK: - Sync Records
   
   /// Used to get update token and start fetching records
-  public func getUpdatedAtAndStartFetchRecords() {
+  public func getUpdatedAtAndStartFetchRecords(completion: @escaping () -> Void) {
     fetchLatestRecordUpdatedAtString { [weak self] updatedAt in
       guard let self else { return }
       recordsUpdateEpoch = updatedAt
-      fetchRecordsFromServer {}
+      fetchRecordsFromServer { completion() }
     }
   }
   
