@@ -154,15 +154,8 @@ extension RecordDatabaseAdapter {
     insertModel.documentHash = UUID().uuidString /// To update ui
     insertModel.documentID = networkModel.item.documentID
     insertModel.documentType = networkModel.item.documentType.rawValue
-    /// Form analysing status of the document
-    if let availableDocument = networkModel.item.availableDocument {
-      switch availableDocument {
-      case .inTransit:
-        insertModel.isAnalyzing = true
-      case .metadata:
-        insertModel.isAnalyzing = false
-      }
-    }
+    /// Form smart of the document
+    insertModel.isSmart = networkModel.item.metadata.tags.contains(where: { $0 == .typeTagSmart })
     insertModel.updatedAt = Date()
     /// Form Thumbnail asynchronously
     if networkModel.item.metadata.hasThumbnail {

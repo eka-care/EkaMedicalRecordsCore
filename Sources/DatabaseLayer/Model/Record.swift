@@ -20,6 +20,9 @@ extension Record {
     if let isAnalyzing = record.isAnalyzing {
       self.isAnalyzing = isAnalyzing
     }
+    if let isSmart = record.isSmart {
+      self.isSmart = isSmart
+    }
     thumbnail = record.thumbnail
     updatedAt = record.updatedAt
     uploadDate = record.uploadDate
