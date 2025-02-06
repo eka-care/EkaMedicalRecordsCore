@@ -117,7 +117,9 @@ public final class RecordsRepo {
     completion: @escaping (_ documentURIs: [String], _ reportInfo: SmartReportInfo?) -> Void
   ) {
     /// If local documents are not present or smart report is not present fetch from network and fill
-    if (record.toRecordMeta?.count == 0) || (record.toSmartReport == nil) {
+    /// but we make sure we have document id which is required for network call
+    if ((record.toRecordMeta?.count == 0) || (record.toSmartReport == nil))
+        && record.documentID != nil {
       fillRecordMetaDataFromNetwork(record: record, completion: completion)
     } else { /// if local documents are present give data from there
       let documentURIs = record.getLocalPathsOfFile()
