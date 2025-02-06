@@ -24,6 +24,7 @@ protocol RecordsProvider {
     uploadRequest request: DocUploadRequest,
     _ completion: @escaping (Result<DocUploadFormsResponse, Error>, Int?) -> Void
   )
+  
   /// submitting documents
   func submitDocuments(
     file: Data,
@@ -38,6 +39,21 @@ protocol RecordsProvider {
   func delete(
     documentId: String,
     oid: String?,
+    _ completion: @escaping (Result<Bool, Error>, Int?) -> Void
+  )
+  
+  /// fetch document details
+  func fetchDocDetails(
+    documentId id: String,
+    oid: String,
+    _ completion: @escaping (Result<DocFetchResponse, Error>, Int?) -> Void
+  )
+  
+  /// edit document details
+  func editDocumentDetails(
+    documentId id: String,
+    filterOID: String,
+    request: DocUpdateRequest,
     _ completion: @escaping (Result<Bool, Error>, Int?) -> Void
   )
 }
@@ -87,5 +103,27 @@ extension RecordsProvider {
     _ completion: @escaping (Result<Bool, Error>, Int?) -> Void
   ) {
     networkService.execute(RecordsEndpoint.delete(documentId: documentId, oid: oid), completion: completion)
+  }
+  
+  /// fetch document details
+  func fetchDocDetails(
+    documentId id: String,
+    oid: String,
+    _ completion: @escaping (Result<DocFetchResponse, Error>, Int?) -> Void
+  ) {
+    networkService.execute(RecordsEndpoint.fetchDocDetails(documentID: id, oid: oid), completion: completion)
+  }
+  
+  /// edit document details
+  func editDocumentDetails(
+    documentId id: String,
+    filterOID: String,
+    request: DocUpdateRequest,
+    _ completion: @escaping (Result<Bool, Error>, Int?) -> Void
+  ) {
+    networkService.execute(
+      RecordsEndpoint.editDocDetails(documentID: id, filterOID: filterOID, request: request),
+      completion: completion
+    )
   }
 }

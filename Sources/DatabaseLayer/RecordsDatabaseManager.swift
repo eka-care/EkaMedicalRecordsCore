@@ -54,6 +54,7 @@ public final class RecordsDatabaseManager {
   private var lastToken: NSPersistentHistoryToken?
   /// Current batch index for batch insert
   var batchIndex: Int = 0
+  private let databaseAdapter = RecordDatabaseAdapter()
   
   // MARK: - Init
   
@@ -129,8 +130,8 @@ extension RecordsDatabaseManager {
       try container.viewContext.save()
       /// Add record meta data after saving record entity
       addRecordMetaData(
-        record: newRecord,
-        recordModel: record
+        to: newRecord,
+        documentURIs: record.documentURIs
       )
       debugPrint("Record added successfully!")
       return newRecord
@@ -141,15 +142,30 @@ extension RecordsDatabaseManager {
     }
   }
   
+  /// Used to add record meta data from api to a record in database
+  /// - Parameter record: record to which meta data is to be added
+  func addFileDetails(
+    to record: Record,
+    documentURIs: [String],
+    smartReportData: Data?
+  ) {
+    /// Add record meta data to database
+    addRecordMetaData(to: record, documentURIs: documentURIs)
+    /// Add smart report data to database
+    if let smartReportData {
+      addSmartReport(to: record, smartReportData: smartReportData)
+    }
+  }
+  
   /// Used to add record meta data as a one to many relationship to record entity
   /// - Parameters:
   ///   - record: Entity Model to which meta data is to be attached
   ///   - recordModel: Record Model that has all the data
   private func addRecordMetaData(
-    record: Record,
-    recordModel: RecordModel
+    to record: Record,
+    documentURIs: [String]?
   ) {
-    guard let documentURIs = recordModel.documentURIs else { return }
+    guard let documentURIs else { return }
     documentURIs.forEach { uriPath in
       let recordMeta = RecordMeta(context: container.viewContext)
       recordMeta.documentURI = uriPath
@@ -161,6 +177,24 @@ extension RecordsDatabaseManager {
     } catch {
       let nsError = error as NSError
       debugPrint("Error saving record meta data: \(nsError), \(nsError.userInfo)")
+    }
+  }
+  
+  /// Used to add smart report data to a record
+  /// - Parameter record: record to which smart report is to be added
+  func addSmartReport(
+    to record: Record,
+    smartReportData: Data
+  ) {
+    let smartReport = SmartReport(context: container.viewContext)
+    smartReport.data = smartReportData
+    record.toSmartReport = smartReport
+    do {
+      try container.viewContext.save()
+      debugPrint("Smart report saved successfully")
+    } catch {
+      let nsError = error as NSError
+      debugPrint("Error saving smart report \(nsError)")
     }
   }
 }
@@ -181,6 +215,27 @@ extension RecordsDatabaseManager {
       completion(records ?? [])
     }
   }
+  
+  /// Used to fetch smart report data from database
+  func fetchSmartReportData(from record: Record) -> SmartReportInfo? {
+    let data = record.toSmartReport?.data
+    /// Get smart report from database
+    if let smartReportInfo = databaseAdapter.deserializeSmartReportInfo(data: data) {
+      return smartReportInfo
+    }
+    return nil
+  }
+  
+  /// Used to fetch record with given object id
+  func fetchRecord(with id: NSManagedObjectID) -> Record?  {
+    do {
+      let record = try container.viewContext.existingObject(with: id) as? Record
+      return record
+    } catch {
+      debugPrint("Not able to fetch record with given id")
+    }
+    return nil
+  }
 }
 
 // MARK: - Update
@@ -189,9 +244,14 @@ extension RecordsDatabaseManager {
   /// Updates a specific record in the database.
   /// - Parameters:
   ///   - recordID: The unique identifier of the record to be updated
+  ///   - documentID: documentID of the record
+  ///   - documentDate: documentDate of the record
+  ///   - documentType: documentType of the record
   func updateRecord(
     recordID: NSManagedObjectID,
-    documentID: String?
+    documentID: String? = nil,
+    documentDate: Date? = nil,
+    documentType: Int? = nil
   ) {
     do {
       guard let record = try container.viewContext.existingObject(with: recordID) as? Record else {
@@ -199,6 +259,10 @@ extension RecordsDatabaseManager {
         return
       }
       record.documentID = documentID
+      record.documentDate = documentDate
+      if let documentType {
+        record.documentType = Int64(documentType)
+      }
       try container.viewContext.save()
     } catch {
       debugPrint("Failed to update record: \(error)")

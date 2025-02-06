@@ -192,3 +192,25 @@ extension RecordDatabaseAdapter {
     }
   }
 }
+
+// MARK: - Smart Report
+
+extension RecordDatabaseAdapter {
+  /// Used to serialize smart report info
+  /// - Parameter smartReport: smartReportInfo object that is to be serialized
+  /// - Returns: serialized data for the smart report
+  func serializeSmartReportInfo(smartReport: SmartReportInfo?) -> Data? {
+    guard let smartReport else { return nil }
+    let smartReportData = try? JSONEncoder().encode(smartReport)
+    return smartReportData
+  }
+  
+  /// Used to deserialize the smart report info
+  /// - Parameter data: data that is to be deserialized
+  /// - Returns: object of smart report info
+  func deserializeSmartReportInfo(data: Data?) -> SmartReportInfo? {
+    guard let data else { return nil }
+    let smartReportObject = try? JSONDecoder().decode(SmartReportInfo.self, from: data)
+    return smartReportObject
+  }
+}

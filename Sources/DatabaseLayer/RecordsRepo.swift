@@ -87,7 +87,7 @@ public final class RecordsRepo {
   /// - Parameter record: record to be added
   public func addSingleRecord(
     record: RecordModel,
-    completion didUploadRecord: @escaping () -> Void
+    completion didUploadRecord: @escaping (Record?) -> Void
   ) {
     /// Add in database and store it in addedRecord
     let addedRecord = databaseManager.addSingleRecord(from: record)
@@ -104,11 +104,60 @@ public final class RecordsRepo {
           recordID: addedRecord.objectID,
           documentID: uploadFormsResponse?.batchResponses?.first?.documentID
         )
-        didUploadRecord()
+        /// Return the added record in completion handler
+        let record = databaseManager.fetchRecord(with: addedRecord.objectID)
+        didUploadRecord(record)
       }
     }
   }
   
+  /// Used to fetch record meta data
+  public func fetchRecordMetaData(
+    for record: Record,
+    completion: @escaping (_ documentURIs: [String], _ reportInfo: SmartReportInfo?) -> Void
+  ) {
+    /// If local documents are not present or smart report is not present fetch from network and fill
+    if (record.toRecordMeta?.count == 0) || (record.toSmartReport == nil) {
+      fillRecordMetaDataFromNetwork(record: record, completion: completion)
+    } else { /// if local documents are present give data from there
+      let documentURIs = record.getLocalPathsOfFile()
+      let smartReport = databaseManager.fetchSmartReportData(from: record)
+      completion(documentURIs, smartReport)
+    }
+  }
+  
+  /// Used to fill record meta data like document uris and smart report from network
+  private func fillRecordMetaDataFromNetwork(
+    record: Record,
+    completion: @escaping (_ documentURIs: [String], _ reportInfo: SmartReportInfo?) -> Void
+  ) {
+    getFileDetails(record: record) { [weak self] docResponse in
+      guard let self else { return }
+      /// Get documentURIs
+      fetchDocumentURIs(files: docResponse?.files) { [weak self] documentURIs in
+        guard let self else { return }
+        databaseManager.addFileDetails(
+          to: record,
+          documentURIs: documentURIs,
+          smartReportData: databaseAdapter.serializeSmartReportInfo(smartReport: docResponse?.smartReport)
+        )
+        let documentURIs = record.toRecordMeta?.allObjects.compactMap { ($0 as? RecordMeta)?.documentURI } ?? []
+        let smartReport = databaseManager.fetchSmartReportData(from: record)
+        completion(documentURIs, smartReport)
+      }
+    }
+  }
+  
+  /// Used to get file details and save in database
+  /// This will have both smart report and original record
+  private func getFileDetails(
+    record: Record,
+    completion: @escaping (DocFetchResponse?) -> Void
+  ) {
+    guard let documentID = record.documentID else { return }
+    fetchFileDetails(documentID: documentID, completion: completion)
+  }
+    
   // MARK: - Read
   
   /// Used to fetch record entity items
@@ -124,9 +173,33 @@ public final class RecordsRepo {
     )
   }
   
-  /// Used to fetch record meta data
-  public func fetchRecordMetaData(record: Record) {
-    
+  // MARK: - Update
+  
+  /// Used to update record
+  /// - Parameters:
+  ///   - recordID: object Id of the record
+  ///   - documentID: document id of the record
+  ///   - documentDate: document date of the record
+  ///   - documentType: document type of the record
+  public func updateRecord(
+    recordID: NSManagedObjectID,
+    documentID: String? = nil,
+    documentDate: Date? = nil,
+    documentType: Int? = nil
+  ) {
+    /// Update in database
+    databaseManager.updateRecord(
+      recordID: recordID,
+      documentID: documentID,
+      documentDate: documentDate,
+      documentType: documentType
+    )
+    /// Update call
+    editDocument(
+      documentID: documentID,
+      documentDate: documentDate,
+      documentType: documentType
+    )
   }
   
   // MARK: - Delete
