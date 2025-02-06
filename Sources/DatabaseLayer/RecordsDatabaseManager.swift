@@ -225,6 +225,17 @@ extension RecordsDatabaseManager {
     }
     return nil
   }
+  
+  /// Used to fetch record with given object id
+  func fetchRecord(with id: NSManagedObjectID) -> Record?  {
+    do {
+      let record = try container.viewContext.existingObject(with: id) as? Record
+      return record
+    } catch {
+      debugPrint("Not able to fetch record with given id")
+    }
+    return nil
+  }
 }
 
 // MARK: - Update

@@ -87,7 +87,7 @@ public final class RecordsRepo {
   /// - Parameter record: record to be added
   public func addSingleRecord(
     record: RecordModel,
-    completion didUploadRecord: @escaping () -> Void
+    completion didUploadRecord: @escaping (Record?) -> Void
   ) {
     /// Add in database and store it in addedRecord
     let addedRecord = databaseManager.addSingleRecord(from: record)
@@ -104,7 +104,9 @@ public final class RecordsRepo {
           recordID: addedRecord.objectID,
           documentID: uploadFormsResponse?.batchResponses?.first?.documentID
         )
-        didUploadRecord()
+        /// Return the added record in completion handler
+        let record = databaseManager.fetchRecord(with: addedRecord.objectID)
+        didUploadRecord(record)
       }
     }
   }
