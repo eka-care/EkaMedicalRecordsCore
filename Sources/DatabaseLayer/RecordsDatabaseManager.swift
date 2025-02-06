@@ -225,6 +225,17 @@ extension RecordsDatabaseManager {
     }
     return nil
   }
+  
+  /// Used to fetch record with given object id
+  func fetchRecord(with id: NSManagedObjectID) -> Record?  {
+    do {
+      let record = try container.viewContext.existingObject(with: id) as? Record
+      return record
+    } catch {
+      debugPrint("Not able to fetch record with given id")
+    }
+    return nil
+  }
 }
 
 // MARK: - Update
@@ -233,9 +244,14 @@ extension RecordsDatabaseManager {
   /// Updates a specific record in the database.
   /// - Parameters:
   ///   - recordID: The unique identifier of the record to be updated
+  ///   - documentID: documentID of the record
+  ///   - documentDate: documentDate of the record
+  ///   - documentType: documentType of the record
   func updateRecord(
     recordID: NSManagedObjectID,
-    documentID: String?
+    documentID: String? = nil,
+    documentDate: Date? = nil,
+    documentType: Int? = nil
   ) {
     do {
       guard let record = try container.viewContext.existingObject(with: recordID) as? Record else {
@@ -243,6 +259,10 @@ extension RecordsDatabaseManager {
         return
       }
       record.documentID = documentID
+      record.documentDate = documentDate
+      if let documentType {
+        record.documentType = Int64(documentType)
+      }
       try container.viewContext.save()
     } catch {
       debugPrint("Failed to update record: \(error)")

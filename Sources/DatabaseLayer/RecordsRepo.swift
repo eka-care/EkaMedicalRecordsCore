@@ -87,7 +87,7 @@ public final class RecordsRepo {
   /// - Parameter record: record to be added
   public func addSingleRecord(
     record: RecordModel,
-    completion didUploadRecord: @escaping () -> Void
+    completion didUploadRecord: @escaping (Record?) -> Void
   ) {
     /// Add in database and store it in addedRecord
     let addedRecord = databaseManager.addSingleRecord(from: record)
@@ -104,7 +104,9 @@ public final class RecordsRepo {
           recordID: addedRecord.objectID,
           documentID: uploadFormsResponse?.batchResponses?.first?.documentID
         )
-        didUploadRecord()
+        /// Return the added record in completion handler
+        let record = databaseManager.fetchRecord(with: addedRecord.objectID)
+        didUploadRecord(record)
       }
     }
   }
@@ -168,6 +170,35 @@ public final class RecordsRepo {
     databaseManager.fetchRecords(
       fetchRequest: fetchRequest,
       completion: completion
+    )
+  }
+  
+  // MARK: - Update
+  
+  /// Used to update record
+  /// - Parameters:
+  ///   - recordID: object Id of the record
+  ///   - documentID: document id of the record
+  ///   - documentDate: document date of the record
+  ///   - documentType: document type of the record
+  public func updateRecord(
+    recordID: NSManagedObjectID,
+    documentID: String? = nil,
+    documentDate: Date? = nil,
+    documentType: Int? = nil
+  ) {
+    /// Update in database
+    databaseManager.updateRecord(
+      recordID: recordID,
+      documentID: documentID,
+      documentDate: documentDate,
+      documentType: documentType
+    )
+    /// Update call
+    editDocument(
+      documentID: documentID,
+      documentDate: documentDate,
+      documentType: documentType
     )
   }
   

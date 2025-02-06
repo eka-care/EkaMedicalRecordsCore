@@ -189,3 +189,38 @@ extension RecordsRepo {
     }
   }
 }
+
+// Update
+
+extension RecordsRepo {
+  func editDocument(
+    documentID: String?,
+    documentDate: Date? = nil,
+    documentType: Int? = nil
+  ) {
+    guard let documentID,
+    let filterID = CoreInitConfigurations.shared.filterID  else {
+      debugPrint("Document ID not found while editing record")
+      return
+    }
+    /// Set document type
+    let vaultRecordDocumentType = documentType.flatMap { Vault_Records_DocumentType(rawValue: $0) }
+    /// Form request
+    let request = DocUpdateRequest(
+      oid: filterID,
+      documentType: vaultRecordDocumentType?.shortHand,
+      documentDate: documentDate?.toUSEnglishString(withFormat: "dd-MM-yyyy") ?? ""
+    )
+    service.editDocumentDetails(
+      documentId: documentID,
+      filterOID: filterID,
+      request: request) { result, statusCode in
+        switch result {
+        case .success:
+          debugPrint("Updated document")
+        case .failure(let error):
+          debugPrint("Failure in document update network call \(error.localizedDescription)")
+        }
+      }
+  }
+}
