@@ -116,10 +116,11 @@ public final class RecordsRepo {
     for record: Record,
     completion: @escaping (_ documentURIs: [String], _ reportInfo: SmartReportInfo?) -> Void
   ) {
-    /// If local documents are not present or smart report is not present fetch from network and fill
-    /// but we make sure we have document id which is required for network call
-    if ((record.toRecordMeta?.count == 0) || (record.toSmartReport == nil))
-        && record.documentID != nil {
+    /// If local documents are not present and record is smart report we make network call
+    /// We also check document id because without it network call wont be made
+    if record.toRecordMeta?.count == 0 &&
+        record.isSmart &&
+        record.documentID != nil {
       fillRecordMetaDataFromNetwork(record: record, completion: completion)
     } else { /// if local documents are present give data from there
       let documentURIs = record.getLocalPathsOfFile()
@@ -140,7 +141,7 @@ public final class RecordsRepo {
         guard let self else { return }
         databaseManager.addFileDetails(
           to: record,
-          documentURIs: record.toRecordMeta?.count == 0 ? documentURIs : [], /// update document uris only if they are not already present
+          documentURIs: record.toRecordMeta?.count == 0 ? documentURIs : nil, /// update document uris only if they are not already present
           smartReportData: databaseAdapter.serializeSmartReportInfo(smartReport: docResponse?.smartReport)
         )
         let documentURIs = record.toRecordMeta?.allObjects.compactMap { ($0 as? RecordMeta)?.documentURI } ?? []

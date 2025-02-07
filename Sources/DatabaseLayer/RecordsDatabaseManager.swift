@@ -146,11 +146,13 @@ extension RecordsDatabaseManager {
   /// - Parameter record: record to which meta data is to be added
   func addFileDetails(
     to record: Record,
-    documentURIs: [String],
+    documentURIs: [String]?,
     smartReportData: Data?
   ) {
     /// Add record meta data to database
-    addRecordMetaData(to: record, documentURIs: documentURIs)
+    if let documentURIs {
+      addRecordMetaData(to: record, documentURIs: documentURIs)
+    }
     /// Add smart report data to database
     if let smartReportData {
       addSmartReport(to: record, smartReportData: smartReportData)
