@@ -149,6 +149,8 @@ extension RecordsDatabaseManager {
     documentURIs: [String]?,
     smartReportData: Data?
   ) {
+    let recordMeta = RecordMeta(context: container.viewContext)
+    recordMeta.documentURI
     /// Add record meta data to database
     if let documentURIs {
       addRecordMetaData(to: record, documentURIs: documentURIs)
