@@ -120,7 +120,7 @@ public final class RecordsRepo {
     /// If record is smart and smart report is nil we fetch
     /// We also check document id because without it network call wont be made
     if (record.toRecordMeta?.count == 0) ||
-        (record.isSmart && record.toSmartReport == nil)
+        (record.isSmart && record.toSmartReport == nil) &&
         record.documentID != nil {
       fillRecordMetaDataFromNetwork(record: record, completion: completion)
     } else { /// if local documents are present give data from there
