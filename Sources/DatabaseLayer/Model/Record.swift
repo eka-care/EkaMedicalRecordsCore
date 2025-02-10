@@ -11,6 +11,7 @@ import CoreData
 
 extension Record {
   func update(from record: RecordModel) {
+    bid = CoreInitConfigurations.shared.ownerID
     documentDate = record.documentDate
     documentHash = record.documentHash
     documentID = record.documentID
