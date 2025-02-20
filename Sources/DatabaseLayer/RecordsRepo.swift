@@ -49,6 +49,7 @@ public final class RecordsRepo {
       /// Add records to the database in batches
       databaseAdapter.convertNetworkToDatabaseModels(from: recordItems) { [weak self] databaseInsertModels in
         guard let self else { return }
+        
         databaseManager.addRecords(from: databaseInsertModels) {
           debugPrint("Batch added to database, count -> \(databaseInsertModels.count)")
           /// If it was last page means all batcehs are added to database, hence send completion
@@ -260,6 +261,6 @@ extension RecordsRepo {
   /// Get last updated at in string format from a record model
   private func fetchUpdatedAtFromRecord(record: Record?) -> String? {
     let updatedAt = record?.updatedAt
-    return updatedAt?.getCurrentEpoch()
+    return updatedAt?.toEpochString()
   }
 }

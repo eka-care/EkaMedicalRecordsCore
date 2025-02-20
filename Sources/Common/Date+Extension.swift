@@ -8,9 +8,8 @@
 import Foundation
 
 extension Date {
-  /// Get the epoch of the current Date()
-  func getCurrentEpoch() -> String {
-    let wholeSecondEpoch: Int = Int(floor(Date().timeIntervalSince1970))
+  func toEpochString() -> String {
+    let wholeSecondEpoch: Int = Int(floor(self.timeIntervalSince1970))
     let stringEpoch: String = String(wholeSecondEpoch)
     return stringEpoch
   }
