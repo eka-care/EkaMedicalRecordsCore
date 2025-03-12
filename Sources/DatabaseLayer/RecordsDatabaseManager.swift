@@ -79,11 +79,11 @@ public final class RecordsDatabaseManager {
 // MARK: - Create
 
 extension RecordsDatabaseManager {
-  /// Used to add records to the database
+  /// Used to upsert records to the database
   /// - Parameters:
   ///   - records: list of records to be added
   ///   - completion: completion block to be executed after adding records
-  func addRecords(
+  func upsertRecords(
     from records: [RecordModel],
     completion: @escaping () -> Void
   ) {
@@ -95,13 +95,21 @@ extension RecordsDatabaseManager {
         entityName: RecordsDatabaseVersion.entityName,
         managedObjectHandler: { [weak self] object in
           guard let self,
-                /// Get the database object
                 let recordModel = object as? Record else { return false }
           if batchIndex <= finalIndex {
-            /// Get the network object
             let record = records[batchIndex]
-            /// Update the model with data from network
-            recordModel.update(from: record)
+            
+            // Check if the record already exists
+            let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "documentID == %@", record.documentID ?? "")
+            if let existingRecord = try? backgroundContext.fetch(fetchRequest).first {
+              // Update the existing record
+              existingRecord.update(from: record)
+            } else {
+              // Insert new record
+              recordModel.update(from: record)
+            }
+            
             batchIndex += 1
             return false
           } else {
@@ -119,6 +127,7 @@ extension RecordsDatabaseManager {
       }
     }
   }
+
   
   /// Used to add single record to the database, this will be faster than batch insert for single record
   func addSingleRecord(

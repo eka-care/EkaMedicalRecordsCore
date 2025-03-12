@@ -50,7 +50,7 @@ public final class RecordsRepo {
       databaseAdapter.convertNetworkToDatabaseModels(from: recordItems) { [weak self] databaseInsertModels in
         guard let self else { return }
         
-        databaseManager.addRecords(from: databaseInsertModels) {
+        databaseManager.upsertRecords(from: databaseInsertModels) {
           debugPrint("Batch added to database, count -> \(databaseInsertModels.count)")
           /// If it was last page means all batcehs are added to database, hence send completion
           if nextPageToken == nil {
@@ -78,7 +78,7 @@ public final class RecordsRepo {
     from records: [RecordModel],
     completion: @escaping () -> Void
   ) {
-    databaseManager.addRecords(from: records) {
+    databaseManager.upsertRecords(from: records) {
       completion()
       debugPrint("Record added to database")
     }
