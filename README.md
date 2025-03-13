@@ -186,7 +186,7 @@ public struct RecordModel {
 }
 ```
 
-#### Create:
+### Create:
 
 ------------
 
@@ -212,7 +212,7 @@ Usage:
     }
 ```
 
-#### Read:
+### Read:
 
 ------------
 
@@ -241,7 +241,7 @@ Function to fetch records from server and store in database.
   public func fetchRecordsFromServer(completion: @escaping () -> Void)
 ```
 
-#### Update:
+### Update:
 
 ------------
 
@@ -272,3 +272,17 @@ Usage
       documentType: selectedDocumentType?.rawValue
     )
 ```
+
+### Delete:
+
+------------
+
+Function to delete record from database and server
+```swift
+  /// Used to delete a specific record from the database as well as server
+  /// - Parameter record: record to be deleted
+  public func deleteRecord(
+    record: Record
+  )
+```
+
