@@ -162,3 +162,113 @@ extension SmartReport {
 ### CRUD operations:
 
 ------------
+
+For all communications with record database we do not directly use db model. For that purpose the following model has been created.
+
+`RecordsRepo` class will contain all the crud operations.
+
+```swift
+/// Model used for record insert
+public struct RecordModel {
+  var documentID: String?
+  var documentDate: Date?
+  var documentHash: String?
+  var documentType: Int?
+  var hasSyncedEdit: Bool?
+  var isAnalyzing: Bool?
+  var isSmart: Bool?
+  var oid: String?
+  var thumbnail: String?
+  var updatedAt: Date?
+  var uploadDate: Date?
+  var documentURIs: [String]?
+  var contentType: String?
+}
+```
+
+#### Create:
+
+------------
+
+
+
+###### Single Record : 
+
+Function:
+```swift
+   /// Used to add a single record to the database
+  /// - Parameter record: record to be added
+  public func addSingleRecord(
+    record: RecordModel,
+    completion didUploadRecord: @escaping (Record?) -> Void
+  )
+```
+
+Usage:
+
+```swift
+    recordsRepo.addSingleRecord(record: recordModel) { uploadedRecord in
+      /// Action to be done after record upload
+    }
+```
+
+#### Read:
+
+------------
+
+Function to fetch records from database using fetch query
+
+```swift
+  /// Used to fetch record entity items
+  /// - Parameter fetchRequest: fetch request for filtering
+  /// - Parameter completion: completion block to be executed after fetching records
+  public func fetchRecords(
+    fetchRequest: NSFetchRequest<Record>,
+    completion: @escaping ([Record]) -> Void
+  ) {
+    databaseManager.fetchRecords(
+      fetchRequest: fetchRequest,
+      completion: completion
+    )
+  }
+```
+
+Function to fetch records from server and store in database.
+
+```swift
+  /// Used to fetch records from the server and store them in the database
+  /// - Parameter completion: completion block to be executed after fetching
+  public func fetchRecordsFromServer(completion: @escaping () -> Void)
+```
+
+#### Update:
+
+------------
+
+Function
+```swift
+  /// Used to update record
+  /// - Parameters:
+  ///   - recordID: object Id of the record
+  ///   - documentID: document id of the record
+  ///   - documentDate: document date of the record
+  ///   - documentType: document type of the record
+  public func updateRecord(
+    recordID: NSManagedObjectID,
+    documentID: String? = nil,
+    documentDate: Date? = nil,
+    documentType: Int? = nil
+  )
+```
+
+Usage
+
+```swift
+    /// Update record in database
+    recordsRepo.updateRecord(
+      recordID: record.objectID,
+      documentID: record.documentID,
+      documentDate: documentDate,
+      documentType: selectedDocumentType?.rawValue
+    )
+```
