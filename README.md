@@ -241,6 +241,39 @@ Function to fetch records from server and store in database.
   public func fetchRecordsFromServer(completion: @escaping () -> Void)
 ```
 
+Function to get file details
+
+```swift
+  /// Used to get file details and save in database
+  /// This will have both smart report and original record
+  private func getFileDetails(
+    record: Record,
+    completion: @escaping (DocFetchResponse?) -> Void
+  )
+```
+
+Response
+
+```swift
+struct DocFetchResponse: Codable, Hashable {
+  let documentID: String?
+  let description: String?
+  let patientName, authorizer: String?
+  let documentDate: String?
+  let documentType: String?
+  let tags: [String]?
+  let canDelete: Bool?
+  let files: [File]?
+  let smartReport: SmartReportInfo?
+  let userTags: [String]?
+  let derivedTags: [String]?
+  let thumbnail: String?
+  let fileExtension: String?
+  let sharedWith: [String]?
+  let uploadedByMe: Bool?
+}
+```
+
 ### Update:
 
 ------------
