@@ -1,5 +1,5 @@
 {
-  "originHash" : "2310fc93cb03e1d2a6989f67b88368c7019f80d0f37707750e412c5faf3b31dd",
+  "originHash" : "2da925a17ef299623aa416dfff73f629fadd27a2625067521178569492e9f607",
   "pins" : [
     {
       "identity" : "alamofire",
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eka-care/proto-contracts.git",
       "state" : {
-        "branch" : "main",
-        "revision" : "bac1201cc305c453e913940c601467004998576c"
+        "revision" : "bac1201cc305c453e913940c601467004998576c",
+        "version" : "1.29.30"
       }
     },
     {
