@@ -16,7 +16,7 @@ protocol RecordsProvider {
     token: String?,
     updatedAt: String?,
     oid: String?,
-    _ completion: @escaping (Result<Vault_Records_RecordsAPIResponse, ProtoError>, RequestMetadata) -> Void
+    _ completion: @escaping (Result<DocsListFetchResponse, Error>, Int?) -> Void
   )
   
   /// Upload records v3
@@ -64,16 +64,17 @@ extension RecordsProvider {
     token: String?,
     updatedAt: String?,
     oid: String?,
-    _ completion: @escaping (Result<Vault_Records_RecordsAPIResponse, ProtoError>, RequestMetadata) -> Void
+    _ completion: @escaping (Result<DocsListFetchResponse, Error>, Int?) -> Void
   ) {
-    networkService.executeProto(
-      RecordsEndpoint.fetchRecords(
-        token: token,
-        updatedAt: updatedAt,
-        oid: oid
-      ),
-      completion: completion
-    )
+    networkService
+      .execute(
+        RecordsEndpoint.fetchRecords(
+          token: token,
+          updatedAt: updatedAt,
+          oid: oid
+        ),
+        completion: completion
+      )
   }
   
   /// Upload Records v3

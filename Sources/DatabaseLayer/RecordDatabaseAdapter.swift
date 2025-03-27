@@ -18,7 +18,7 @@ public struct RecordModel {
   var documentID: String?
   var documentDate: Date?
   var documentHash: String?
-  var documentType: Int?
+  var documentType: RecordDocumentType?
   var hasSyncedEdit: Bool?
   var isAnalyzing: Bool?
   var isSmart: Bool?
@@ -33,7 +33,7 @@ public struct RecordModel {
     documentID: String? = nil,
     documentDate: Date? = nil,
     documentHash: String? = nil,
-    documentType: Int? = nil,
+    documentType: RecordDocumentType? = nil,
     hasSyncedEdit: Bool? = nil,
     isAnalyzing: Bool? = nil,
     isSmart: Bool? = nil,
@@ -69,7 +69,7 @@ public final class RecordDatabaseAdapter {
   
   /// This is to convert network array of models to database models
   func convertNetworkToDatabaseModels(
-    from networkModels: [Vault_Records_Record],
+    from networkModels: [RecordItemElement],
     completion: @escaping ([RecordModel]) -> Void
   ) {
     var insertModels = [RecordModel]()
@@ -141,25 +141,30 @@ extension RecordDatabaseAdapter {
 extension RecordDatabaseAdapter {
   /// This is to convert single network model to database model
   private func convertNetworkModelToInsertModel(
-    from networkModel: Vault_Records_Record,
+    from networkModel: RecordItemElement,
     completion: @escaping (RecordModel) -> Void
   ) {
     var insertModel = RecordModel()
-    if networkModel.item.metadata.hasDocumentDate {
-      insertModel.documentDate = networkModel.item.metadata.documentDate.toDate()
+
+    if let documentDate = networkModel.recordDocument.item.metadata?.documentDate {
+      insertModel.documentDate = documentDate.toDate()
     }
-    if networkModel.item.hasUploadDate {
-      insertModel.uploadDate = networkModel.item.uploadDate.toDate()
+    if let uploadDate = networkModel.recordDocument.item.uploadDate {
+      insertModel.uploadDate = uploadDate.toDate()
     }
     insertModel.documentHash = UUID().uuidString /// To update ui
-    insertModel.documentID = networkModel.item.documentID
-    insertModel.documentType = networkModel.item.documentType.rawValue
+    insertModel.documentID = networkModel.recordDocument.item.documentID
+    if let documentType = networkModel.recordDocument.item.documentType {
+      insertModel.documentType = RecordDocumentType(rawValue: documentType)
+    }
     /// Form smart of the document
-    insertModel.isSmart = networkModel.item.metadata.tags.contains(where: { $0 == .typeTagSmart })
+    insertModel.isSmart = networkModel.recordDocument.item.metadata?.tags?.contains(where: { $0 == RecordDocumentTagType.smartTag.networkName }) ?? false
     insertModel.updatedAt = Date()
     /// Form Thumbnail asynchronously
-    if networkModel.item.metadata.hasThumbnail {
-      formLocalThumbnailFileNameFromNetworkURL(networkUrlString: networkModel.item.metadata.thumbnail) { localFileName in
+    if let thumbnail = networkModel.recordDocument.item.metadata?.thumbnail {
+      formLocalThumbnailFileNameFromNetworkURL(
+        networkUrlString: thumbnail
+      ) { localFileName in
         guard let localFileName else { return }
         insertModel.thumbnail = localFileName
         completion(insertModel)
