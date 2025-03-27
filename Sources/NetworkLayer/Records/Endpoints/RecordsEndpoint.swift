@@ -61,7 +61,7 @@ extension RecordsEndpoint: RequestProvider {
       }
       
       return AF.request(
-        "\(DomainConfigurations.vaultURL)/mr/api/v1/docs",
+        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs",
         method: .get,
         parameters: params,
         encoding: URLEncoding.queryString,
