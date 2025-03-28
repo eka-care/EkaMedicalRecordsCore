@@ -57,7 +57,7 @@ extension RecordsEndpoint: RequestProvider {
       }
       
       if let oid {
-        params["oid"] = oid
+        params["p_oid"] = oid
       }
       
       return AF.request(
