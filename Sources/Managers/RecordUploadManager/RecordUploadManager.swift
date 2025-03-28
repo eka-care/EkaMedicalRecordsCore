@@ -22,7 +22,7 @@ final class RecordUploadManager {
     nestedFiles: [DocumentMetaData],
     tags: [String]?,
     recordType: String?,
-    documentDate: String?,
+    documentDate: Int?,
     isLinkedWithAbha: Bool? = nil,
     recordUploadCompletion: @escaping RecordUploadCompletion
   ) {
@@ -30,8 +30,10 @@ final class RecordUploadManager {
     
     /// Making Batch Request
     let batchRequests: [DocUploadRequest.BatchRequest] = createBatchRequest(
-      nestedFiles: nestedFiles, tags: tags,
-      recordType: recordType, documentDate: documentDate,
+      nestedFiles: nestedFiles,
+      tags: tags,
+      recordType: recordType,
+      documentDate: documentDate,
       isLinkedWithAbha: isLinkedWithAbha
     )
     
@@ -45,7 +47,7 @@ final class RecordUploadManager {
     }
     
     /// Create Upload Request
-    let request = DocUploadRequest(batchRequests: batchRequests)
+    let request = DocUploadRequest(batchRequest: batchRequests)
     debugPrint("DocUploadRequestV3 - \(request)")
     
     /// Network Call
@@ -179,7 +181,7 @@ final class RecordUploadManager {
     nestedFiles: [DocumentMetaData],
     tags: [String]?,
     recordType: String?,
-    documentDate: String?,
+    documentDate: Int?,
     isLinkedWithAbha: Bool?
   ) -> [DocUploadRequest.BatchRequest] {
     var batchRequests: [DocUploadRequest.BatchRequest] = []
@@ -193,17 +195,12 @@ final class RecordUploadManager {
         )
       )
     }
-    
+
     let batchRequest = DocUploadRequest.BatchRequest(
-      documentDate: documentDate ?? nil,
       documentType: recordType,
+      documentDate: documentDate,
       tags: tags,
-      shareable: false,
-      fileContentTypes: filesMetaData,
-      patientOID: CoreInitConfigurations.shared.filterID,
-      saId: nil,
-      isEncrypted: false,
-      isLinkedWithAbha: isLinkedWithAbha
+      files: filesMetaData
     )
     
     batchRequests.append(batchRequest)
