@@ -16,7 +16,7 @@ extension Record {
     documentHash = record.documentHash
     documentID = record.documentID
     if let documentType = record.documentType {
-      self.documentType = Int64(documentType)
+      self.documentType = Int64(documentType.intValue)
     }
     if let isAnalyzing = record.isAnalyzing {
       self.isAnalyzing = isAnalyzing
