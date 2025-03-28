@@ -20,6 +20,7 @@ struct DocUploadRequest: Codable {
   struct BatchRequest: Codable {
     let documentType: String?
     let documentDate: Int?
+    let patientOID: String?
     let tags: [String]?
     let files: [FileMetaData]?
     
@@ -27,17 +28,20 @@ struct DocUploadRequest: Codable {
       case documentType = "dt"
       case documentDate = "dd_e"
       case tags = "tg"
+      case patientOID = "patient_oid"
       case files
     }
     
     init(
       documentType: String? = nil,
       documentDate: Int? = nil,
+      patientOID: String? = nil,
       tags: [String]? = nil,
       files: [DocUploadRequest.FileMetaData]? = nil
     ) {
       self.documentType = documentType
       self.documentDate = documentDate
+      self.patientOID = patientOID
       self.tags = tags
       self.files = files
     }
