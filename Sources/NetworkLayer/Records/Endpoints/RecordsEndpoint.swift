@@ -57,11 +57,11 @@ extension RecordsEndpoint: RequestProvider {
       }
       
       if let oid {
-        params["oid"] = oid
+        params["patient_oid"] = oid
       }
       
       return AF.request(
-        "\(DomainConfigurations.vaultURL)/api/d/v1/docs",
+        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs",
         method: .get,
         parameters: params,
         encoding: URLEncoding.queryString,

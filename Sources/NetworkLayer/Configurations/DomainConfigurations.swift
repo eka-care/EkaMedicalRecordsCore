@@ -15,4 +15,8 @@ enum DomainConfigurations {
   public static var vaultURL: String {
     return "https://vault.eka.care"
   }
+  
+  public static var ekaURL: String {
+    return "https://api.eka.care"
+  }
 }
