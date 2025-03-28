@@ -21,6 +21,10 @@ struct DocsListFetchResponse: Codable {
 // MARK: - ItemElement
 struct RecordItemElement: Codable {
   let recordDocument: RecordDocument
+  
+  enum CodingKeys: String, CodingKey {
+    case recordDocument = "record"
+  }
 }
 
 // MARK: - Record

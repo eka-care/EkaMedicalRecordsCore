@@ -24,7 +24,6 @@ extension RecordsRepo {
       updatedAt: updatedAt,
       oid: oid
     ) { [weak self] result, metaData in
-      guard let self else { return }
       switch result {
       case .success(let response):
 //        /// Store the epoch in var first, update the UserDefaults ony once the last page is reached
