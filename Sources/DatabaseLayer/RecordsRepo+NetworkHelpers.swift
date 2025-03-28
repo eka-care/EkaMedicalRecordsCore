@@ -53,7 +53,7 @@ extension RecordsRepo {
     tags: [String]? = nil,
     recordType: String? = nil,
     recordURLs: [String]?,
-    documentDate: String? = nil,
+    documentDate: Int? = nil,
     contentType: String,
     isLinkedWithAbha: Bool? = false,
     completion: @escaping (DocUploadFormsResponse?, RecordUploadErrorType?) -> Void

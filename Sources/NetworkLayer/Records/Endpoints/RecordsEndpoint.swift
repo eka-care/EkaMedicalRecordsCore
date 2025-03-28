@@ -71,7 +71,7 @@ extension RecordsEndpoint: RequestProvider {
       
     case .uploadRecords(let request):
       return AF.request(
-        "\(DomainConfigurations.vaultURL)/api/v3/docs",
+        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs",
         method: .post,
         parameters: request,
         encoder: JSONParameterEncoder.default,

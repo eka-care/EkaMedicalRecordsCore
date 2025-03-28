@@ -96,7 +96,7 @@ public final class RecordsRepo {
     if let contentType = record.contentType {
       uploadRecordsV3(
         recordURLs: record.documentURIs,
-        documentDate: record.documentDate?.toUSEnglishString(),
+        documentDate: record.documentDate?.toEpochInt(),
         contentType: contentType
       ) { [weak self] uploadFormsResponse, error in
         guard let self else { return }
