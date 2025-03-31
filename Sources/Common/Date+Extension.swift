@@ -14,6 +14,11 @@ extension Date {
     return stringEpoch
   }
   
+  func toEpochInt() -> Int {
+    let wholeSecondEpoch: Int = Int(floor(self.timeIntervalSince1970))
+    return wholeSecondEpoch
+  }
+  
   func toUSEnglishString(withFormat format: String = "YYYY-MM-dd") -> String {
     // Create Date Formatter
     let dateFormatter = DateFormatter()

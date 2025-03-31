@@ -22,6 +22,7 @@ protocol RecordsProvider {
   /// Upload records v3
   func uploadRecords(
     uploadRequest request: DocUploadRequest,
+    oid: String?,
     _ completion: @escaping (Result<DocUploadFormsResponse, Error>, Int?) -> Void
   )
   
@@ -80,9 +81,10 @@ extension RecordsProvider {
   /// Upload Records v3
   func uploadRecords(
     uploadRequest request: DocUploadRequest,
+    oid: String?,
     _ completion: @escaping (Result<DocUploadFormsResponse, Error>, Int?) -> Void
   ) {
-    networkService.execute(RecordsEndpoint.uploadRecords(request: request), completion: completion)
+    networkService.execute(RecordsEndpoint.uploadRecords(request: request, oid: oid), completion: completion)
   }
   
   /// Submitting documents
