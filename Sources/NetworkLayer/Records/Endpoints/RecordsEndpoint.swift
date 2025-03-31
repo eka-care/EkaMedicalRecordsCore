@@ -123,11 +123,11 @@ extension RecordsEndpoint: RequestProvider {
       var params = [String: String]()
       
       if let oid {
-        params["oid"] = oid
+        params["p_oid"] = oid
       }
       
       return AF.request(
-        "\(DomainConfigurations.vaultURL)/api/v1/docs/\(documentID)",
+        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/\(documentID)",
         method: .delete,
         parameters: params,
         encoding: URLEncoding.queryString,
