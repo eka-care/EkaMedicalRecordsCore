@@ -41,7 +41,7 @@ enum RecordsEndpoint {
   /// Edit document details
   case editDocDetails(
     documentID: String,
-    filterOID: String,
+    filterOID: String?,
     request: DocUpdateRequest
   )
 }
@@ -154,8 +154,9 @@ extension RecordsEndpoint: RequestProvider {
       let filterOID,
       let request
     ):
+      let patientOidString = filterOID != nil ? "?p_oid=\(filterOID ?? "")" : ""
       return AF.request(
-        "\(DomainConfigurations.vaultURL)/api/d/v1/docs/\(documentID)?oid=\(filterOID)",
+        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/\(documentID)\(patientOidString)",
         method: .patch,
         parameters: request,
         encoder: JSONParameterEncoder.default,

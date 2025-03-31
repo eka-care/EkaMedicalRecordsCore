@@ -53,7 +53,7 @@ protocol RecordsProvider {
   /// edit document details
   func editDocumentDetails(
     documentId id: String,
-    filterOID: String,
+    filterOID: String?,
     request: DocUpdateRequest,
     _ completion: @escaping (Result<Bool, Error>, Int?) -> Void
   )
@@ -120,7 +120,7 @@ extension RecordsProvider {
   /// edit document details
   func editDocumentDetails(
     documentId id: String,
-    filterOID: String,
+    filterOID: String?,
     request: DocUpdateRequest,
     _ completion: @escaping (Result<Bool, Error>, Int?) -> Void
   ) {
