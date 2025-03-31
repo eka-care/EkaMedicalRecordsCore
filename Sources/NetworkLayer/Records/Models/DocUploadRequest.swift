@@ -7,36 +7,47 @@
 
 import Foundation
 
+// MARK: - Welcome
 struct DocUploadRequest: Codable {
-  let batchRequests: [BatchRequest]?
+  let batchRequest: [BatchRequest]
   
   enum CodingKeys: String, CodingKey {
-    case batchRequests = "batch_request"
+    case batchRequest = "batch_request"
   }
   
+  
+  // MARK: - BatchRequest
   struct BatchRequest: Codable {
-    let documentDate, documentType: String?
-    let tags: [String]?
-    let shareable: Bool?
-    let fileContentTypes: [FileMetaData]?
+    let documentType: String?
+    let documentDate: Int?
     let patientOID: String?
-    let saId: String?
-    let isEncrypted: Bool?
-    let isLinkedWithAbha: Bool?
+    let tags: [String]?
+    let files: [FileMetaData]?
     
     enum CodingKeys: String, CodingKey {
-      case documentDate = "dd"
       case documentType = "dt"
+      case documentDate = "dd_e"
       case tags = "tg"
-      case shareable = "sh"
       case patientOID = "patient_oid"
-      case fileContentTypes = "files"
-      case saId = "sa_id"
-      case isEncrypted = "is_encrypted"
-      case isLinkedWithAbha = "ndhm"
+      case files
+    }
+    
+    init(
+      documentType: String? = nil,
+      documentDate: Int? = nil,
+      patientOID: String? = nil,
+      tags: [String]? = nil,
+      files: [DocUploadRequest.FileMetaData]? = nil
+    ) {
+      self.documentType = documentType
+      self.documentDate = documentDate
+      self.patientOID = patientOID
+      self.tags = tags
+      self.files = files
     }
   }
   
+  // MARK: - File
   struct FileMetaData: Codable {
     let contentType: String?
     let fileSize: Int?
