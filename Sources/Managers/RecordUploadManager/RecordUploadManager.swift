@@ -51,7 +51,7 @@ final class RecordUploadManager {
     debugPrint("DocUploadRequestV3 - \(request)")
     
     /// Network Call
-    service.uploadRecords(uploadRequest: request) { [weak self] result, statusCode in
+    service.uploadRecords(uploadRequest: request, oid: request.batchRequest.first?.patientOID) { [weak self] result, statusCode in
       
       guard let self else { return }
       

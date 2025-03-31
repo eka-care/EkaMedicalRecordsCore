@@ -16,9 +16,18 @@ enum RecordsEndpoint {
     oid: String?
   )
   /// upload records v3
-  case uploadRecords(request: DocUploadRequest)
+  case uploadRecords(
+    request: DocUploadRequest,
+    oid: String?
+  )
   /// Submit documents
-  case submitDocuments(file: Data, fileName: String, mimeType: EkaFileMimeType, urlString: String, formFields: DocUploadFormsResponse.Fields)
+  case submitDocuments(
+    file: Data,
+    fileName: String,
+    mimeType: EkaFileMimeType,
+    urlString: String,
+    formFields: DocUploadFormsResponse.Fields
+  )
   /// delete
   case delete(
     documentId: String,
@@ -57,7 +66,7 @@ extension RecordsEndpoint: RequestProvider {
       }
       
       if let oid {
-        params["patient_oid"] = oid
+        params["p_oid"] = oid
       }
       
       return AF.request(
@@ -69,9 +78,10 @@ extension RecordsEndpoint: RequestProvider {
       )
       .validate()
       
-    case .uploadRecords(let request):
+    case .uploadRecords(let request, let oid):
+      let oidQueryParamString = oid != nil ? "?p_oid=\(oid ?? "")" : ""
       return AF.request(
-        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs",
+        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs\(oidQueryParamString)",
         method: .post,
         parameters: request,
         encoder: JSONParameterEncoder.default,
