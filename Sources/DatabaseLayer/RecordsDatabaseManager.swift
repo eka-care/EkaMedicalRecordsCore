@@ -105,6 +105,11 @@ extension RecordsDatabaseManager {
             if let existingRecord = try? backgroundContext.fetch(fetchRequest).first {
               // Update the existing record
               existingRecord.update(from: record)
+              do {
+                try backgroundContext.save()
+              } catch {
+                debugPrint("Error saving updated record: \(error)")
+              }
             } else {
               // Insert new record
               recordModel.update(from: record)
