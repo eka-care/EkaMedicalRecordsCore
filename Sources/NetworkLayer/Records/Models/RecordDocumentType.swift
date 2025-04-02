@@ -5,7 +5,7 @@
 //  Created by Arya Vashisht on 27/03/25.
 //
 
-enum RecordDocumentType: String {
+public enum RecordDocumentType: String {
   case typeLabReport = "lr"
   case typePrescription = "ps"
   case typeDischargeSummary = "ds"
@@ -15,7 +15,7 @@ enum RecordDocumentType: String {
   case typeScan = "sc"
   case typeOther = "ot"
   
-  var intValue: Int {
+  public var intValue: Int {
     switch self {
     case .typeLabReport:
       return 1

@@ -29,7 +29,7 @@ public struct RecordModel {
   var documentURIs: [String]?
   var contentType: String?
   
-  init(
+  public init(
     documentID: String? = nil,
     documentDate: Date? = nil,
     documentHash: String? = nil,
