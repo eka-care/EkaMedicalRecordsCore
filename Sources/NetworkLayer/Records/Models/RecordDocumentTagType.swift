@@ -11,7 +11,7 @@ enum RecordDocumentTagType {
   var networkName: String {
     switch self {
     case .smartTag:
-      return "TYPE_TAG_SMART"
+      return "1"
     }
   }
 }

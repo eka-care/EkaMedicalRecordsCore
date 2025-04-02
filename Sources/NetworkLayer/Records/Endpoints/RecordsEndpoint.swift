@@ -139,10 +139,10 @@ extension RecordsEndpoint: RequestProvider {
     case .fetchDocDetails(let documentID, let patientOID):
       var params = [String: String]()
       
-      params["oid"] = patientOID
+      params["p_oid"] = patientOID
       
       return AF.request(
-        "\(DomainConfigurations.vaultURL)/api/v1/docs/\(documentID)",
+        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/\(documentID)",
         method: .get,
         parameters: params,
         interceptor: NetworkRequestInterceptor()
