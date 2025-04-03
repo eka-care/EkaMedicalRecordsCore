@@ -60,7 +60,8 @@ struct Metadata: Codable {
   enum CodingKeys: String, CodingKey {
     case thumbnail
     case documentDate = "document_date"
-    case tags, title, abha
+    case tags = "auto_tags"
+    case title, abha
   }
 }
 
