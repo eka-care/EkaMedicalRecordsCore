@@ -103,6 +103,7 @@ extension RecordsDatabaseManager {
             let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
             fetchRequest.predicate = NSPredicate(format: "documentID == %@", record.documentID ?? "")
             if let existingRecord = try? backgroundContext.fetch(fetchRequest).first {
+              print("Document id of document being updated is \(record.documentID ?? "")")
               // Update the existing record
               existingRecord.update(from: record)
               do {

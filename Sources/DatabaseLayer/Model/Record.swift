@@ -15,6 +15,7 @@ extension Record {
     documentDate = record.documentDate
     documentHash = record.documentHash
     documentID = record.documentID
+    print("Record model -> documentID: \(String(describing: documentID))")
     if let documentType = record.documentType {
       self.documentType = Int64(documentType.intValue)
     }
