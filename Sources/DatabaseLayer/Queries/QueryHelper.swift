@@ -19,4 +19,15 @@ public final class QueryHelper {
     fetchRequest.fetchLimit = 1
     return fetchRequest
   }
+  
+  /// Query to fetch records that match the provided array of document IDs
+  /// - Parameter documentIDs: Array of document IDs to fetch
+  /// - Returns: NSFetchRequest configured to fetch matching records
+  public static func fetchRecordsByDocumentIDs(documentIDs: [String]) -> NSFetchRequest<NSFetchRequestResult> {
+    let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: Record.entity().name!)
+    // Predicate: documentID matches any of the provided IDs
+    fetchRequest.predicate = NSPredicate(format: "documentID IN %@", documentIDs as CVarArg)
+    // Return all matching records
+    return fetchRequest
+  }
 }
