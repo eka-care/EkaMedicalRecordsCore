@@ -25,7 +25,10 @@ extension Record {
     if let isSmart = record.isSmart {
       self.isSmart = isSmart
     }
+    print("Record model -> isSmart: \(String(describing: isSmart))")
+    print("Record model -> Earlier thumbnail : \(String(describing: thumbnail))")
     thumbnail = record.thumbnail
+    print("Record model -> Later thumbnail : \(String(describing: thumbnail))")
     updatedAt = record.updatedAt
     uploadDate = record.uploadDate
     /// Get oid from the passed value
