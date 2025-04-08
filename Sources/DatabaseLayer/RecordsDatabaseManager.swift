@@ -83,52 +83,103 @@ extension RecordsDatabaseManager {
   /// - Parameters:
   ///   - records: list of records to be added
   ///   - completion: completion block to be executed after adding records
+//  func upsertRecords(
+//    from records: [RecordModel],
+//    completion: @escaping () -> Void
+//  ) {
+//    let documentIDs = records.compactMap { $0.documentID }.filter { !$0.isEmpty }
+//    deleteExistingDocumentIdsRecordsFirst(documentIds: documentIDs) { [weak self] in
+//      guard let self else { return }
+//      batchInsertRecords(from: records, completion: completion)
+//    }
+//  }
+//  
+//  private func batchInsertRecords(
+//    from records: [RecordModel],
+//    completion: @escaping () -> Void
+//  ) {
+//    // Batch Insert
+//    let finalIndex = records.count - 1
+//    backgroundContext.perform { [weak self] in
+//      guard let self else { return }
+//      let batchRequest = NSBatchInsertRequest(
+//        entityName: RecordsDatabaseVersion.entityName,
+//        managedObjectHandler: { [weak self] object in
+//          guard let self,
+//                let recordModel = object as? Record else { return false }
+//          if batchIndex <= finalIndex {
+//            let record = records[batchIndex]
+//            // Insert new record
+//            recordModel.update(from: record)
+//            
+//            batchIndex += 1
+//            return false
+//          } else {
+//            batchIndex = 0 // Resetting the index for next batch
+//            return true
+//          }
+//        })
+//      do {
+//        try backgroundContext.execute(batchRequest)
+//        DispatchQueue.main.async {
+//          completion()
+//        }
+//      } catch {
+//        debugPrint("Batch insert failed: \(error)")
+//      }
+//    }
+//  }
+//  
+//  private func deleteExistingDocumentIdsRecordsFirst(
+//    documentIds: [String],
+//    completion: @escaping () -> Void
+//  ) {
+//    deleteRecords(
+//      request: QueryHelper.fetchRecordsByDocumentIDs(
+//        documentIDs: documentIds
+//      ),
+//      completion: completion
+//    )
+//  }
+  
   func upsertRecords(
     from records: [RecordModel],
     completion: @escaping () -> Void
   ) {
-    // Batch Insert
-    let finalIndex = records.count - 1
     backgroundContext.perform { [weak self] in
-      guard let self else { return }
-      let batchRequest = NSBatchInsertRequest(
-        entityName: RecordsDatabaseVersion.entityName,
-        managedObjectHandler: { [weak self] object in
-          guard let self,
-                let recordModel = object as? Record else { return false }
-          if batchIndex <= finalIndex {
-            let record = records[batchIndex]
-            
-            // Check if the record already exists
-            let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
-            fetchRequest.predicate = NSPredicate(format: "documentID == %@", record.documentID ?? "")
-            if let existingRecord = try? backgroundContext.fetch(fetchRequest).first {
-              // Update the existing record
-              existingRecord.update(from: record)
-              do {
-                try backgroundContext.save()
-              } catch {
-                debugPrint("Error saving updated record: \(error)")
-              }
-            } else {
-              // Insert new record
-              recordModel.update(from: record)
-            }
-            
-            batchIndex += 1
-            return false
+      guard let self else {
+        completion()
+        return
+      }
+      
+      for record in records {
+        // Check if the record already exists
+        let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "documentID == %@", record.documentID ?? "")
+        
+        do {
+          if let existingRecord = try self.backgroundContext.fetch(fetchRequest).first {
+            // Update existing record
+            print("Document id of document being updated is \(record.documentID ?? "")")
+            existingRecord.update(from: record)
           } else {
-            batchIndex = 0 // Resetting the index for next batch
-            return true
+            // Create new record
+            let newRecord = Record(context: self.backgroundContext)
+            newRecord.update(from: record)
           }
-        })
+        } catch {
+          debugPrint("Error fetching record: \(error)")
+        }
+      }
+      
+      // Save all changes at once
       do {
-        try backgroundContext.execute(batchRequest)
+        try self.backgroundContext.save()
         DispatchQueue.main.async {
           completion()
         }
       } catch {
-        debugPrint("Batch insert failed: \(error)")
+        debugPrint("Error saving records: \(error)")
       }
     }
   }
