@@ -93,22 +93,28 @@ public final class RecordsRepo {
     /// Add in database and store it in addedRecord
     let addedRecord = databaseManager.addSingleRecord(from: record)
     /// Upload to vault
-    if let contentType = record.contentType {
-      uploadRecordsV3(
-        recordURLs: record.documentURIs,
-        documentDate: record.documentDate?.toEpochInt(),
-        contentType: contentType
-      ) { [weak self] uploadFormsResponse, error in
-        guard let self else { return }
-        /// Update the database with document id
-        databaseManager.updateRecord(
-          recordID: addedRecord.objectID,
-          documentID: uploadFormsResponse?.batchResponses?.first?.documentID
-        )
-        /// Return the added record in completion handler
-        let record = databaseManager.fetchRecord(with: addedRecord.objectID)
-        didUploadRecord(record)
-      }
+    uploadRecord(record: addedRecord, completion: didUploadRecord)
+  }
+  
+  private func uploadRecord(
+    record: Record,
+    completion didUploadRecord: @escaping (Record?) -> Void
+  ) {
+    let documentURIs: [String] = record.toRecordMeta?.allObjects.compactMap { ($0 as? RecordMeta)?.documentURI } ?? []
+    uploadRecordsV3(
+      recordURLs: documentURIs,
+      documentDate: record.documentDate?.toEpochInt(),
+      contentType: FileType.getFileTypeFromFilePath(filePath: documentURIs.first ?? "")?.fileExtension ?? ""
+    ) { [weak self] uploadFormsResponse, error in
+      guard let self else { return }
+      /// Update the database with document id
+      databaseManager.updateRecord(
+        recordID: record.objectID,
+        documentID: uploadFormsResponse?.batchResponses?.first?.documentID
+      )
+      /// Return the added record in completion handler
+      let record = databaseManager.fetchRecord(with: record.objectID)
+      didUploadRecord(record)
     }
   }
   
@@ -262,5 +268,15 @@ extension RecordsRepo {
   private func fetchUpdatedAtFromRecord(record: Record?) -> String? {
     let updatedAt = record?.updatedAt
     return updatedAt?.toEpochString()
+  }
+  
+  /// Used to sync the unuploaded records
+  public func syncUnuploadedRecords() {
+    fetchRecords(fetchRequest: QueryHelper.fetchRecordsWithNilDocumentID()) { unsyncedRecords in
+      unsyncedRecords.forEach { [weak self] unsyncedRecord in
+        guard let self else { return }
+        uploadRecord(record: unsyncedRecord) { _ in }
+      }
+    }
   }
 }
