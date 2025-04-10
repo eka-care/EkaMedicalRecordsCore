@@ -30,6 +30,18 @@ public enum FileType: String {
       return nil
     }
   }
+  
+  public static func getFileTypeFromFilePath(filePath: String) -> FileType? {
+    let fileExtension = (filePath as NSString).pathExtension.lowercased()
+    switch fileExtension {
+    case "pdf":
+      return .pdf
+    case "jpg", "jpeg", "png", "gif", "heic", "bmp", "tiff", "webp":
+      return .image
+    default:
+      return nil
+    }
+  }
 }
 
 public final class FileHelper {
