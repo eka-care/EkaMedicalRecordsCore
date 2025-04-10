@@ -5,7 +5,7 @@
 //  Created by Arya Vashisht on 27/03/25.
 //
 
-public enum RecordDocumentType: String {
+public enum RecordDocumentType: String, CaseIterable {
   case typeAll = "all"
   case typeLabReport = "lr"
   case typePrescription = "ps"
