@@ -42,4 +42,14 @@ public final class QueryHelper {
     
     return fetchRequest
   }
+  
+  public static func fetchRecords(with filter: RecordDocumentType) -> NSFetchRequest<Record> {
+    // Create a fetch request for the Record entity
+    let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
+    
+    // Set the predicate to filter records where documentID is nil
+    fetchRequest.predicate = PredicateHelper.equals("documentType", value: filter.intValue)
+    
+    return fetchRequest
+  }
 }
