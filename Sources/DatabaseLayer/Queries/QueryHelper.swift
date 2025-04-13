@@ -43,12 +43,20 @@ public final class QueryHelper {
     return fetchRequest
   }
   
-  public static func fetchRecords(with filter: RecordDocumentType) -> NSFetchRequest<Record> {
-    // Create a fetch request for the Record entity
-    let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
+  public static func fetchRecordCountsByDocumentTypeFetchRequest() -> NSFetchRequest<NSFetchRequestResult> {
+    let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: Record.entity().name!)
+    fetchRequest.resultType = .dictionaryResultType
     
-    // Set the predicate to filter records where documentID is nil
-    fetchRequest.predicate = PredicateHelper.equals("documentType", value: filter.intValue)
+    // Create count expression
+    let countExpression = NSExpressionDescription()
+    countExpression.name = "count"
+    let keyPathExpression = NSExpression(forKeyPath: "documentType")
+    countExpression.expression = NSExpression(forFunction: "count:", arguments: [keyPathExpression])
+    countExpression.expressionResultType = .integer32AttributeType
+    
+    // Set group by and properties to fetch
+    fetchRequest.propertiesToFetch = ["documentType", countExpression]
+    fetchRequest.propertiesToGroupBy = ["documentType"]
     
     return fetchRequest
   }

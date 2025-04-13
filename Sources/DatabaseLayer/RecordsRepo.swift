@@ -184,6 +184,12 @@ public final class RecordsRepo {
     )
   }
   
+  /// Used to get record document type count
+  /// - Returns: Dictionary with count of each document type
+  public func getRecordDocumentTypeCount() -> [RecordDocumentType: Int] {
+    return databaseManager.getDocumentTypeCounts()
+  }
+  
   // MARK: - Update
   
   /// Used to update record
