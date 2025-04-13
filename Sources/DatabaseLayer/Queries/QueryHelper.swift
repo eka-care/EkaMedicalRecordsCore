@@ -43,7 +43,7 @@ public final class QueryHelper {
     return fetchRequest
   }
   
-  public static func fetchRecordCountsByDocumentTypeFetchRequest() -> NSFetchRequest<NSFetchRequestResult> {
+  public static func fetchRecordCountsByDocumentTypeFetchRequest(oid: String?) -> NSFetchRequest<NSFetchRequestResult> {
     let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: Record.entity().name!)
     fetchRequest.resultType = .dictionaryResultType
     
@@ -57,6 +57,12 @@ public final class QueryHelper {
     // Set group by and properties to fetch
     fetchRequest.propertiesToFetch = ["documentType", countExpression]
     fetchRequest.propertiesToGroupBy = ["documentType"]
+    
+    /// Add predicate to filter by oid
+    if let oid {
+      let oidPredicate = NSPredicate(format: "%K == %@", "oid", oid)
+      fetchRequest.predicate = oidPredicate
+    }
     
     return fetchRequest
   }

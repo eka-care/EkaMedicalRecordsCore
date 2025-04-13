@@ -305,8 +305,8 @@ extension RecordsDatabaseManager {
   }
   
   /// Get document type counts
-  func getDocumentTypeCounts() -> [RecordDocumentType: Int] {
-    let fetchRequest = QueryHelper.fetchRecordCountsByDocumentTypeFetchRequest()
+  func getDocumentTypeCounts(oid: String?) -> [RecordDocumentType: Int] {
+    let fetchRequest = QueryHelper.fetchRecordCountsByDocumentTypeFetchRequest(oid: oid)
     var counts: [RecordDocumentType: Int] = [:]
     
     do {
