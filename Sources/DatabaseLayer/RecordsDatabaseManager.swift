@@ -303,6 +303,35 @@ extension RecordsDatabaseManager {
     }
     return nil
   }
+  
+  /// Get document type counts
+  func getDocumentTypeCounts(oid: String?) -> [RecordDocumentType: Int] {
+    let fetchRequest = QueryHelper.fetchRecordCountsByDocumentTypeFetchRequest(oid: oid)
+    var counts: [RecordDocumentType: Int] = [:]
+    
+    do {
+      let results = try container.viewContext.fetch(fetchRequest)
+      var totalDocumentsCount = 0
+      
+      for result in results {
+        if let resultDict = result as? [String: Any],
+           let documentTypeInt = resultDict["documentType"] as? Int,
+           let recordDocumentType = RecordDocumentType.from(intValue: documentTypeInt),
+           let count = resultDict["count"] as? Int {
+          totalDocumentsCount += count
+          counts[recordDocumentType] = count
+        }
+      }
+      
+      /// Add totalDocumentsCount in all
+      counts[.typeAll] = totalDocumentsCount
+      
+    } catch {
+      print("Failed to fetch grouped document type counts: \(error)")
+    }
+    
+    return counts
+  }
 }
 
 // MARK: - Update

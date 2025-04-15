@@ -9,9 +9,10 @@ import Foundation
 
 public struct PredicateHelper {
   
-  /// Predicate for exact match of a string value
   public static func equals<T>(_ key: String, value: T?) -> NSPredicate {
-    if let unwrappedValue = value as? CVarArg {
+    if let int64Value = value as? Int64 {
+      return NSPredicate(format: "%K == %@", key, NSNumber(value: int64Value))
+    } else if let unwrappedValue = value as? CVarArg {
       return NSPredicate(format: "%K == %@", key, unwrappedValue)
     } else {
       return NSPredicate(format: "%K == nil", key)

@@ -5,7 +5,8 @@
 //  Created by Arya Vashisht on 27/03/25.
 //
 
-public enum RecordDocumentType: String {
+public enum RecordDocumentType: String, CaseIterable {
+  case typeAll = "all"
   case typeLabReport = "lr"
   case typePrescription = "ps"
   case typeDischargeSummary = "ds"
@@ -33,6 +34,35 @@ public enum RecordDocumentType: String {
       return 7
     case .typeOther:
       return 8
+    case .typeAll:
+      return 0
     }
+  }
+  
+  public var filterName: String {
+    switch self {
+    case .typeAll:
+      return "All"
+    case .typeLabReport:
+      return "Lab Report"
+    case .typePrescription:
+      return "Prescription"
+    case .typeDischargeSummary:
+      return "Discharge Summary"
+    case .typeVaccineCertificate:
+      return "Vaccine Certificate"
+    case .typeInsurance:
+      return "Insurance"
+    case .typeInvoice:
+      return "Invoice"
+    case .typeScan:
+      return "Scan"
+    case .typeOther:
+      return "Other"
+    }
+  }
+  
+  public static func from(intValue: Int) -> RecordDocumentType? {
+    return RecordDocumentType.allCases.first { $0.intValue == intValue }
   }
 }
