@@ -137,6 +137,28 @@ public final class RecordsRepo {
     }
   }
   
+  /// Used to fetch RecordMetaData of multiple records
+  /// - Parameters:
+  ///   - records: Records for which meta data is to be fetched
+  ///   - completion: Gives uris of all the documents
+  public func fetchRecordsMetaData(
+    for records: [Record],
+    completion: @escaping (_ documentURIs: [[String]]) -> Void
+  ) {
+    var recordDocumentURIs: [[String]] = []
+    let dispatchGroup = DispatchGroup()
+    records.forEach { record in
+      dispatchGroup.enter()
+      fetchRecordMetaData(for: record) { documentURIs, _ in
+        recordDocumentURIs.append(documentURIs)
+        dispatchGroup.leave()
+      }
+    }
+    dispatchGroup.notify(queue: .main) {
+      completion(recordDocumentURIs)
+    }
+  }
+  
   /// Used to fill record meta data like document uris and smart report from network
   private func fillRecordMetaDataFromNetwork(
     record: Record,
