@@ -100,7 +100,7 @@ extension Networking {
       switch response.result {
       case .success(let data):
         do {
-          let decodedMessage = try T(serializedBytes: data)
+          let decodedMessage = try T(serializedData: data)
           /// Use the decoded Protobuf message
           completion(.success(decodedMessage))
         } catch {
@@ -125,7 +125,7 @@ extension Networking {
       switch response.result {
       case .success(let data):
         do {
-          let decodedMessage = try T(serializedBytes: data)
+          let decodedMessage = try T(serializedData: data)
           /// Use the decoded Protobuf message
           completion(
             .success(decodedMessage),

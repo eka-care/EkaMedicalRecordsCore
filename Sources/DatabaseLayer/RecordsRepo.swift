@@ -184,6 +184,13 @@ public final class RecordsRepo {
     )
   }
   
+  /// Used to get record document type count
+  /// - Returns: Dictionary with count of each document type
+  public func getRecordDocumentTypeCount() -> [RecordDocumentType: Int] {
+    let oid = CoreInitConfigurations.shared.filterID
+    return databaseManager.getDocumentTypeCounts(oid: oid)
+  }
+  
   // MARK: - Update
   
   /// Used to update record
