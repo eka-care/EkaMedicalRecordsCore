@@ -62,4 +62,18 @@ public struct PredicateHelper {
   public static func or(_ predicates: NSPredicate...) -> NSPredicate {
     return NSCompoundPredicate(type: .or, subpredicates: predicates)
   }
+  
+  /// Generates a predicate for filtering records based on the provided filter
+  /// - Parameter filter: The filter to apply (e.g., document type)
+  /// - Returns: An NSPredicate that filters records based on the provided filter
+  public static func generatePredicate(for filter: RecordDocumentType) -> NSPredicate {
+    let oidPredicate = PredicateHelper.equals("oid", value: CoreInitConfigurations.shared.filterID)
+    switch filter {
+    case .typeAll:
+      return oidPredicate
+    default:
+      let typePredicate = PredicateHelper.equals("documentType", value: Int64(filter.intValue))
+      return NSCompoundPredicate(andPredicateWithSubpredicates: [oidPredicate, typePredicate])
+    }
+  }
 }
