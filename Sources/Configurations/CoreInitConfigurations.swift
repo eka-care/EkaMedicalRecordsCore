@@ -5,6 +5,8 @@
 //  Created by Arya Vashisht on 06/01/25.
 //
 
+import Alamofire
+
 public class CoreInitConfigurations {
   
   // MARK: - Properties
@@ -32,7 +34,7 @@ public class CoreInitConfigurations {
   public var ownerID: String?
   
   /// Request Interceptor
-  public var requestInterceptor = NetworkRequestInterceptor()
+  public var requestInterceptor: Alamofire.RequestInterceptor = NetworkRequestInterceptor()
   
   // MARK: - Init
   
