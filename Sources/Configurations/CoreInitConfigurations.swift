@@ -31,6 +31,9 @@ public class CoreInitConfigurations {
   /// Owner ID for records
   public var ownerID: String?
   
+  /// Request Interceptor
+  public var requestInterceptor = NetworkRequestInterceptor()
+  
   // MARK: - Init
   
   private init() {}
