@@ -26,8 +26,7 @@ extension Record {
     thumbnail = record.thumbnail
     updatedAt = record.updatedAt
     uploadDate = record.uploadDate
-    /// Get oid from the passed value
-    oid = CoreInitConfigurations.shared.filterID
+    oid = record.oid
   }
   
   /// Used to get local paths of file
