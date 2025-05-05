@@ -158,6 +158,9 @@ extension RecordDatabaseAdapter {
     }
     /// Form smart of the document
     insertModel.isSmart = networkModel.recordDocument.item.metadata?.tags?.contains(where: { $0 == RecordDocumentTagType.smartTag.networkName }) ?? false
+    if let oid = networkModel.recordDocument.item.patientID {
+      insertModel.oid = oid
+    }
     insertModel.updatedAt = Date()
     /// Form Thumbnail asynchronously
     if let thumbnail = networkModel.recordDocument.item.metadata?.thumbnail {
