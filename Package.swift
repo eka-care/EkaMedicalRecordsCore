@@ -15,8 +15,8 @@ let package = Package(
     ),
   ],
   dependencies: [
-    .package(url: "https://github.com/eka-care/proto-contracts.git", .upToNextMajor(from: "1.29.30")),
-    .package(url: "https://github.com/Alamofire/Alamofire.git", .upToNextMajor(from: "5.10.2"))
+    .package(url: "https://github.com/eka-care/proto-contracts.git", branch: "main"),
+    .package(url: "https://github.com/Alamofire/Alamofire.git", .upToNextMajor(from: "5.4.3"))
   ],
   targets: [
     .target(
