@@ -15,15 +15,13 @@ let package = Package(
     ),
   ],
   dependencies: [
-    .package(url: "https://github.com/eka-care/proto-contracts.git", branch: "main"),
     .package(url: "https://github.com/Alamofire/Alamofire.git", .upToNextMajor(from: "5.4.3"))
   ],
   targets: [
     .target(
       name: "EkaMedicalRecordsCore",
       dependencies: [
-        .product(name: "Alamofire", package: "Alamofire"),
-        .product(name: "SwiftProtoContracts", package: "proto-contracts")
+        .product(name: "Alamofire", package: "Alamofire")
       ],
       resources: [
         .process("Resources")

@@ -7,7 +7,6 @@
 
 import Foundation
 import CoreData
-import SwiftProtoContracts
 
 /**
  This file contains CRUD functions for the database layer.

@@ -5,7 +5,6 @@
 //  Created by Arya Vashisht on 03/01/25.
 //
 
-import SwiftProtoContracts
 import Foundation
 import CoreData
 

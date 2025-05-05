@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import SwiftProtoContracts
 import CoreData
 
 public final class RecordsRepo {

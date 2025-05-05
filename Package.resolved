@@ -1,5 +1,5 @@
 {
-  "originHash" : "cc43df3abc4449364b03c4f4566cf9404813f6f5e0f031485100b2d38183e67d",
+  "originHash" : "8c7c6a1aeccfd2344ba4aa739dc71ff82ef31dfe9ebb4333528f20f951e5fbaf",
   "pins" : [
     {
       "identity" : "alamofire",
@@ -8,24 +8,6 @@
       "state" : {
         "revision" : "513364f870f6bfc468f9d2ff0a95caccc10044c5",
         "version" : "5.10.2"
-      }
-    },
-    {
-      "identity" : "proto-contracts",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/eka-care/proto-contracts.git",
-      "state" : {
-        "branch" : "main",
-        "revision" : "bac1201cc305c453e913940c601467004998576c"
-      }
-    },
-    {
-      "identity" : "swift-protobuf",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-protobuf.git",
-      "state" : {
-        "revision" : "ebc7251dd5b37f627c93698e4374084d98409633",
-        "version" : "1.28.2"
       }
     }
   ],
