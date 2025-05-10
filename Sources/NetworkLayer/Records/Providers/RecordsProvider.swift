@@ -5,7 +5,6 @@
 //  Created by Arya Vashisht on 05/01/25.
 //
 
-import SwiftProtoContracts
 import Foundation
 
 protocol RecordsProvider {

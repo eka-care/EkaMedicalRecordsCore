@@ -5,7 +5,6 @@
 //  Created by Arya Vashisht on 24/01/25.
 //
 
-import SwiftProtoContracts
 import Foundation
 
 // MARK: - Network Call Helper functions
@@ -183,11 +182,11 @@ extension RecordsRepo {
       return
     }
     /// Set document type
-    let vaultRecordDocumentType = documentType.flatMap { Vault_Records_DocumentType(rawValue: $0) }
+    let recordDocumentType = RecordDocumentType.from(intValue: documentType)
     /// Form request
     let request = DocUpdateRequest(
       oid: filterID,
-      documentType: vaultRecordDocumentType?.shortHand,
+      documentType: recordDocumentType?.rawValue,
       documentDate: documentDate?.toUSEnglishString(withFormat: "dd-MM-yyyy") ?? ""
     )
     service.editDocumentDetails(

@@ -9,7 +9,7 @@ import Alamofire
 import Foundation
 import UIKit
 
-final class NetworkRequestInterceptor: Alamofire.RequestInterceptor {
+public final class NetworkRequestInterceptor: Alamofire.RequestInterceptor {
   
   // MARK: - Properties
   
@@ -26,7 +26,7 @@ final class NetworkRequestInterceptor: Alamofire.RequestInterceptor {
   
   // MARK: - Adapt
   
-  func adapt(_ urlRequest: URLRequest, for session: Session, completion: @escaping (Result<URLRequest, Error>) -> Void) {
+  public func adapt(_ urlRequest: URLRequest, for session: Session, completion: @escaping (Result<URLRequest, Error>) -> Void) {
     /// If the request does not require authentication, we can directly return it as unmodified.
     guard let url = urlRequest.url?.absoluteString, url.hasPrefix("") == true else {
       return completion(.success(urlRequest))
@@ -40,7 +40,7 @@ final class NetworkRequestInterceptor: Alamofire.RequestInterceptor {
   // MARK: - Retry
   
   /// Retry Logic
-  func retry(
+  public func retry(
     _ request: Request,
     for session: Session,
     dueTo error: Error,
