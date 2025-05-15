@@ -9,7 +9,7 @@ import Foundation
 
 // MARK: - DocFetchResponse
 
-struct DocFetchResponse: Codable, Hashable {
+public struct DocFetchResponse: Codable, Hashable {
   let documentID: String?
   let description: String?
   let patientName, authorizer: String?
@@ -56,7 +56,7 @@ struct DocFetchResponse: Codable, Hashable {
 
 // MARK: - File
 
-struct File: Codable {
+public struct File: Codable {
   let assetURL: String?
   let fileType, shareText: String?
   let maskedFile: MaskedFile?
@@ -70,7 +70,7 @@ struct File: Codable {
 }
 
 // MARK: - MaskedFile
-struct MaskedFile: Codable {
+public struct MaskedFile: Codable {
   let assetURL: String?
   let fileType, shareText, title, body: String?
   let tagline: String?
