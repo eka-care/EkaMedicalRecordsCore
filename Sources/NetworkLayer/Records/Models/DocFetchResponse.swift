@@ -45,11 +45,11 @@ public struct DocFetchResponse: Codable, Hashable {
     case uploadedByMe = "uploaded_by_me"
   }
   
-  static func == (lhs: DocFetchResponse, rhs: DocFetchResponse) -> Bool {
+  public static func == (lhs: DocFetchResponse, rhs: DocFetchResponse) -> Bool {
     return lhs.documentID == rhs.documentID
   }
   
-  func hash(into hasher: inout Hasher) {
+  public func hash(into hasher: inout Hasher) {
     hasher.combine(documentID)
   }
 }
