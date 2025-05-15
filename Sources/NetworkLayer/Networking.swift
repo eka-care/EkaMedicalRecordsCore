@@ -7,7 +7,6 @@
 
 import Foundation
 import Alamofire
-import SwiftProtobuf
 
 // TODO: - Remove unnecssary functions
 
@@ -31,16 +30,6 @@ protocol Networking: Sendable {
   func execute<T: Decodable>(
     _ requestProvider: RequestProvider,
     completion: @escaping (Result<T, EkaAPIError>, Int?) -> Void
-  )
-  
-  func executeProto<T: SwiftProtobuf.Message>(
-    _ requestProvider: RequestProvider,
-    completion: @escaping (Result<T, ProtoError>) -> Void
-  )
-  
-  func executeProto<T: SwiftProtobuf.Message>(
-    _ requestProvider: RequestProvider,
-    completion: @escaping (Result<T, ProtoError>, RequestMetadata) -> Void
   )
   
   func download(
@@ -87,74 +76,6 @@ extension Networking {
     let request = requestProvider.urlRequest
     request.ekaErrorResponseSerializer(of: T.self) { result, statusCode in
       completion(result, statusCode)
-    }
-  }
-  
-  public func executeProto<T: SwiftProtobuf.Message>(
-    _ requestProvider: RequestProvider,
-    completion: @escaping (Result<T, ProtoError>) -> Void
-  ) {
-    let request = requestProvider.urlRequest
-    
-    request.responseData { response in
-      switch response.result {
-      case .success(let data):
-        do {
-          let decodedMessage = try T(serializedData: data)
-          /// Use the decoded Protobuf message
-          completion(.success(decodedMessage))
-        } catch {
-          /// Handle deserialization error
-          completion(.failure(.deserializationError(error)))
-        }
-      case .failure(_):
-        /// Handle missing data Error
-        let statusCode = response.response?.statusCode
-        completion(.failure(.missingData(statusCode)))
-      }
-    }
-  }
-  
-  public func executeProto<T: SwiftProtobuf.Message>(
-    _ requestProvider: RequestProvider,
-    completion: @escaping (Result<T, ProtoError>, RequestMetadata) -> Void
-  ) {
-    let request = requestProvider.urlRequest
-    
-    request.responseData { response in
-      switch response.result {
-      case .success(let data):
-        do {
-          let decodedMessage = try T(serializedData: data)
-          /// Use the decoded Protobuf message
-          completion(
-            .success(decodedMessage),
-            RequestMetadata(
-              statusCode: response.response?.statusCode,
-              allHeaders: response.response?.allHeaderFields as? [String: String]
-            )
-          )
-        } catch {
-          /// Handle deserialization error
-          completion(
-            .failure(.deserializationError(error)),
-            RequestMetadata(
-              statusCode: response.response?.statusCode,
-              allHeaders: response.response?.allHeaderFields as? [String: String]
-            )
-          )
-        }
-      case .failure(_):
-        /// Handle missing data Error
-        let statusCode = response.response?.statusCode
-        completion(
-          .failure(.missingData(statusCode)),
-          RequestMetadata(
-            statusCode: response.response?.statusCode,
-            allHeaders: response.response?.allHeaderFields as? [String: String]
-          )
-        )
-      }
     }
   }
   
@@ -263,18 +184,3 @@ extension DataRequest {
       .validate(statusCode: 200...599)
     }
 }
-
-public enum ProtoError: LocalizedError {
-  case missingData(Int?)
-  case deserializationError(Error)
-  
-  public var errorDescription: String? {
-    switch self {
-    case .missingData(let statusCode):
-      return "Data not found in response. Status Code \(String(describing: statusCode))"
-    case .deserializationError(let error):
-      return "Error deserializing response: \(error.localizedDescription)"
-    }
-  }
-}
-
