@@ -119,6 +119,38 @@ public struct Verified: Codable, Hashable, Identifiable {
   public func hash(into hasher: inout Hasher) {
     hasher.combine(vitalID)
   }
+  
+  public init(
+    name: String? = nil,
+    value: String? = nil,
+    unit: String? = nil,
+    vitalID: String? = nil,
+    ekaID: String? = nil,
+    isResultEditable: Bool? = nil,
+    pageNum: Int? = nil,
+    fileIndex: Int? = nil,
+    coordinates: [Coordinate]? = nil,
+    range: String? = nil,
+    result: String? = nil,
+    resultID: String? = nil,
+    displayResult: String? = nil,
+    date: Int? = nil
+  ) {
+    self.name = name
+    self.value = value
+    self.unit = unit
+    self.vitalID = vitalID
+    self.ekaID = ekaID
+    self.isResultEditable = isResultEditable
+    self.pageNum = pageNum
+    self.fileIndex = fileIndex
+    self.coordinates = coordinates
+    self.range = range
+    self.result = result
+    self.resultID = resultID
+    self.displayResult = displayResult
+    self.date = date
+  }
 }
 
 // MARK: - Coordinate
