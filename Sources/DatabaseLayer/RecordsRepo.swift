@@ -224,20 +224,23 @@ public final class RecordsRepo {
     recordID: NSManagedObjectID,
     documentID: String? = nil,
     documentDate: Date? = nil,
-    documentType: Int? = nil
+    documentType: Int? = nil,
+    documentOid: String? = nil
   ) {
     /// Update in database
     databaseManager.updateRecord(
       recordID: recordID,
       documentID: documentID,
       documentDate: documentDate,
-      documentType: documentType
+      documentType: documentType,
+      documentOid: documentOid
     )
     /// Update call
     editDocument(
       documentID: documentID,
       documentDate: documentDate,
-      documentType: documentType
+      documentType: documentType,
+      documentFilterId: documentOid
     )
   }
   

@@ -346,7 +346,8 @@ extension RecordsDatabaseManager {
     recordID: NSManagedObjectID,
     documentID: String? = nil,
     documentDate: Date? = nil,
-    documentType: Int? = nil
+    documentType: Int? = nil,
+    documentOid: String? = nil
   ) {
     do {
       guard let record = try container.viewContext.existingObject(with: recordID) as? Record else {
@@ -357,6 +358,9 @@ extension RecordsDatabaseManager {
       record.documentDate = documentDate
       if let documentType {
         record.documentType = Int64(documentType)
+      }
+      if let documentOid {
+        record.oid = documentOid
       }
       try container.viewContext.save()
     } catch {

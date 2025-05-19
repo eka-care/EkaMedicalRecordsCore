@@ -174,10 +174,11 @@ extension RecordsRepo {
   func editDocument(
     documentID: String?,
     documentDate: Date? = nil,
-    documentType: Int? = nil
+    documentType: Int? = nil,
+    documentFilterId: String? = CoreInitConfigurations.shared.filterID
   ) {
     guard let documentID,
-    let filterID = CoreInitConfigurations.shared.filterID  else {
+    let documentFilterId else {
       debugPrint("Document ID not found while editing record")
       return
     }
@@ -185,13 +186,13 @@ extension RecordsRepo {
     let recordDocumentType = RecordDocumentType.from(intValue: documentType)
     /// Form request
     let request = DocUpdateRequest(
-      oid: filterID,
+      oid: documentFilterId,
       documentType: recordDocumentType?.rawValue,
       documentDate: documentDate?.toUSEnglishString(withFormat: "dd-MM-yyyy") ?? ""
     )
     service.editDocumentDetails(
       documentId: documentID,
-      filterOID: filterID,
+      filterOID: documentFilterId,
       request: request) { result, statusCode in
         switch result {
         case .success:
