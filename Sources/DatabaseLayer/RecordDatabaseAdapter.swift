@@ -14,19 +14,19 @@ import UIKit
 
 /// Model used for record insert
 public struct RecordModel {
-  var documentID: String?
-  var documentDate: Date?
-  var documentHash: String?
-  var documentType: RecordDocumentType?
-  var hasSyncedEdit: Bool?
-  var isAnalyzing: Bool?
-  var isSmart: Bool?
-  var oid: String?
-  var thumbnail: String?
-  var updatedAt: Date?
-  var uploadDate: Date?
-  var documentURIs: [String]?
-  var contentType: String?
+  public var documentID: String?
+  public var documentDate: Date?
+  public var documentHash: String?
+  public var documentType: RecordDocumentType?
+  public var hasSyncedEdit: Bool?
+  public var isAnalyzing: Bool?
+  public var isSmart: Bool?
+  public var oid: String?
+  public var thumbnail: String?
+  public var updatedAt: Date?
+  public var uploadDate: Date?
+  public var documentURIs: [String]?
+  public var contentType: String?
   
   public init(
     documentID: String? = nil,
