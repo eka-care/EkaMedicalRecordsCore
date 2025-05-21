@@ -250,7 +250,7 @@ public final class RecordsRepo {
   /// - Parameters:
   ///   - request: fetch request for records that are to be deleted
   ///   - completion: closure executed after deletion
-  func deleteRecords(
+  public func deleteRecords(
     request: NSFetchRequest<NSFetchRequestResult>,
     completion: @escaping () -> Void
   ) {
