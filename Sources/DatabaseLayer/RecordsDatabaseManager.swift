@@ -78,69 +78,6 @@ public final class RecordsDatabaseManager {
 // MARK: - Create
 
 extension RecordsDatabaseManager {
-  /// Used to upsert records to the database
-  /// - Parameters:
-  ///   - records: list of records to be added
-  ///   - completion: completion block to be executed after adding records
-//  func upsertRecords(
-//    from records: [RecordModel],
-//    completion: @escaping () -> Void
-//  ) {
-//    let documentIDs = records.compactMap { $0.documentID }.filter { !$0.isEmpty }
-//    deleteExistingDocumentIdsRecordsFirst(documentIds: documentIDs) { [weak self] in
-//      guard let self else { return }
-//      batchInsertRecords(from: records, completion: completion)
-//    }
-//  }
-//  
-//  private func batchInsertRecords(
-//    from records: [RecordModel],
-//    completion: @escaping () -> Void
-//  ) {
-//    // Batch Insert
-//    let finalIndex = records.count - 1
-//    backgroundContext.perform { [weak self] in
-//      guard let self else { return }
-//      let batchRequest = NSBatchInsertRequest(
-//        entityName: RecordsDatabaseVersion.entityName,
-//        managedObjectHandler: { [weak self] object in
-//          guard let self,
-//                let recordModel = object as? Record else { return false }
-//          if batchIndex <= finalIndex {
-//            let record = records[batchIndex]
-//            // Insert new record
-//            recordModel.update(from: record)
-//            
-//            batchIndex += 1
-//            return false
-//          } else {
-//            batchIndex = 0 // Resetting the index for next batch
-//            return true
-//          }
-//        })
-//      do {
-//        try backgroundContext.execute(batchRequest)
-//        DispatchQueue.main.async {
-//          completion()
-//        }
-//      } catch {
-//        debugPrint("Batch insert failed: \(error)")
-//      }
-//    }
-//  }
-//  
-//  private func deleteExistingDocumentIdsRecordsFirst(
-//    documentIds: [String],
-//    completion: @escaping () -> Void
-//  ) {
-//    deleteRecords(
-//      request: QueryHelper.fetchRecordsByDocumentIDs(
-//        documentIDs: documentIds
-//      ),
-//      completion: completion
-//    )
-//  }
-  
   func upsertRecords(
     from records: [RecordModel],
     completion: @escaping () -> Void
@@ -271,7 +208,7 @@ extension RecordsDatabaseManager {
   /// Used to fetch record entity items
   /// - Parameter fetchRequest: fetch request for filtering
   /// - Parameter completion: completion block to be executed after fetching records
-  func fetchRecords(
+  public func fetchRecords(
     fetchRequest: NSFetchRequest<Record>,
     completion: @escaping ([Record]) -> Void
   ) {
@@ -296,6 +233,21 @@ extension RecordsDatabaseManager {
   func fetchRecord(with id: NSManagedObjectID) -> Record?  {
     do {
       let record = try container.viewContext.existingObject(with: id) as? Record
+      return record
+    } catch {
+      debugPrint("Not able to fetch record with given id")
+    }
+    return nil
+  }
+  
+  /// Used to get record for given fetch request on main thread
+  /// - Parameter fetchRequest: fetch request for filtering
+  /// - Returns: The given record
+  func getRecord(
+    fetchRequest: NSFetchRequest<Record>
+  ) -> Record? {
+    do {
+      let record = try container.viewContext.fetch(fetchRequest).first
       return record
     } catch {
       debugPrint("Not able to fetch record with given id")
