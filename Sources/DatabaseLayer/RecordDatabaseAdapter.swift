@@ -161,7 +161,9 @@ extension RecordDatabaseAdapter {
     if let oid = networkModel.recordDocument.item.patientID {
       insertModel.oid = oid
     }
-    insertModel.updatedAt = Date()
+    if let updatedAt = networkModel.recordDocument.item.updatedAt {
+      insertModel.updatedAt = updatedAt.toDate()
+    }
     /// Form Thumbnail asynchronously
     if let thumbnail = networkModel.recordDocument.item.metadata?.thumbnail {
       formLocalThumbnailFileNameFromNetworkURL(

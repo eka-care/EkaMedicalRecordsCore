@@ -36,7 +36,8 @@ public final class QueryHelper {
   public static func fetchRecordsWithNilDocumentID() -> NSFetchRequest<Record> {
     // Create a fetch request for the Record entity
     let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
-    
+    // Add a predicate to filter records where documentID is nil
+    fetchRequest.predicate = NSPredicate(format: "documentID == nil")
     return fetchRequest
   }
   

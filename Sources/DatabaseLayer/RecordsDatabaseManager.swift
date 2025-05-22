@@ -120,7 +120,6 @@ extension RecordsDatabaseManager {
     }
   }
 
-  
   /// Used to add single record to the database, this will be faster than batch insert for single record
   func addSingleRecord(
     from record: RecordModel
