@@ -212,6 +212,13 @@ public final class RecordsRepo {
     return databaseManager.getDocumentTypeCounts(oid: oid)
   }
   
+  /// Used to get record in main thread from fetch request
+  /// - Parameter fetchRequest: fetch request for filtering
+  /// - Returns: Given record
+  public func getRecord(fetchRequest: NSFetchRequest<Record>) -> Record? {
+    databaseManager.getRecord(fetchRequest: fetchRequest)
+  }
+  
   // MARK: - Update
   
   /// Used to update record
