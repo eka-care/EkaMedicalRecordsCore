@@ -98,10 +98,18 @@ extension RecordsDatabaseManager {
             // Update existing record
             print("Document id of document being updated is \(record.documentID ?? "")")
             existingRecord.update(from: record)
+            updateRecordEvent(
+              id: record.documentID ?? existingRecord.objectID.uriRepresentation().absoluteString,
+              status: .success
+            )
           } else {
             // Create new record
             let newRecord = Record(context: self.backgroundContext)
             newRecord.update(from: record)
+            createRecordEvent(
+              id: record.documentID,
+              status: .success
+            )
           }
         } catch {
           debugPrint("Error fetching record: \(error)")
@@ -133,10 +141,12 @@ extension RecordsDatabaseManager {
         to: newRecord,
         documentURIs: record.documentURIs
       )
+      createRecordEvent(id: newRecord.id.debugDescription, status: .success)
       debugPrint("Record added successfully!")
       return newRecord
     } catch {
       let nsError = error as NSError
+      createRecordEvent(id: newRecord.id.debugDescription, status: .failure, message: error.localizedDescription)
       debugPrint("Error saving record: \(nsError), \(nsError.userInfo)")
       return newRecord
     }
@@ -303,6 +313,11 @@ extension RecordsDatabaseManager {
     do {
       guard let record = try container.viewContext.existingObject(with: recordID) as? Record else {
         debugPrint("Record not found")
+        updateRecordEvent(
+          id: documentID ?? recordID.uriRepresentation().absoluteString,
+          status: .failure,
+          message: "Record not found"
+        )
         return
       }
       record.documentID = documentID
@@ -314,8 +329,17 @@ extension RecordsDatabaseManager {
         record.oid = documentOid
       }
       try container.viewContext.save()
+      updateRecordEvent(
+        id: record.documentID,
+        status: .success
+      )
     } catch {
       debugPrint("Failed to update record: \(error)")
+      updateRecordEvent(
+        id: documentID ?? recordID.uriRepresentation().absoluteString,
+        status: .failure,
+        message: error.localizedDescription
+      )
     }
   }
 }
@@ -337,6 +361,7 @@ extension RecordsDatabaseManager {
       let deleteRequest = NSBatchDeleteRequest(fetchRequest: request)
       do {
         try backgroundContext.execute(deleteRequest)
+        try container.viewContext.save()
       } catch {
         debugPrint("There was an error deleting entity")
       }
@@ -349,8 +374,17 @@ extension RecordsDatabaseManager {
     container.viewContext.delete(record)
     do {
       try container.viewContext.save()
+      deleteRecordEvent(
+        id: record.documentID ?? record.objectID.uriRepresentation().absoluteString,
+        status: .success
+      )
     } catch {
       debugPrint("Error deleting record: \(error)")
+      deleteRecordEvent(
+        id: record.documentID ?? record.objectID.uriRepresentation().absoluteString,
+        status: .failure,
+        message: error.localizedDescription
+      )
     }
   }
 }

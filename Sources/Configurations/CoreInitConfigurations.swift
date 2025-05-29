@@ -36,6 +36,9 @@ public class CoreInitConfigurations {
   /// Request Interceptor
   public var requestInterceptor: Alamofire.RequestInterceptor = NetworkRequestInterceptor()
   
+  /// Delegate to get events
+  public weak var delegate: EventLoggerProtocol?
+  
   // MARK: - Init
   
   private init() {}
