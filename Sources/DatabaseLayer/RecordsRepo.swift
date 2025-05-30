@@ -105,7 +105,9 @@ public final class RecordsRepo {
       recordURLs: documentURIs,
       documentDate: record.documentDate?.toEpochInt(),
       contentType: FileType.getFileTypeFromFilePath(filePath: documentURIs.first ?? "")?.fileExtension ?? ""
-    ) { [weak self] uploadFormsResponse, error in
+    ) {
+      [weak self] uploadFormsResponse,
+      error in
       guard let self else { return }
       /// Update the database with document id
       databaseManager.updateRecord(
