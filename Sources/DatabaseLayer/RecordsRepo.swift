@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import SwiftProtoContracts
 import CoreData
 
 public final class RecordsRepo {
@@ -92,8 +91,9 @@ public final class RecordsRepo {
   ) {
     /// Add in database and store it in addedRecord
     let addedRecord = databaseManager.addSingleRecord(from: record)
+    didUploadRecord(addedRecord)
     /// Upload to vault
-    uploadRecord(record: addedRecord, completion: didUploadRecord)
+    uploadRecord(record: addedRecord) { _ in }
   }
   
   private func uploadRecord(
@@ -105,7 +105,9 @@ public final class RecordsRepo {
       recordURLs: documentURIs,
       documentDate: record.documentDate?.toEpochInt(),
       contentType: FileType.getFileTypeFromFilePath(filePath: documentURIs.first ?? "")?.fileExtension ?? ""
-    ) { [weak self] uploadFormsResponse, error in
+    ) {
+      [weak self] uploadFormsResponse,
+      error in
       guard let self else { return }
       /// Update the database with document id
       databaseManager.updateRecord(
@@ -213,6 +215,13 @@ public final class RecordsRepo {
     return databaseManager.getDocumentTypeCounts(oid: oid)
   }
   
+  /// Used to get record in main thread from fetch request
+  /// - Parameter fetchRequest: fetch request for filtering
+  /// - Returns: Given record
+  public func getRecord(fetchRequest: NSFetchRequest<Record>) -> Record? {
+    databaseManager.getRecord(fetchRequest: fetchRequest)
+  }
+  
   // MARK: - Update
   
   /// Used to update record
@@ -225,20 +234,23 @@ public final class RecordsRepo {
     recordID: NSManagedObjectID,
     documentID: String? = nil,
     documentDate: Date? = nil,
-    documentType: Int? = nil
+    documentType: Int? = nil,
+    documentOid: String? = nil
   ) {
     /// Update in database
     databaseManager.updateRecord(
       recordID: recordID,
       documentID: documentID,
       documentDate: documentDate,
-      documentType: documentType
+      documentType: documentType,
+      documentOid: documentOid
     )
     /// Update call
     editDocument(
       documentID: documentID,
       documentDate: documentDate,
-      documentType: documentType
+      documentType: documentType,
+      documentFilterId: documentOid
     )
   }
   
@@ -248,7 +260,7 @@ public final class RecordsRepo {
   /// - Parameters:
   ///   - request: fetch request for records that are to be deleted
   ///   - completion: closure executed after deletion
-  func deleteRecords(
+  public func deleteRecords(
     request: NSFetchRequest<NSFetchRequestResult>,
     completion: @escaping () -> Void
   ) {

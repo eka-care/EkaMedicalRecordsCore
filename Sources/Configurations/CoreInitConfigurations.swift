@@ -5,6 +5,8 @@
 //  Created by Arya Vashisht on 06/01/25.
 //
 
+import Alamofire
+
 public class CoreInitConfigurations {
   
   // MARK: - Properties
@@ -30,6 +32,12 @@ public class CoreInitConfigurations {
   
   /// Owner ID for records
   public var ownerID: String?
+  
+  /// Request Interceptor
+  public var requestInterceptor: Alamofire.RequestInterceptor = NetworkRequestInterceptor()
+  
+  /// Delegate to get events
+  public weak var delegate: EventLoggerProtocol?
   
   // MARK: - Init
   

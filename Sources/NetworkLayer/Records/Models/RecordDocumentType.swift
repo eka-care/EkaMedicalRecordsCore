@@ -62,7 +62,12 @@ public enum RecordDocumentType: String, CaseIterable {
     }
   }
   
-  public static func from(intValue: Int) -> RecordDocumentType? {
+  public static func from(intValue: Int?) -> RecordDocumentType? {
+    guard let intValue else { return nil }
     return RecordDocumentType.allCases.first { $0.intValue == intValue }
+  }
+  
+  public static func from(filterName: String) -> RecordDocumentType? {
+    return RecordDocumentType.allCases.first { $0.filterName == filterName }
   }
 }

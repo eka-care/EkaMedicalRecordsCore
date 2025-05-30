@@ -39,6 +39,7 @@ struct RecordItem: Codable {
   let documentType: String?
   let metadata: Metadata?
   let patientID: String?
+  let updatedAt: Int?
   
   enum CodingKeys: String, CodingKey {
     case documentID = "document_id"
@@ -46,6 +47,7 @@ struct RecordItem: Codable {
     case documentType = "document_type"
     case metadata
     case patientID = "patient_id"
+    case updatedAt = "u_at"
   }
 }
 

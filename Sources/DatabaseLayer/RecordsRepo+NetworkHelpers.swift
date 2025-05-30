@@ -5,7 +5,6 @@
 //  Created by Arya Vashisht on 24/01/25.
 //
 
-import SwiftProtoContracts
 import Foundation
 
 // MARK: - Network Call Helper functions
@@ -23,12 +22,9 @@ extension RecordsRepo {
       token: token,
       updatedAt: updatedAt,
       oid: oid
-    ) { [weak self] result, metaData in
+    ) { result, metaData in
       switch result {
       case .success(let response):
-//        /// Store the epoch in var first, update the UserDefaults ony once the last page is reached
-//        recordsUpdateEpoch = metaData.allHeaders?["Eka-Uat"]
-        
         let recordsItems = response.items
         let nextPageToken = response.nextToken
         completion(nextPageToken, recordsItems)
@@ -67,12 +63,22 @@ extension RecordsRepo {
       recordType: recordType,
       documentDate: documentDate,
       isLinkedWithAbha: isLinkedWithAbha
-    ) { response, error in
+    ) { [weak self] response,error in
+      guard let self else { return }
       if let error {
+        createRecordEvent(
+          id: response?.batchResponses?.first?.documentID,
+          status: .failure,
+          message: error.errorDescription
+        )
         completion(nil, error)
         return
       }
       if let response {
+        createRecordEvent(
+          id: response.batchResponses?.first?.documentID,
+          status: .success
+        )
         completion(response, error)
       }
     }
@@ -91,11 +97,21 @@ extension RecordsRepo {
     service.delete(
       documentId: documentID,
       oid: CoreInitConfigurations.shared.filterID
-    ) { result, statusCode in
+    ) { [weak self] result, statusCode in
+      guard let self else { return }
       switch result {
       case .success:
+        deleteRecordEvent(
+          id: documentID,
+          status: .success
+        )
         debugPrint("Record deleted successfully from v3")
       case .failure(let error):
+        deleteRecordEvent(
+          id: documentID,
+          status: .failure,
+          message: error.localizedDescription
+        )
         debugPrint("Failed to delete record \(error.localizedDescription)")
       }
     }
@@ -175,31 +191,36 @@ extension RecordsRepo {
   func editDocument(
     documentID: String?,
     documentDate: Date? = nil,
-    documentType: Int? = nil
+    documentType: Int? = nil,
+    documentFilterId: String? = CoreInitConfigurations.shared.filterID
   ) {
     guard let documentID,
-    let filterID = CoreInitConfigurations.shared.filterID  else {
+          let documentFilterId else {
       debugPrint("Document ID not found while editing record")
       return
     }
     /// Set document type
-    let vaultRecordDocumentType = documentType.flatMap { Vault_Records_DocumentType(rawValue: $0) }
+    let recordDocumentType = RecordDocumentType.from(intValue: documentType)
     /// Form request
     let request = DocUpdateRequest(
-      oid: filterID,
-      documentType: vaultRecordDocumentType?.shortHand,
+      oid: documentFilterId,
+      documentType: recordDocumentType?.rawValue,
       documentDate: documentDate?.toUSEnglishString(withFormat: "dd-MM-yyyy") ?? ""
     )
     service.editDocumentDetails(
       documentId: documentID,
-      filterOID: filterID,
-      request: request) { result, statusCode in
-        switch result {
-        case .success:
-          debugPrint("Updated document")
-        case .failure(let error):
-          debugPrint("Failure in document update network call \(error.localizedDescription)")
-        }
+      filterOID: documentFilterId,
+      request: request
+    ) { [weak self] result, statusCode in
+      guard let self else { return }
+      switch result {
+      case .success:
+        debugPrint("Updated document")
+        updateRecordEvent(id: documentID, status: .success)
+      case .failure(let error):
+        debugPrint("Failure in document update network call \(error.localizedDescription)")
+        updateRecordEvent(id: documentID, status: .failure, message: error.localizedDescription)
       }
+    }
   }
 }
