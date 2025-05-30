@@ -6,19 +6,19 @@
 //
 
 /// Event Log structure
-struct EventLog {
+public struct EventLog {
   /// Any extra information
-  let params: [String: Any]?
+  public let params: [String: Any]?
   /// Event type
-  let eventType: EventType
+  public let eventType: EventType
   /// Any message for the event
-  let message: String?
+  public let message: String?
   /// Status in which event is in
-  let status: EventStatusMonitor
+  public let status: EventStatusMonitor
   /// Platform on which event took place
-  let platform: EventPlatform
+  public let platform: EventPlatform
   
-  init(
+  public init(
     params: [String : Any]? = nil,
     eventType: EventType,
     message: String? = nil,
@@ -34,7 +34,7 @@ struct EventLog {
 }
 
 /// Event Type
-enum EventType: String {
+public enum EventType: String {
   case create
   case read
   case update
@@ -42,13 +42,13 @@ enum EventType: String {
 }
 
 /// Event Status
-enum EventStatusMonitor: String {
+public enum EventStatusMonitor: String {
   case success
   case failure
 }
 
 /// Event platform
-enum EventPlatform: String {
+public enum EventPlatform: String {
   case database
   case network
 }
