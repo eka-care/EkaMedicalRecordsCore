@@ -74,7 +74,7 @@ extension RecordsEndpoint: RequestProvider {
         method: .get,
         parameters: params,
         encoding: URLEncoding.queryString,
-        interceptor: NetworkRequestInterceptor()
+        interceptor: CoreInitConfigurations.shared.requestInterceptor
       )
       .validate()
       
@@ -85,7 +85,7 @@ extension RecordsEndpoint: RequestProvider {
         method: .post,
         parameters: request,
         encoder: JSONParameterEncoder.default,
-        interceptor: NetworkRequestInterceptor()
+        interceptor: CoreInitConfigurations.shared.requestInterceptor
       )
       .validate()
       
@@ -113,7 +113,7 @@ extension RecordsEndpoint: RequestProvider {
         usingThreshold: UInt64.init(),
         method: .post,
         headers: HTTPHeaders([.contentType(HTTPHeader.multipartFormData.rawValue)]),
-        interceptor: NetworkRequestInterceptor(),
+        interceptor: CoreInitConfigurations.shared.requestInterceptor,
         fileManager: .default,
         requestModifier: nil
       )
@@ -131,7 +131,7 @@ extension RecordsEndpoint: RequestProvider {
         method: .delete,
         parameters: params,
         encoding: URLEncoding.queryString,
-        interceptor: NetworkRequestInterceptor()
+        interceptor: CoreInitConfigurations.shared.requestInterceptor
       )
       .validate()
       
@@ -145,7 +145,7 @@ extension RecordsEndpoint: RequestProvider {
         "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/\(documentID)",
         method: .get,
         parameters: params,
-        interceptor: NetworkRequestInterceptor()
+        interceptor: CoreInitConfigurations.shared.requestInterceptor
       )
       .validate()
       
@@ -160,7 +160,7 @@ extension RecordsEndpoint: RequestProvider {
         method: .patch,
         parameters: request,
         encoder: JSONParameterEncoder.default,
-        interceptor: NetworkRequestInterceptor()
+        interceptor: CoreInitConfigurations.shared.requestInterceptor
       )
       .validate()
     }

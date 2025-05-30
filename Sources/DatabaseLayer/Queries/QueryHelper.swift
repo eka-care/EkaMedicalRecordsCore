@@ -36,10 +36,21 @@ public final class QueryHelper {
   public static func fetchRecordsWithNilDocumentID() -> NSFetchRequest<Record> {
     // Create a fetch request for the Record entity
     let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
-    
-    // Set the predicate to filter records where documentID is nil
+    // Add a predicate to filter records where documentID is nil
     fetchRequest.predicate = NSPredicate(format: "documentID == nil")
-    
+    return fetchRequest
+  }
+  
+  /// Query to fetch record for given documentID
+  /// - Parameter documentID: The document ID to filter by
+  /// - Returns: NSFetchRequest configured to fetch the matching record
+  public static func fetchRecordWith(documentID: String) -> NSFetchRequest<Record> {
+    // Create a fetch request for the Record entity
+    let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
+    // Set the predicate to filter records where documentID matches the input
+    fetchRequest.predicate = NSPredicate(format: "documentID == %@", documentID)
+    // Optionally set a fetch limit since we expect at most one record
+    fetchRequest.fetchLimit = 1
     return fetchRequest
   }
   

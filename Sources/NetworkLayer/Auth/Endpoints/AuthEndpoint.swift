@@ -21,7 +21,7 @@ extension AuthEndpoint: RequestProvider {
         parameters: refreshRequest,
         encoder: JSONParameterEncoder.default,
         headers: HTTPHeaders([.contentType(HTTPHeader.contentTypeJson.rawValue)]),
-        interceptor: NetworkRequestInterceptor()
+        interceptor: CoreInitConfigurations.shared.requestInterceptor
       )
       .validate()
     }
