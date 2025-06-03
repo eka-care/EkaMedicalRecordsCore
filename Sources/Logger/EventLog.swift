@@ -40,7 +40,7 @@ public enum EventType: String {
   case update
   case delete
   
-  var eventName: String {
+  public var eventName: String {
     switch self {
     case .create:
       return "Records_iOS_SDK_CREATE"
