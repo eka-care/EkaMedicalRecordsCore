@@ -39,6 +39,19 @@ public enum EventType: String {
   case read
   case update
   case delete
+  
+  var eventName: String {
+    switch self {
+    case .create:
+      return "Records_iOS_SDK_CREATE"
+    case .read:
+      return "Records_iOS_SDK_READ"
+    case .update:
+      return "Records_iOS_SDK_UPDATE"
+    case .delete:
+      return "Records_iOS_SDK_DELETE"
+    }
+  }
 }
 
 /// Event Status
