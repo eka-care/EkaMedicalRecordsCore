@@ -63,7 +63,7 @@ public struct PredicateHelper {
     return NSCompoundPredicate(type: .or, subpredicates: predicates)
   }
     
-  static func inArray(_ key: String, values: [String]) -> NSPredicate {
+  public static func inArray(_ key: String, values: [String]) -> NSPredicate {
         return NSPredicate(format: "%K IN %@", key, values)
   }
   
