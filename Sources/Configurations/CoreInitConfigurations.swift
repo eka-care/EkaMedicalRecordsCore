@@ -26,9 +26,11 @@ public class CoreInitConfigurations {
       AuthTokenHolder.shared.refreshToken = refreshToken
     }
   }
-  
+  /// Primary FilterId
+  public var primaryFilterID: String?
+    
   /// Filter ID for records
-  public var filterID: String?
+  public var filterID: [String]?
   
   /// Owner ID for records
   public var ownerID: String?

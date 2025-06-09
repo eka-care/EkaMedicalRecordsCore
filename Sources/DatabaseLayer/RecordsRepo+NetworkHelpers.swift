@@ -91,12 +91,13 @@ extension RecordsRepo {
   /// Delete record from v3 network
   /// - Parameter documentID: documentID of the document to be deleted
   func deleteRecordV3(
-    documentID: String?
+    documentID: String?,
+    oid: String?
   ) {
     guard let documentID else { return }
     service.delete(
       documentId: documentID,
-      oid: CoreInitConfigurations.shared.filterID
+      oid: oid
     ) { [weak self] result, statusCode in
       guard let self else { return }
       switch result {
@@ -122,14 +123,15 @@ extension RecordsRepo {
 
 extension RecordsRepo {
   func fetchFileDetails(
+    oid: String?,
     documentID: String?,
     completion: @escaping (DocFetchResponse) -> Void
   ) {
     guard let documentID,
-          let filterID = CoreInitConfigurations.shared.filterID else { return }
+          let oid else { return }
     service.fetchDocDetails(
       documentId: documentID,
-      oid: filterID
+      oid: oid
     ) { result, statusCode in
       switch result {
       case .success(let response):
@@ -192,7 +194,7 @@ extension RecordsRepo {
     documentID: String?,
     documentDate: Date? = nil,
     documentType: Int? = nil,
-    documentFilterId: String? = CoreInitConfigurations.shared.filterID
+    documentFilterId: String? = nil
   ) {
     guard let documentID,
           let documentFilterId else {
