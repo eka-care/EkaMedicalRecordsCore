@@ -63,9 +63,10 @@ public struct PredicateHelper {
     return NSCompoundPredicate(type: .or, subpredicates: predicates)
   }
     
-  public static func inArray(_ key: String, values: [String]) -> NSPredicate {
-        return NSPredicate(format: "%K IN %@", key, values)
-  }
+    public static func containsAny(_ key: String, values: [String]) -> NSPredicate {
+        let predicates = values.map { NSPredicate(format: "%K CONTAINS[c] %@", key, $0) }
+        return NSCompoundPredicate(orPredicateWithSubpredicates: predicates)
+    }
   
   /// Generates a predicate for filtering records based on the provided filter
   /// - Parameter filter: The filter to apply (e.g., document type)
