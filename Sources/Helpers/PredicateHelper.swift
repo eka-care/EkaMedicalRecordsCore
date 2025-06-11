@@ -82,7 +82,7 @@ public struct PredicateHelper {
     }
   }
   
-  public static func predicateForKey<T>(_ key: String, in values: [T]) -> NSPredicate {
+  public static func predicateForKeyInValues<T>(_ key: String, in values: [T]) -> NSPredicate {
       return NSPredicate(format: "%K IN %@", key, values)
   }
 }
