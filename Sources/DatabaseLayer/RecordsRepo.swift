@@ -240,7 +240,7 @@ public final class RecordsRepo {
     documentID: String? = nil,
     documentDate: Date? = nil,
     documentType: Int? = nil,
-    documentOid: String? = nil
+    documentOid: String? = CoreInitConfigurations.shared.primaryFilterID
   ) {
     /// Update in database
     databaseManager.updateRecord(
