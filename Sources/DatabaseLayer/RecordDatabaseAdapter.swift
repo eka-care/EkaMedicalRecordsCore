@@ -126,7 +126,7 @@ extension RecordDatabaseAdapter {
     }
     
     return RecordModel(
-      oid: CoreInitConfigurations.shared.filterID,
+      oid: CoreInitConfigurations.shared.primaryFilterID,
       thumbnail: thumbnailUrl,
       updatedAt: Date(), // Current date
       uploadDate: Date(), // Current date

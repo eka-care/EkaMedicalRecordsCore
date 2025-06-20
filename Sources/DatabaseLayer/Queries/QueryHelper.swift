@@ -54,7 +54,7 @@ public final class QueryHelper {
     return fetchRequest
   }
   
-  public static func fetchRecordCountsByDocumentTypeFetchRequest(oid: String?) -> NSFetchRequest<NSFetchRequestResult> {
+  public static func fetchRecordCountsByDocumentTypeFetchRequest(oid: [String]?) -> NSFetchRequest<NSFetchRequestResult> {
     let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: Record.entity().name!)
     fetchRequest.resultType = .dictionaryResultType
     
@@ -71,7 +71,7 @@ public final class QueryHelper {
     
     /// Add predicate to filter by oid
     if let oid {
-      let oidPredicate = NSPredicate(format: "%K == %@", "oid", oid)
+      let oidPredicate = NSPredicate(format: "oid IN %@", oid)
       fetchRequest.predicate = oidPredicate
     }
     
