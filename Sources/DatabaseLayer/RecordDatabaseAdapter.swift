@@ -63,7 +63,7 @@ public struct RecordModel {
 }
 
 /// Used to get the records sync state
-public enum RecordSyncState {
+public enum RecordSyncState: Equatable {
   case uploading
   case upload(success: Bool)
   
