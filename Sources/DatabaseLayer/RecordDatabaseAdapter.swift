@@ -196,6 +196,7 @@ extension RecordDatabaseAdapter {
     if let updatedAt = networkModel.recordDocument.item.updatedAt {
       insertModel.updatedAt = updatedAt.toDate()
     }
+    insertModel.syncState = RecordSyncState.upload(success: true)
     /// Form Thumbnail asynchronously
     if let thumbnail = networkModel.recordDocument.item.metadata?.thumbnail, !thumbnail.isEmpty {
       formLocalThumbnailFileNameFromNetworkURL(
