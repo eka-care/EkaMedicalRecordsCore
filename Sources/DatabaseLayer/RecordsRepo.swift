@@ -29,20 +29,20 @@ public final class RecordsRepo {
   
   /// Used to get update token and start fetching records
   public func getUpdatedAtAndStartFetchRecords(completion: @escaping () -> Void) {
-      guard let oids = CoreInitConfigurations.shared.filterID else { return }
+    guard let oids = CoreInitConfigurations.shared.filterID else { return }
     
-      for oid in oids {
-          fetchLatestRecordUpdatedAtString(oid: oid) { [weak self] updatedAt in
-              guard let self else { return }
-              recordsUpdateEpoch = updatedAt
-              fetchRecordsFromServer(oid: oid) { completion() }
-          }
+    for oid in oids {
+      fetchLatestRecordUpdatedAtString(oid: oid) { [weak self] updatedAt in
+        guard let self else { return }
+        recordsUpdateEpoch = updatedAt
+        fetchRecordsFromServer(oid: oid) { completion() }
       }
+    }
   }
   
   /// Used to fetch records from the server and store them in the database
   /// - Parameter completion: completion block to be executed after fetching
-    public func fetchRecordsFromServer(oid: String, completion: @escaping () -> Void) {
+  public func fetchRecordsFromServer(oid: String, completion: @escaping () -> Void) {
     syncRecordsForPage(
       token: pageOffsetToken,
       updatedAt: recordsUpdateEpoch,
@@ -66,7 +66,7 @@ public final class RecordsRepo {
         /// Update the page offset token
         pageOffsetToken = nextPageToken
         /// Call for next page
-          fetchRecordsFromServer(oid: oid, completion: completion)
+        fetchRecordsFromServer(oid: oid, completion: completion)
       }
     }
   }
@@ -95,6 +95,8 @@ public final class RecordsRepo {
   ) {
     /// Add in database and store it in addedRecord
     let addedRecord = databaseManager.addSingleRecord(from: record)
+    /// Update the upload sync status
+    addedRecord.syncState = RecordSyncState.uploading.stringValue
     didUploadRecord(addedRecord)
     /// Upload to vault
     uploadRecord(record: addedRecord) { _ in }
@@ -113,11 +115,16 @@ public final class RecordsRepo {
       [weak self] uploadFormsResponse,
       error in
       guard let self else { return }
+      guard error == nil, let uploadFormsResponse else {
+        databaseManager.updateRecord(recordID: record.objectID, syncStatus: RecordSyncState.upload(success: false))
+        return
+      }
       /// Update the database with document id
       databaseManager.updateRecord(
         recordID: record.objectID,
-        documentID: uploadFormsResponse?.batchResponses?.first?.documentID,
-        documentOid: record.oid
+        documentID: uploadFormsResponse.batchResponses?.first?.documentID,
+        documentOid: record.oid,
+        syncStatus: RecordSyncState.upload(success: true)
       )
       /// Return the added record in completion handler
       let record = databaseManager.fetchRecord(with: record.objectID)
@@ -197,7 +204,7 @@ public final class RecordsRepo {
     guard let documentID = record.documentID else { return }
     fetchFileDetails(oid: record.oid ,documentID: documentID, completion: completion)
   }
-    
+  
   // MARK: - Read
   
   /// Used to fetch record entity items
@@ -285,29 +292,29 @@ public final class RecordsRepo {
     /// Delete from database
     databaseManager.deleteRecord(record: record)
     /// Delete from vault v3
-      deleteRecordV3(documentID: documentID, oid: record.oid)
+    deleteRecordV3(documentID: documentID, oid: record.oid)
   }
 }
 
 extension RecordsRepo {
   
   /// Used to fetch updated at for the latest
-    private func fetchLatestRecordUpdatedAtString(oid: String, completion: @escaping (String?) -> Void) {
-        fetchLatestRecord(oid: oid) { [weak self] record in
-            guard let self else { return }
-            let updatedAt = fetchUpdatedAtFromRecord(record: record)
-            completion(updatedAt)
-        }
+  private func fetchLatestRecordUpdatedAtString(oid: String, completion: @escaping (String?) -> Void) {
+    fetchLatestRecord(oid: oid) { [weak self] record in
+      guard let self else { return }
+      let updatedAt = fetchUpdatedAtFromRecord(record: record)
+      completion(updatedAt)
     }
+  }
   
   /// Used to fetch the latest document synced to server
-    private func fetchLatestRecord(oid: String, completion: @escaping (Record?) -> Void) {
-        databaseManager.fetchRecords(
-            fetchRequest: QueryHelper.fetchLastUpdatedAt(oid: oid)
-        ) { records in
-            completion(records.first)
-        }
+  private func fetchLatestRecord(oid: String, completion: @escaping (Record?) -> Void) {
+    databaseManager.fetchRecords(
+      fetchRequest: QueryHelper.fetchLastUpdatedAt(oid: oid)
+    ) { records in
+      completion(records.first)
     }
+  }
   
   /// Get last updated at in string format from a record model
   private func fetchUpdatedAtFromRecord(record: Record?) -> String? {

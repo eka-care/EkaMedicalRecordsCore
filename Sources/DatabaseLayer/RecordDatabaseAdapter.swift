@@ -18,6 +18,7 @@ public struct RecordModel {
   public var documentDate: Date?
   public var documentHash: String?
   public var documentType: RecordDocumentType?
+  public var syncState: RecordSyncState?
   public var hasSyncedEdit: Bool?
   public var isAnalyzing: Bool?
   public var isSmart: Bool?
@@ -33,6 +34,7 @@ public struct RecordModel {
     documentDate: Date? = nil,
     documentHash: String? = nil,
     documentType: RecordDocumentType? = nil,
+    syncState: RecordSyncState? = nil,
     hasSyncedEdit: Bool? = nil,
     isAnalyzing: Bool? = nil,
     isSmart: Bool? = nil,
@@ -47,6 +49,7 @@ public struct RecordModel {
     self.documentDate = documentDate
     self.documentHash = documentHash
     self.documentType = documentType
+    self.syncState = syncState
     self.hasSyncedEdit = hasSyncedEdit
     self.isAnalyzing = isAnalyzing
     self.isSmart = isSmart
@@ -56,6 +59,34 @@ public struct RecordModel {
     self.uploadDate = uploadDate
     self.documentURIs = documentURIs
     self.contentType = contentType
+  }
+}
+
+/// Used to get the records sync state
+public enum RecordSyncState {
+  case uploading
+  case upload(success: Bool)
+  
+  var stringValue: String {
+    switch self {
+    case .uploading:
+      return "uploading"
+    case .upload(let success):
+      return success ? "upload_success" : "upload_failure"
+    }
+  }
+  
+  init?(from string: String) {
+    switch string {
+    case "uploading":
+      self = .uploading
+    case "upload_success":
+      self = .upload(success: true)
+    case "upload_failure":
+      self = .upload(success: false)
+    default:
+      return nil
+    }
   }
 }
 
