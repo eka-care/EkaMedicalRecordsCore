@@ -24,7 +24,7 @@ public final class RecordsDatabaseManager {
   public var container: NSPersistentContainer = {
     /// Loading model from package resources
     let bundle = Bundle.module
-    let modelURL = bundle.url(forResource: RecordsDatabaseVersion.containerName, withExtension: "mom")!
+    let modelURL = bundle.url(forResource: RecordsDatabaseVersion.containerName, withExtension: "momd")!
     let model = NSManagedObjectModel(contentsOf: modelURL)!
     let container = NSPersistentContainer(name: RecordsDatabaseVersion.containerName, managedObjectModel: model)
     
