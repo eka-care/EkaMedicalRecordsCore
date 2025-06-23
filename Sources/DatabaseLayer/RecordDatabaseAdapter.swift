@@ -76,7 +76,7 @@ public enum RecordSyncState: Equatable {
     }
   }
   
-  init?(from string: String) {
+  public init?(from string: String) {
     switch string {
     case "uploading":
       self = .uploading
