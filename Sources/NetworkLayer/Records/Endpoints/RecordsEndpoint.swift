@@ -81,7 +81,7 @@ extension RecordsEndpoint: RequestProvider {
     case .uploadRecords(let request, let oid):
       let oidQueryParamString = oid != nil ? "?p_oid=\(oid ?? "")" : ""
       return AF.request(
-        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs\(oidQueryParamString)",
+        "\(DomainConfigurations.ekaURL)/mr/api/v2/docs\(oidQueryParamString)",
         method: .post,
         parameters: request,
         encoder: JSONParameterEncoder.default,

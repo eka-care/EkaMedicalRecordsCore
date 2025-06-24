@@ -67,7 +67,7 @@ public enum RecordSyncState: Equatable {
   case uploading
   case upload(success: Bool)
   
-  var stringValue: String {
+  public var stringValue: String {
     switch self {
     case .uploading:
       return "uploading"
