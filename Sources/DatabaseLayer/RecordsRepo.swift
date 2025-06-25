@@ -28,27 +28,30 @@ public final class RecordsRepo {
   // MARK: - Sync Records
   
   /// Used to get update token and start fetching records
-  public func getUpdatedAtAndStartFetchRecords(completion: @escaping () -> Void) {
+  public func getUpdatedAtAndStartFetchRecords(completion: @escaping (Bool) -> Void) {
     guard let oids = CoreInitConfigurations.shared.filterID else { return }
     
     for oid in oids {
       fetchLatestRecordUpdatedAtString(oid: oid) { [weak self] updatedAt in
         guard let self else { return }
         recordsUpdateEpoch = updatedAt
-        fetchRecordsFromServer(oid: oid) { completion() }
+        fetchRecordsFromServer(oid: oid, completion: completion)
       }
     }
   }
   
   /// Used to fetch records from the server and store them in the database
   /// - Parameter completion: completion block to be executed after fetching
-  public func fetchRecordsFromServer(oid: String, completion: @escaping () -> Void) {
+  public func fetchRecordsFromServer(oid: String, completion: @escaping (Bool) -> Void) {
     syncRecordsForPage(
       token: pageOffsetToken,
       updatedAt: recordsUpdateEpoch,
       oid: oid
-    ) { [weak self] nextPageToken, recordItems in
+    ) { [weak self] nextPageToken, recordItems, error in
       guard let self else { return }
+      if error != nil {
+        completion(false)
+      }
       /// Add records to the database in batches
       databaseAdapter.convertNetworkToDatabaseModels(from: recordItems) { [weak self] databaseInsertModels in
         guard let self else { return }
@@ -57,7 +60,7 @@ public final class RecordsRepo {
           debugPrint("Batch added to database, count -> \(databaseInsertModels.count)")
           /// If it was last page means all batcehs are added to database, hence send completion
           if nextPageToken == nil {
-            completion()
+            completion(true)
           }
         }
       }
