@@ -102,7 +102,7 @@ public final class RecordsRepo {
     uploadRecord(record: addedRecord) { _ in }
   }
   
-  private func uploadRecord(
+  public func uploadRecord(
     record: Record,
     completion didUploadRecord: @escaping (Record?) -> Void
   ) {
