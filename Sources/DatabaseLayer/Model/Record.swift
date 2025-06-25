@@ -14,6 +14,9 @@ extension Record {
     documentDate = record.documentDate
     documentHash = record.documentHash
     documentID = record.documentID
+    if let syncState = record.syncState {
+      self.syncState = syncState.stringValue
+    }
     if let documentType = record.documentType {
       self.documentType = Int64(documentType.intValue)
     }
