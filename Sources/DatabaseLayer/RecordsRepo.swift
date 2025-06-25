@@ -288,10 +288,10 @@ public final class RecordsRepo {
   ) {
     /// We need to store it before deleting from database as once document is deleted we can't get the documentID
     let documentID = record.documentID
-    /// Delete from database
-    databaseManager.deleteRecord(record: record)
     /// Delete from vault v3
     deleteRecordV3(documentID: documentID, oid: record.oid)
+    /// Delete from database
+    databaseManager.deleteRecord(record: record)
   }
 }
 
