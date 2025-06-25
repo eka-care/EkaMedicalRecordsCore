@@ -95,9 +95,6 @@ public final class RecordsRepo {
   ) {
     /// Add in database and store it in addedRecord
     let addedRecord = databaseManager.addSingleRecord(from: record)
-    /// Update the upload sync status
-    addedRecord.syncState = RecordSyncState.uploading.stringValue
-    didUploadRecord(addedRecord)
     /// Upload to vault
     uploadRecord(record: addedRecord) { _ in }
   }
@@ -106,6 +103,9 @@ public final class RecordsRepo {
     record: Record,
     completion didUploadRecord: @escaping (Record?) -> Void
   ) {
+    /// Update the upload sync status
+    record.syncState = RecordSyncState.uploading.stringValue
+    didUploadRecord(record)
     let documentURIs: [String] = record.toRecordMeta?.allObjects.compactMap { ($0 as? RecordMeta)?.documentURI } ?? []
     uploadRecordsV3(
       recordURLs: documentURIs,
