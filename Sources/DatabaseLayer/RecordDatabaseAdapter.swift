@@ -157,7 +157,7 @@ extension RecordDatabaseAdapter {
     }
     
     return RecordModel(
-      documentType: .typeOther
+      documentType: .typeOther,
       oid: CoreInitConfigurations.shared.primaryFilterID,
       thumbnail: thumbnailUrl,
       updatedAt: Date(), // Current date
