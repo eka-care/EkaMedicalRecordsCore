@@ -13,7 +13,7 @@ import CoreData
  */
 
 enum RecordsDatabaseVersion {
-  static let containerName = "EkaMedicalRecordsCoreSdk"
+  static let containerName = "EkaMedicalRecordsCoreSdkV2"
   static let entityName = "Record"
 }
 
@@ -24,7 +24,7 @@ public final class RecordsDatabaseManager {
   public var container: NSPersistentContainer = {
     /// Loading model from package resources
     let bundle = Bundle.module
-    let modelURL = bundle.url(forResource: RecordsDatabaseVersion.containerName, withExtension: "mom")!
+    let modelURL = bundle.url(forResource: RecordsDatabaseVersion.containerName, withExtension: "momd")!
     let model = NSManagedObjectModel(contentsOf: modelURL)!
     let container = NSPersistentContainer(name: RecordsDatabaseVersion.containerName, managedObjectModel: model)
     
@@ -308,7 +308,8 @@ extension RecordsDatabaseManager {
     documentID: String? = nil,
     documentDate: Date? = nil,
     documentType: Int? = nil,
-    documentOid: String? = nil
+    documentOid: String? = nil,
+    syncStatus: RecordSyncState? = nil
   ) {
     do {
       guard let record = try container.viewContext.existingObject(with: recordID) as? Record else {
@@ -327,6 +328,9 @@ extension RecordsDatabaseManager {
       }
       if let documentOid {
         record.oid = documentOid
+      }
+      if let syncStatus {
+        record.syncState = syncStatus.stringValue
       }
       try container.viewContext.save()
       updateRecordEvent(
