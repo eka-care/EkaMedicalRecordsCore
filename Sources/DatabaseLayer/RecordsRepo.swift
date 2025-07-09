@@ -117,6 +117,8 @@ public final class RecordsRepo {
       [weak self] uploadFormsResponse,
       error in
       guard let self else { return }
+      print("Error is -> \(error)")
+      print("Upload forms response is -> \(uploadFormsResponse)")
       guard error == nil, let uploadFormsResponse else {
         databaseManager.updateRecord(recordID: record.objectID, syncStatus: RecordSyncState.upload(success: false))
         return
