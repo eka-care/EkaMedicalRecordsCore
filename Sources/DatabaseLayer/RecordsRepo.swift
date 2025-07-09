@@ -98,8 +98,8 @@ public final class RecordsRepo {
   ) {
     /// Add in database and store it in addedRecord
     let addedRecord = databaseManager.addSingleRecord(from: record)
-    /// Upload to vault
-    uploadRecord(record: addedRecord, completion: didUploadRecord)
+//    /// Upload to vault
+//    uploadRecord(record: addedRecord, completion: didUploadRecord)
   }
   
   public func uploadRecord(
