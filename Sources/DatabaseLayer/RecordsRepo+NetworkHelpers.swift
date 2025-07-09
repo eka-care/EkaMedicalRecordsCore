@@ -72,7 +72,7 @@ extension RecordsRepo {
           status: .failure,
           message: error.errorDescription
         )
-        completion(nil, error)
+        completion(response, error)
         return
       }
       if let response {
