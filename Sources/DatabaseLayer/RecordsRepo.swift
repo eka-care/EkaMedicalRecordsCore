@@ -117,10 +117,12 @@ public final class RecordsRepo {
       [weak self] uploadFormsResponse,
       error in
       guard let self else { return }
-      print("Error is -> \(error)")
-      print("Upload forms response is -> \(uploadFormsResponse)")
       guard error == nil, let uploadFormsResponse else {
         databaseManager.updateRecord(recordID: record.objectID, syncStatus: RecordSyncState.upload(success: false))
+        /// Make delete api record call so that its not availabe on server
+        if let docId = uploadFormsResponse?.batchResponses?.first?.documentID  {
+          deleteRecordV3(documentID: docId, oid: record.oid)
+        }
         return
       }
       /// Update the database with document id
