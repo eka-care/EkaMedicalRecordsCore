@@ -49,6 +49,7 @@ final class RecordUploadManager {
     /// Create Upload Request
     let request = DocUploadRequest(batchRequest: batchRequests)
     debugPrint("DocUploadRequestV3 - \(request)")
+    var recordUploadError: RecordUploadErrorType?
     
     /// Network Call
     service.uploadRecords(uploadRequest: request, oid: request.batchRequest.first?.patientOID) { [weak self] result, statusCode in
@@ -60,8 +61,9 @@ final class RecordUploadManager {
         debugPrint("Received DocUploadFormsResponse - \(response)")
         
         guard let batchResponses = response.batchResponses, !batchResponses.isEmpty else {
+          recordUploadError = .emptyFormResponse
           debugPrint("Received empty or nil BatchResponse")
-          recordUploadCompletion(nil, nil)
+          recordUploadCompletion(nil, recordUploadError)
           return
         }
         
@@ -92,7 +94,8 @@ final class RecordUploadManager {
               
               if !success {
                 debugPrint("❌ 📁 Failed to submit file - \(nestedFiles[batchResponseIndex].name) \(error?.localizedDescription ?? "")")
-                recordUploadCompletion(nil, .failedToUploadFiles)
+                recordUploadError = .failedToUploadFiles
+                recordUploadCompletion(nil, recordUploadError)
                 return
               } else {
                 debugPrint("Submitted file - \(nestedFiles[batchResponseIndex].name)")
@@ -107,12 +110,12 @@ final class RecordUploadManager {
         }
         
         group.notify(queue: .main) {
-          recordUploadCompletion(response, nil)
+          recordUploadCompletion(response, recordUploadError)
         }
         
       case .failure(let error):
         debugPrint("❌ 📁 Failed to upload files - \(error.localizedDescription)")
-        recordUploadCompletion(nil, .failedToUploadFiles)
+        recordUploadCompletion(nil, recordUploadError)
       }
     }
   }
