@@ -8,7 +8,7 @@
 enum RecordUploadErrorType {
   case failedToUploadFiles
   case emptyFormResponse
-  
+  case recordCountMetaDataMismatch
   
   var errorDescription: String {
     switch self {
@@ -16,6 +16,8 @@ enum RecordUploadErrorType {
       return "Failed to Upload Files"
     case .emptyFormResponse:
       return "Empty form response"
+    case .recordCountMetaDataMismatch:
+      return "Record Count meta data mismatch"
     }
   }
 }

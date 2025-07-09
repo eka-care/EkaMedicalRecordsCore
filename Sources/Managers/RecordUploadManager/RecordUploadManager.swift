@@ -27,6 +27,7 @@ final class RecordUploadManager {
     recordUploadCompletion: @escaping RecordUploadCompletion
   ) {
     var documentIDs = [String]()
+    var recordUploadError: RecordUploadErrorType?
     
     /// Making Batch Request
     let batchRequests: [DocUploadRequest.BatchRequest] = createBatchRequest(
@@ -41,15 +42,15 @@ final class RecordUploadManager {
     let filesData = fetchRecordsDataFromURL(nestedFiles)
     let recordDataReceivedCount: Int? = filesData.count
     guard recordDataReceivedCount == nestedFiles.count else {
+      recordUploadError = .recordCountMetaDataMismatch
       debugPrint("Count of file data does not match with count of files to be uploaded")
-      recordUploadCompletion(nil, nil)
+      recordUploadCompletion(nil, recordUploadError)
       return
     }
     
     /// Create Upload Request
     let request = DocUploadRequest(batchRequest: batchRequests)
     debugPrint("DocUploadRequestV3 - \(request)")
-    var recordUploadError: RecordUploadErrorType?
     
     /// Network Call
     service.uploadRecords(uploadRequest: request, oid: request.batchRequest.first?.patientOID) { [weak self] result, statusCode in
@@ -75,6 +76,7 @@ final class RecordUploadManager {
         for (batchResponseIndex, response) in batchResponses.enumerated() {
           
           guard let forms = response.forms else {
+            recordUploadError = .emptyFormResponse
             debugPrint("Didn't receive form data in the BatchResponse \(response)")
             continue
           }
