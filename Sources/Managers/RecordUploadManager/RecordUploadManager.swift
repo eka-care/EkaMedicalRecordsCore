@@ -92,6 +92,7 @@ final class RecordUploadManager {
               
               if !success {
                 debugPrint("❌ 📁 Failed to submit file - \(nestedFiles[batchResponseIndex].name) \(error?.localizedDescription ?? "")")
+                recordUploadCompletion(nil, .failedToUploadFiles)
               } else {
                 debugPrint("Submitted file - \(nestedFiles[batchResponseIndex].name)")
                 if let documentID = response.documentID {
