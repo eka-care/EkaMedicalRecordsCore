@@ -111,7 +111,7 @@ extension RecordsEndpoint: RequestProvider {
         },
         to: urlString,
         usingThreshold: UInt64.init(),
-        method: .post,
+        method: .get,
         headers: HTTPHeaders([.contentType(HTTPHeader.multipartFormData.rawValue)]),
         interceptor: CoreInitConfigurations.shared.requestInterceptor,
         fileManager: .default,
