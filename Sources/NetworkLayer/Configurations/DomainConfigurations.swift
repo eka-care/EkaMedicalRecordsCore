@@ -9,7 +9,7 @@ import Foundation
 
 enum DomainConfigurations {
   public static var authURL: String {
-    return "https://auth.eka.care"
+    return "https://api.eka.care"
   }
   
   public static var vaultURL: String {
