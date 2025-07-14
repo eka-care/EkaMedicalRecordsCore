@@ -8,7 +8,7 @@
 import Foundation
 
 enum DomainConfigurations {
-  public static var authURL: String {
+  public static var apiURL: String {
     return "https://api.eka.care"
   }
   
