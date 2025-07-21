@@ -20,4 +20,22 @@ public struct CaseArguementModel {
   public var name: String? /// Name of the case
   public var updatedAt: Date? /// Updated at of the case
   public var userDate: Date? /// Date of the folder added by user
+  
+  public init(
+    caseId: String? = nil,
+    caseType: String? = nil,
+    oid: String? = nil,
+    createdAt: Date? = nil,
+    name: String? = nil,
+    updatedAt: Date? = nil,
+    userDate: Date? = nil
+  ) {
+    self.caseId = caseId
+    self.caseType = caseType
+    self.oid = oid
+    self.createdAt = createdAt
+    self.name = name
+    self.updatedAt = updatedAt
+    self.userDate = userDate
+  }
 }
