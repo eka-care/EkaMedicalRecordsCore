@@ -29,6 +29,10 @@ extension CaseModel {
       self.createdAt = createdAt
     }
     
+    if let oid = caseArguementModel.oid {
+      self.oid = oid
+    }
+    
     if let userDate = caseArguementModel.userDate {
       self.userAddedDate = userDate
     }
