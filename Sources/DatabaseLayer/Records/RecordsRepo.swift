@@ -228,9 +228,10 @@ public final class RecordsRepo {
   
   /// Used to get record document type count
   /// - Returns: Dictionary with count of each document type
-  public func getRecordDocumentTypeCount() -> [RecordDocumentType: Int] {
+  /// - Parameter caseID: caseID of the case if any
+  public func getRecordDocumentTypeCount(caseID: String? = nil) -> [RecordDocumentType: Int] {
     let oid = CoreInitConfigurations.shared.filterID
-    return databaseManager.getDocumentTypeCounts(oid: oid)
+    return databaseManager.getDocumentTypeCounts(oid: oid, caseID: caseID)
   }
   
   /// Used to get record in main thread from fetch request
