@@ -85,12 +85,14 @@ extension QueryHelper {
   /// Query to fetch case for given caseID
   /// - Parameter caseID: The case ID to filter by
   /// - Returns: NSFetchRequest configured to fetch the matching record
-  public static func fetchRecordWith(caseID: String) -> NSFetchRequest<CaseModel> {
-    // Create a fetch request for the Record entity
+  public static func fetchCase(caseID: String?) -> NSFetchRequest<CaseModel> {
+    // Create a fetch request for the CaseMOdel entity
     let fetchRequest: NSFetchRequest<CaseModel> = CaseModel.fetchRequest()
-    // Set the predicate to filter records where documentID matches the input
-    fetchRequest.predicate = NSPredicate(format: "caseID == %@", caseID)
-    // Optionally set a fetch limit since we expect at most one record
+    // Set the predicate to filter case where caseID matches the input
+    if let caseID {
+      fetchRequest.predicate = NSPredicate(format: "caseID == %@", caseID)
+    }
+    // Optionally set a fetch limit since we expect at most one case
     fetchRequest.fetchLimit = 1
     return fetchRequest
   }
