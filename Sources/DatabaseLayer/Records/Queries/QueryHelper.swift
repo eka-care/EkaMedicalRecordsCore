@@ -54,7 +54,7 @@ public final class QueryHelper {
     return fetchRequest
   }
   
-  public static func fetchRecordCountsByDocumentTypeFetchRequest(oid: [String]?) -> NSFetchRequest<NSFetchRequestResult> {
+  public static func fetchRecordCountsByDocumentTypeFetchRequest(oid: [String]?, caseID: String?) -> NSFetchRequest<NSFetchRequestResult> {
     let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: Record.entity().name!)
     fetchRequest.resultType = .dictionaryResultType
     
@@ -69,10 +69,23 @@ public final class QueryHelper {
     fetchRequest.propertiesToFetch = ["documentType", countExpression]
     fetchRequest.propertiesToGroupBy = ["documentType"]
     
-    /// Add predicate to filter by oid
+    /// Predicates
+    var predicates: [NSPredicate] = []
+    
+    /// Oid Predicate
     if let oid {
       let oidPredicate = NSPredicate(format: "oid IN %@", oid)
-      fetchRequest.predicate = oidPredicate
+      predicates.append(oidPredicate)
+    }
+    
+    /// CaseID predicate
+    if let caseID {
+      let casePredicate = NSPredicate(format: "ANY toCaseModel.caseID == %@", caseID)
+      predicates.append(casePredicate)
+    }
+    
+    if !predicates.isEmpty {
+      fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
     }
     
     return fetchRequest
