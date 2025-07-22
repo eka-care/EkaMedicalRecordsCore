@@ -33,7 +33,7 @@ extension RecordsDatabaseManager {
   /// Used to read a case
   /// - Parameter fetchRequest: fetch request for filtering
   /// - Parameter completion: completion block to be executed after fetching cases
-  func fetchCase(
+  public func fetchCase(
     fetchRequest: NSFetchRequest<CaseModel>,
     completion: @escaping ([CaseModel]) -> Void
   ) {
@@ -47,7 +47,7 @@ extension RecordsDatabaseManager {
   /// Used to fetch record with given object id
   /// - Parameter id: Id of the case
   /// - Returns: The case model which was fetched using given object id
-  func fetchCase(with id: NSManagedObjectID) -> CaseModel? {
+  public func fetchCase(with id: NSManagedObjectID) -> CaseModel? {
     do {
       let caseModel = try container.viewContext.existingObject(with: id) as? CaseModel
       return caseModel
