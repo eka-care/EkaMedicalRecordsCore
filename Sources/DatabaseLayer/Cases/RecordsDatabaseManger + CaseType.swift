@@ -30,10 +30,10 @@ extension RecordsDatabaseManager {
   
   
   // To Fetch  all the CaseTypes from DB
-  func fetchAllCases(
+  func fetchAllCasesType(
     fetchRequest: NSFetchRequest<CaseType>,
     completion: @escaping ([CaseType]) -> Void
-  ) -> [CaseType] {
+  ) {
     backgroundContext.perform { [weak self] in
       guard let self else { return }
       let casesType = try? backgroundContext.fetch(fetchRequest)
