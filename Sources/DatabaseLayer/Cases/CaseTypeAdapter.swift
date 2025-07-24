@@ -21,6 +21,5 @@ public struct CaseTypeModel {
   public init(name: String, icon: String) {
     self.name = name
     self.icon = icon
-    self.backgroundColor = backgroundColor
   }
 }
