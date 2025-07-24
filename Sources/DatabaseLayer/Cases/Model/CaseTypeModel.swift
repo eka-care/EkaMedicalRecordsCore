@@ -9,6 +9,5 @@ extension CaseType {
   func update(from caseTypeModel: CaseTypeModel) {
     self.name = caseTypeModel.name
     self.icon = caseTypeModel.icon
-    self.backgroundColor = caseTypeModel.backgroundColor
   }
 }

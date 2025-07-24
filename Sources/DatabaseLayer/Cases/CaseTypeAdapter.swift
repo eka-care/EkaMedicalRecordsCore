@@ -17,9 +17,8 @@ import Foundation
 public struct CaseTypeModel {
   public var name: String
   public var icon: String
-  public var backgroundColor: Color
  
-  public init(name: String, icon: String, backgroundColor: Color) {
+  public init(name: String, icon: String) {
     self.name = name
     self.icon = icon
     self.backgroundColor = backgroundColor
