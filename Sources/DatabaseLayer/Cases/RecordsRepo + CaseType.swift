@@ -13,7 +13,7 @@ extension RecordsRepo {
   public func createCaseType (
     caseTypeModel: CaseTypeModel
   ) -> CaseType {
-    return databaseManager.createCase(from: caseTypeModel)
+    return databaseManager.createCaseType(from: caseTypeModel)
   }
   
   ///  Used to fetch all casetypes
