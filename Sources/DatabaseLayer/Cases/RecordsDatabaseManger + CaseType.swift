@@ -30,16 +30,14 @@ extension RecordsDatabaseManager {
   
   
   // To Fetch  all the CaseTypes from DB
-  func fetchAllCases() -> [CaseType] {
-      let context = PersistenceController.shared.context
-      let request: NSFetchRequest<CaseType> = CaseType.fetchRequest()
-      
-      do {
-          return try context.fetch(request)
-      } catch {
-          print("Failed to fetch CaseType: \(error)")
-          return []
-      }
+  func fetchAllCases(
+    fetchRequest: NSFetchRequest<CaseType>,
+    completion: @escaping ([CaseType]) -> Void
+  ) -> [CaseType] {
+    backgroundContext.perform { [weak self] in
+      guard let self else { return }
+      let casesType = try? backgroundContext.fetch(fetchRequest)
+      completion(casesType ?? [])
   }
 
 }
