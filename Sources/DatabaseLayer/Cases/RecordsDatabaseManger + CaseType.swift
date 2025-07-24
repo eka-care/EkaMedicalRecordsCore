@@ -38,6 +38,6 @@ extension RecordsDatabaseManager {
       guard let self else { return }
       let casesType = try? backgroundContext.fetch(fetchRequest)
       completion(casesType ?? [])
+    }
   }
-
 }
