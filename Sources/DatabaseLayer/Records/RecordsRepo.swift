@@ -94,17 +94,17 @@ public final class RecordsRepo {
   /// - Parameter record: record to be added
   public func addSingleRecord(
     record: RecordModel,
-    completion didUploadRecord: @escaping (Record?) -> Void
+    completion didAddRecord: @escaping (Record?) -> Void
   ) {
     /// Add in database and store it in addedRecord
     let addedRecord = databaseManager.addSingleRecord(from: record)
+    didAddRecord(addedRecord)
     /// Upload to vault
-    uploadRecord(record: addedRecord, completion: didUploadRecord)
+    uploadRecord(record: addedRecord)
   }
   
   public func uploadRecord(
-    record: Record,
-    completion didUploadRecord: @escaping (Record?) -> Void
+    record: Record
   ) {
     /// Update the upload sync status
     record.syncState = RecordSyncState.uploading.stringValue
@@ -132,9 +132,6 @@ public final class RecordsRepo {
         documentOid: record.oid,
         syncStatus: RecordSyncState.upload(success: true)
       )
-      /// Return the added record in completion handler
-      let record = databaseManager.fetchRecord(with: record.objectID)
-      didUploadRecord(record)
     }
   }
   
