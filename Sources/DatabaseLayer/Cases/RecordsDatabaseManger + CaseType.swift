@@ -15,7 +15,7 @@ import CoreData
 extension RecordsDatabaseManager {
   
   // To Insert CaseType In DB
-  func createCaseType(from model: CaseTypeModel) -> CaseType {
+  func insertCaseType(from model: CaseTypeModel) -> CaseType {
     let newCasetype = CaseType(context: container.viewContext)
     newCasetype.update(from: model)
     do {
@@ -40,4 +40,37 @@ extension RecordsDatabaseManager {
       completion(casesType ?? [])
     }
   }
+  
+  func bulkInsertCaseTypes(models: [CaseType]) -> [CaseType] {
+      var createdCaseTypes: [CaseType] = []
+      
+      // Create all entities first
+      for model in models {
+          let newCaseType = CaseType(context: container.viewContext)
+          createdCaseTypes.append(newCaseType)
+      }
+      
+      // Save all at once
+      do {
+          try container.viewContext.save()
+          debugPrint("All \(createdCaseTypes.count) CaseTypes added successfully!")
+          return createdCaseTypes
+      } catch {
+          debugPrint("Error saving CaseTypes: \(error.localizedDescription)")
+          container.viewContext.rollback()
+          return [] // Return empty array on failure
+      }
+  }
+  
+  func checkAndPreloadCaseTypes(fetchRequest: NSFetchRequest<CaseType>, preloadData: [CaseType], completion: @escaping ([CaseType]) -> Void ) {
+    fetchAllCasesType(fetchRequest: fetchRequest) { [self] caseTypes in
+      if caseTypes.count > 0 {
+        completion(caseTypes)
+      } else {
+       var insertedData = bulkInsertCaseTypes(models: preloadData)
+        completion(insertedData)
+      }
+    }
+  }
 }
+
