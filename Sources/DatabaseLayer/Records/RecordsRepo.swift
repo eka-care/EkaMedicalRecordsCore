@@ -246,12 +246,15 @@ public final class RecordsRepo {
   ///   - documentID: document id of the record
   ///   - documentDate: document date of the record
   ///   - documentType: document type of the record
+  ///   - documentOid: document oid of the record
+  ///   - caseModel: case model of the record
   public func updateRecord(
     recordID: NSManagedObjectID,
     documentID: String? = nil,
     documentDate: Date? = nil,
     documentType: Int? = nil,
-    documentOid: String? = CoreInitConfigurations.shared.primaryFilterID
+    documentOid: String? = CoreInitConfigurations.shared.primaryFilterID,
+    caseModel: CaseModel? = nil
   ) {
     /// Update in database
     databaseManager.updateRecord(
@@ -259,7 +262,8 @@ public final class RecordsRepo {
       documentID: documentID,
       documentDate: documentDate,
       documentType: documentType,
-      documentOid: documentOid
+      documentOid: documentOid,
+      caseModel: caseModel
     )
     /// Update call
     editDocument(
