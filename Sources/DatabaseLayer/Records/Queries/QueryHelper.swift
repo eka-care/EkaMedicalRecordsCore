@@ -104,6 +104,9 @@ extension QueryHelper {
     // Set the predicate to filter case where caseID matches the input
     if let caseID {
       fetchRequest.predicate = NSPredicate(format: "caseID == %@", caseID)
+    } else {
+      // This will match nothing
+      fetchRequest.predicate = NSPredicate(value: false)
     }
     // Optionally set a fetch limit since we expect at most one case
     fetchRequest.fetchLimit = 1
