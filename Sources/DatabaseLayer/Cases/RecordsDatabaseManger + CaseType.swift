@@ -41,12 +41,13 @@ extension RecordsDatabaseManager {
     }
   }
   
-  func bulkInsertCaseTypes(models: [CaseType]) -> [CaseType] {
+  func bulkInsertCaseTypes(models: [CaseTypeModel]) -> [CaseType] {
       var createdCaseTypes: [CaseType] = []
       
       // Create all entities first
       for model in models {
           let newCaseType = CaseType(context: container.viewContext)
+          newCaseType.update(from: model)
           createdCaseTypes.append(newCaseType)
       }
       
@@ -62,12 +63,12 @@ extension RecordsDatabaseManager {
       }
   }
   
-  func checkAndPreloadCaseTypes(fetchRequest: NSFetchRequest<CaseType>, preloadData: [CaseType], completion: @escaping ([CaseType]) -> Void ) {
+  func checkAndPreloadCaseTypes(fetchRequest: NSFetchRequest<CaseType>, preloadData: [CaseTypeModel], completion: @escaping ([CaseType]) -> Void ) {
     fetchAllCasesType(fetchRequest: fetchRequest) { [self] caseTypes in
       if caseTypes.count > 0 {
         completion(caseTypes)
       } else {
-       var insertedData = bulkInsertCaseTypes(models: preloadData)
+        let insertedData = bulkInsertCaseTypes(models: preloadData)
         completion(insertedData)
       }
     }
