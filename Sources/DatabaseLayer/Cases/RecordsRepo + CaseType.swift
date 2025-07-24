@@ -24,7 +24,7 @@ extension RecordsRepo {
     }
   }
   
-  public func checkAndPreloadCaseTypes(preloadData: [CaseType], completion: @escaping ([CaseType]) -> Void) {
+  public func checkAndPreloadCaseTypes(preloadData: [CaseTypeModel], completion: @escaping ([CaseType]) -> Void) {
     let fetchRequest: NSFetchRequest<CaseType> = CaseType.fetchRequest()
     databaseManager.checkAndPreloadCaseTypes(fetchRequest: fetchRequest, preloadData: preloadData) { caseTypes in
       completion(caseTypes)
