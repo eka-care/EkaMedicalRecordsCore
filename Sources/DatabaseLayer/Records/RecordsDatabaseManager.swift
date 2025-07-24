@@ -305,13 +305,17 @@ extension RecordsDatabaseManager {
   ///   - documentID: documentID of the record
   ///   - documentDate: documentDate of the record
   ///   - documentType: documentType of the record
+  ///   - documentOid: document oid of the record
+  ///   - syncStatus: document sync state of the record
+  ///   - caseModel: case to which document is attached to
   func updateRecord(
     recordID: NSManagedObjectID,
     documentID: String? = nil,
     documentDate: Date? = nil,
     documentType: Int? = nil,
     documentOid: String? = nil,
-    syncStatus: RecordSyncState? = nil
+    syncStatus: RecordSyncState? = nil,
+    caseModel: CaseModel? = nil
   ) {
     do {
       guard let record = try container.viewContext.existingObject(with: recordID) as? Record else {
@@ -333,6 +337,9 @@ extension RecordsDatabaseManager {
       }
       if let syncStatus {
         record.syncState = syncStatus.stringValue
+      }
+      if let caseModel {
+        record.addToToCaseModel(caseModel)
       }
       try container.viewContext.save()
       updateRecordEvent(
