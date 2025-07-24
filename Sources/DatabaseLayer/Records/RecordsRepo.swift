@@ -335,7 +335,7 @@ extension RecordsRepo {
     fetchRecords(fetchRequest: QueryHelper.fetchRecordsWithNilDocumentID()) { unsyncedRecords in
       unsyncedRecords.forEach { [weak self] unsyncedRecord in
         guard let self else { return }
-        uploadRecord(record: unsyncedRecord)
+        uploadRecord(record: unsyncedRecord) { _ in }
       }
     }
   }
