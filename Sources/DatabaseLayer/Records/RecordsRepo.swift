@@ -98,13 +98,13 @@ public final class RecordsRepo {
   ) {
     /// Add in database and store it in addedRecord
     let addedRecord = databaseManager.addSingleRecord(from: record)
+    didAddRecord(addedRecord)
     /// Upload to vault
-    uploadRecord(record: addedRecord, completion: didAddRecord)
+    uploadRecord(record: addedRecord)
   }
   
   public func uploadRecord(
-    record: Record,
-    completion: @escaping (Record?) -> Void
+    record: Record
   ) {
     /// Update the upload sync status
     record.syncState = RecordSyncState.uploading.stringValue
@@ -132,7 +132,6 @@ public final class RecordsRepo {
         documentOid: record.oid,
         syncStatus: RecordSyncState.upload(success: true)
       )
-      completion(record)
     }
   }
   
@@ -336,7 +335,7 @@ extension RecordsRepo {
     fetchRecords(fetchRequest: QueryHelper.fetchRecordsWithNilDocumentID()) { unsyncedRecords in
       unsyncedRecords.forEach { [weak self] unsyncedRecord in
         guard let self else { return }
-        uploadRecord(record: unsyncedRecord) { _ in }
+        uploadRecord(record: unsyncedRecord)
       }
     }
   }
