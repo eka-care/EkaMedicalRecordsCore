@@ -54,7 +54,7 @@ public final class QueryHelper {
     return fetchRequest
   }
   
-  public static func fetchRecordCountsByDocumentTypeFetchRequest(oid: [String]?) -> NSFetchRequest<NSFetchRequestResult> {
+  public static func fetchRecordCountsByDocumentTypeFetchRequest(oid: [String]?, caseID: String?) -> NSFetchRequest<NSFetchRequestResult> {
     let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: Record.entity().name!)
     fetchRequest.resultType = .dictionaryResultType
     
@@ -69,12 +69,47 @@ public final class QueryHelper {
     fetchRequest.propertiesToFetch = ["documentType", countExpression]
     fetchRequest.propertiesToGroupBy = ["documentType"]
     
-    /// Add predicate to filter by oid
+    /// Predicates
+    var predicates: [NSPredicate] = []
+    
+    /// Oid Predicate
     if let oid {
       let oidPredicate = NSPredicate(format: "oid IN %@", oid)
-      fetchRequest.predicate = oidPredicate
+      predicates.append(oidPredicate)
     }
     
+    /// CaseID predicate
+    if let caseID {
+      let casePredicate = NSPredicate(format: "ANY toCaseModel.caseID == %@", caseID)
+      predicates.append(casePredicate)
+    }
+    
+    if !predicates.isEmpty {
+      fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+    }
+    
+    return fetchRequest
+  }
+}
+
+// MARK: - Cases
+
+extension QueryHelper {
+  /// Query to fetch case for given caseID
+  /// - Parameter caseID: The case ID to filter by
+  /// - Returns: NSFetchRequest configured to fetch the matching record
+  public static func fetchCase(caseID: String?) -> NSFetchRequest<CaseModel> {
+    // Create a fetch request for the CaseMOdel entity
+    let fetchRequest: NSFetchRequest<CaseModel> = CaseModel.fetchRequest()
+    // Set the predicate to filter case where caseID matches the input
+    if let caseID {
+      fetchRequest.predicate = NSPredicate(format: "caseID == %@", caseID)
+    } else {
+      // This will match nothing
+      fetchRequest.predicate = NSPredicate(value: false)
+    }
+    // Optionally set a fetch limit since we expect at most one case
+    fetchRequest.fetchLimit = 1
     return fetchRequest
   }
 }

@@ -14,7 +14,6 @@ import CoreData
 
 enum RecordsDatabaseVersion {
   static let containerName = "EkaMedicalRecordsCoreSdkV2"
-  static let entityName = "Record"
 }
 
 public final class RecordsDatabaseManager {
@@ -265,8 +264,11 @@ extension RecordsDatabaseManager {
   }
   
   /// Get document type counts
-  func getDocumentTypeCounts(oid: [String]?) -> [RecordDocumentType: Int] {
-    let fetchRequest = QueryHelper.fetchRecordCountsByDocumentTypeFetchRequest(oid: oid)
+  func getDocumentTypeCounts(
+    oid: [String]?,
+    caseID: String?
+  ) -> [RecordDocumentType: Int] {
+    let fetchRequest = QueryHelper.fetchRecordCountsByDocumentTypeFetchRequest(oid: oid, caseID: caseID)
     var counts: [RecordDocumentType: Int] = [:]
     
     do {
@@ -303,13 +305,17 @@ extension RecordsDatabaseManager {
   ///   - documentID: documentID of the record
   ///   - documentDate: documentDate of the record
   ///   - documentType: documentType of the record
+  ///   - documentOid: document oid of the record
+  ///   - syncStatus: document sync state of the record
+  ///   - caseModel: case to which document is attached to
   func updateRecord(
     recordID: NSManagedObjectID,
     documentID: String? = nil,
     documentDate: Date? = nil,
     documentType: Int? = nil,
     documentOid: String? = nil,
-    syncStatus: RecordSyncState? = nil
+    syncStatus: RecordSyncState? = nil,
+    caseModel: CaseModel? = nil
   ) {
     do {
       guard let record = try container.viewContext.existingObject(with: recordID) as? Record else {
@@ -331,6 +337,9 @@ extension RecordsDatabaseManager {
       }
       if let syncStatus {
         record.syncState = syncStatus.stringValue
+      }
+      if let caseModel {
+        record.addToToCaseModel(caseModel)
       }
       try container.viewContext.save()
       updateRecordEvent(

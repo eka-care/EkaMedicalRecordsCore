@@ -30,6 +30,10 @@ extension Record {
     updatedAt = record.updatedAt
     uploadDate = record.uploadDate
     oid = record.oid
+    /// Add Case Models
+    if let caseModel = record.caseModel {
+      addToToCaseModel(caseModel)
+    }
   }
   
   /// Used to get local paths of file

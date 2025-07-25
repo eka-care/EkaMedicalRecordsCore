@@ -28,6 +28,7 @@ public struct RecordModel {
   public var uploadDate: Date?
   public var documentURIs: [String]?
   public var contentType: String?
+  public var caseModel: CaseModel?
   
   public init(
     documentID: String? = nil,
@@ -43,7 +44,8 @@ public struct RecordModel {
     updatedAt: Date? = nil,
     uploadDate: Date? = nil,
     documentURIs: [String]? = nil,
-    contentType: String? = nil
+    contentType: String? = nil,
+    caseModel: CaseModel? = nil
   ) {
     self.documentID = documentID
     self.documentDate = documentDate
@@ -59,6 +61,7 @@ public struct RecordModel {
     self.uploadDate = uploadDate
     self.documentURIs = documentURIs
     self.contentType = contentType
+    self.caseModel = caseModel
   }
 }
 
@@ -126,10 +129,12 @@ extension RecordDatabaseAdapter {
   /// - Parameters:
   ///   - data: Array of items within the record
   ///   - contentType: Type of content like for pdf it will be .pdf
+  ///   - caseID: caseID of the case to which the record will be attached to
   /// - Returns: RecordModel which will be used to insert in the database
   public func formRecordModelFromAddedData(
     data: [Data],
-    contentType: FileType
+    contentType: FileType,
+    caseModel: CaseModel? = nil
   ) -> RecordModel {
     let contentTypeString: String = contentType.fileExtension
     /// Form record local path
@@ -163,7 +168,8 @@ extension RecordDatabaseAdapter {
       updatedAt: Date(), // Current date
       uploadDate: Date(), // Current date
       documentURIs: recordsPath,
-      contentType: contentType.fileExtension
+      contentType: contentType.fileExtension,
+      caseModel: caseModel
     )
   }
 }

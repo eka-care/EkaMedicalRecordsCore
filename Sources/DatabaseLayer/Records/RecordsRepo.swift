@@ -94,17 +94,17 @@ public final class RecordsRepo {
   /// - Parameter record: record to be added
   public func addSingleRecord(
     record: RecordModel,
-    completion didUploadRecord: @escaping (Record?) -> Void
+    completion didAddRecord: @escaping (Record?) -> Void
   ) {
     /// Add in database and store it in addedRecord
     let addedRecord = databaseManager.addSingleRecord(from: record)
     /// Upload to vault
-    uploadRecord(record: addedRecord, completion: didUploadRecord)
+    uploadRecord(record: addedRecord, completion: didAddRecord)
   }
   
   public func uploadRecord(
     record: Record,
-    completion didUploadRecord: @escaping (Record?) -> Void
+    completion: @escaping (Record?) -> Void
   ) {
     /// Update the upload sync status
     record.syncState = RecordSyncState.uploading.stringValue
@@ -132,9 +132,7 @@ public final class RecordsRepo {
         documentOid: record.oid,
         syncStatus: RecordSyncState.upload(success: true)
       )
-      /// Return the added record in completion handler
-      let record = databaseManager.fetchRecord(with: record.objectID)
-      didUploadRecord(record)
+      completion(record)
     }
   }
   
@@ -228,9 +226,10 @@ public final class RecordsRepo {
   
   /// Used to get record document type count
   /// - Returns: Dictionary with count of each document type
-  public func getRecordDocumentTypeCount() -> [RecordDocumentType: Int] {
+  /// - Parameter caseID: caseID of the case if any
+  public func getRecordDocumentTypeCount(caseID: String? = nil) -> [RecordDocumentType: Int] {
     let oid = CoreInitConfigurations.shared.filterID
-    return databaseManager.getDocumentTypeCounts(oid: oid)
+    return databaseManager.getDocumentTypeCounts(oid: oid, caseID: caseID)
   }
   
   /// Used to get record in main thread from fetch request
@@ -248,12 +247,15 @@ public final class RecordsRepo {
   ///   - documentID: document id of the record
   ///   - documentDate: document date of the record
   ///   - documentType: document type of the record
+  ///   - documentOid: document oid of the record
+  ///   - caseModel: case model of the record
   public func updateRecord(
     recordID: NSManagedObjectID,
     documentID: String? = nil,
     documentDate: Date? = nil,
     documentType: Int? = nil,
-    documentOid: String? = CoreInitConfigurations.shared.primaryFilterID
+    documentOid: String? = CoreInitConfigurations.shared.primaryFilterID,
+    caseModel: CaseModel? = nil
   ) {
     /// Update in database
     databaseManager.updateRecord(
@@ -261,7 +263,8 @@ public final class RecordsRepo {
       documentID: documentID,
       documentDate: documentDate,
       documentType: documentType,
-      documentOid: documentOid
+      documentOid: documentOid,
+      caseModel: caseModel
     )
     /// Update call
     editDocument(
