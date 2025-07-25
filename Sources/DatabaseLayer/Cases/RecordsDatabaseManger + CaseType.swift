@@ -5,10 +5,7 @@
 //  Created by Shekhar Gupta on 24/07/25.
 //
 
-
-
 import CoreData
-
 
 // MARK: - CASE_TYPE -  Create / Insert , Fetch
 
@@ -27,7 +24,6 @@ extension RecordsDatabaseManager {
       return newCasetype
     }
   }
-  
   
   // To Fetch  all the CaseTypes from DB
   func fetchAllCasesType(
