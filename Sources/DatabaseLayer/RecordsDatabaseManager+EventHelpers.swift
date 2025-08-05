@@ -18,7 +18,8 @@ extension RecordsDatabaseManager {
   func createRecordEvent(
     id: String?,
     status: EventStatusMonitor,
-    message: String? = nil
+    message: String? = nil,
+    userOid: String? = nil
   ) {
     guard let id else { return }
     let eventLog = EventLog(
@@ -28,7 +29,8 @@ extension RecordsDatabaseManager {
       eventType: .create,
       message: message,
       status: status,
-      platform: .database
+      platform: .database,
+      userOid: userOid
     )
     CoreInitConfigurations.shared.delegate?.receiveEvent(eventLog: eventLog)
   }
@@ -41,7 +43,8 @@ extension RecordsDatabaseManager {
   func updateRecordEvent(
     id: String?,
     status: EventStatusMonitor,
-    message: String? = nil
+    message: String? = nil,
+    userOid: String? = nil
   ) {
     guard let id else { return }
     let eventLog = EventLog(
@@ -50,7 +53,8 @@ extension RecordsDatabaseManager {
       ],
       eventType: .update,
       status: status,
-      platform: .database
+      platform: .database,
+      userOid: userOid
     )
     CoreInitConfigurations.shared.delegate?.receiveEvent(eventLog: eventLog)
   }
@@ -63,7 +67,8 @@ extension RecordsDatabaseManager {
   func deleteRecordEvent(
     id: String?,
     status: EventStatusMonitor,
-    message: String? = nil
+    message: String? = nil,
+    userOid: String? = nil
   ) {
     guard let id else { return }
     let eventLog = EventLog(
@@ -72,7 +77,8 @@ extension RecordsDatabaseManager {
       ],
       eventType: .delete,
       status: status,
-      platform: .database
+      platform: .database,
+      userOid: userOid
     )
     CoreInitConfigurations.shared.delegate?.receiveEvent(eventLog: eventLog)
   }

@@ -141,12 +141,12 @@ extension RecordsDatabaseManager {
         to: newRecord,
         documentURIs: record.documentURIs
       )
-      createRecordEvent(id: newRecord.id.debugDescription, status: .success)
+      createRecordEvent(id: newRecord.id.debugDescription, status: .success,userOid: record.oid)
       debugPrint("Record added successfully!")
       return newRecord
     } catch {
       let nsError = error as NSError
-      createRecordEvent(id: newRecord.id.debugDescription, status: .failure, message: error.localizedDescription)
+      createRecordEvent(id: newRecord.id.debugDescription, status: .failure, message: error.localizedDescription, userOid: record.oid)
       debugPrint("Error saving record: \(nsError), \(nsError.userInfo)")
       return newRecord
     }

@@ -18,7 +18,8 @@ extension RecordsRepo {
   func createRecordEvent(
     id: String?,
     status: EventStatusMonitor,
-    message: String? = nil
+    message: String? = nil,
+    userOid: String? = nil
   ) {
     guard let id else { return }
     let eventLog = EventLog(
@@ -28,7 +29,8 @@ extension RecordsRepo {
       eventType: .create,
       message: message,
       status: status,
-      platform: .network
+      platform: .network,
+      userOid: userOid
     )
     CoreInitConfigurations.shared.delegate?.receiveEvent(eventLog: eventLog)
   }
@@ -43,7 +45,8 @@ extension RecordsRepo {
   func updateRecordEvent(
     id: String?,
     status: EventStatusMonitor,
-    message: String? = nil
+    message: String? = nil,
+    userOid: String? = nil
   ) {
     guard let id else { return }
     let eventLog = EventLog(
@@ -53,7 +56,8 @@ extension RecordsRepo {
       eventType: .update,
       message: message,
       status: status,
-      platform: .network
+      platform: .network,
+      userOid: userOid
     )
     CoreInitConfigurations.shared.delegate?.receiveEvent(eventLog: eventLog)
   }
@@ -68,7 +72,8 @@ extension RecordsRepo {
   func deleteRecordEvent(
     id: String?,
     status: EventStatusMonitor,
-    message: String? = nil
+    message: String? = nil,
+    userOid: String? = nil
   ) {
     guard let id else { return }
     let eventLog = EventLog(
@@ -77,7 +82,8 @@ extension RecordsRepo {
       ],
       eventType: .delete,
       status: status,
-      platform: .network
+      platform: .network,
+      userOid: userOid
     )
     CoreInitConfigurations.shared.delegate?.receiveEvent(eventLog: eventLog)
   }
