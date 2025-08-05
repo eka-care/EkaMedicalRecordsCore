@@ -17,19 +17,23 @@ public struct EventLog {
   public let status: EventStatusMonitor
   /// Platform on which event took place
   public let platform: EventPlatform
+  /// User Oid
+  public let userOid: String?
   
   public init(
     params: [String : Any]? = nil,
     eventType: EventType,
     message: String? = nil,
     status: EventStatusMonitor,
-    platform: EventPlatform
+    platform: EventPlatform,
+    userOid: String? = nil
   ) {
     self.params = params
     self.eventType = eventType
     self.message = message
     self.status = status
     self.platform = platform
+    self.userOid = userOid
   }
 }
 

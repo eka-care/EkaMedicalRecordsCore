@@ -53,6 +53,7 @@ extension RecordsRepo {
     documentDate: Int? = nil,
     contentType: String,
     isLinkedWithAbha: Bool? = false,
+    userOid: String? = nil,
     completion: @escaping (DocUploadFormsResponse?, RecordUploadErrorType?) -> Void
   ) {
     guard let recordURLs,
@@ -70,7 +71,8 @@ extension RecordsRepo {
         createRecordEvent(
           id: response?.batchResponses?.first?.documentID,
           status: .failure,
-          message: error.errorDescription
+          message: error.errorDescription,
+          userOid: userOid
         )
         completion(response, error)
         return
@@ -78,7 +80,8 @@ extension RecordsRepo {
       if let response {
         createRecordEvent(
           id: response.batchResponses?.first?.documentID,
-          status: .success
+          status: .success,
+          userOid: userOid
         )
         completion(response, error)
       }
