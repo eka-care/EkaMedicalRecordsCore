@@ -24,6 +24,7 @@ final class RecordUploadManager {
     recordType: String?,
     documentDate: Int?,
     isLinkedWithAbha: Bool? = nil,
+    userOid: String? = nil,
     recordUploadCompletion: @escaping RecordUploadCompletion
   ) {
     var documentIDs = [String]()
@@ -35,7 +36,8 @@ final class RecordUploadManager {
       tags: tags,
       recordType: recordType,
       documentDate: documentDate,
-      isLinkedWithAbha: isLinkedWithAbha
+      isLinkedWithAbha: isLinkedWithAbha,
+      userOid: userOid
     )
     
     /// Check if the record Data is Received Properly
@@ -187,7 +189,8 @@ final class RecordUploadManager {
     tags: [String]?,
     recordType: String?,
     documentDate: Int?,
-    isLinkedWithAbha: Bool?
+    isLinkedWithAbha: Bool?,
+    userOid: String? = nil
   ) -> [DocUploadRequest.BatchRequest] {
     var batchRequests: [DocUploadRequest.BatchRequest] = []
     var filesMetaData: [DocUploadRequest.FileMetaData] = []
@@ -204,7 +207,7 @@ final class RecordUploadManager {
     let batchRequest = DocUploadRequest.BatchRequest(
       documentType: recordType,
       documentDate: documentDate,
-      patientOID: CoreInitConfigurations.shared.primaryFilterID,
+      patientOID: userOid,
       tags: tags,
       files: filesMetaData
     )

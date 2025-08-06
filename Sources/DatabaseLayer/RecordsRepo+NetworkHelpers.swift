@@ -64,7 +64,8 @@ extension RecordsRepo {
       tags: tags,
       recordType: recordType,
       documentDate: documentDate,
-      isLinkedWithAbha: isLinkedWithAbha
+      isLinkedWithAbha: isLinkedWithAbha,
+      userOid: userOid
     ) { [weak self] response,error in
       guard let self else { return }
       if let error {
