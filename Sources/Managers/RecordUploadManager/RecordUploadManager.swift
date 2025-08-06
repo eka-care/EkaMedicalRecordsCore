@@ -207,7 +207,7 @@ final class RecordUploadManager {
     let batchRequest = DocUploadRequest.BatchRequest(
       documentType: recordType,
       documentDate: documentDate,
-      patientOID: userOid,
+      patientOID: userOid ?? CoreInitConfigurations.shared.primaryFilterID,
       tags: tags,
       files: filesMetaData
     )
