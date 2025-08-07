@@ -98,13 +98,22 @@ public final class RecordsRepo {
   ) {
     /// Add in database and store it in addedRecord
     let addedRecord = databaseManager.addSingleRecord(from: record)
+    didAddRecord(addedRecord)
     /// Upload to vault
+<<<<<<< HEAD
     uploadRecord(record: addedRecord, completion: didAddRecord)
   }
   
   public func uploadRecord(
     record: Record,
     completion: @escaping (Record?) -> Void
+=======
+    uploadRecord(record: addedRecord)
+  }
+  
+  public func uploadRecord(
+    record: Record
+>>>>>>> 1a0b9cd (Edit sheet immediately after add in database)
   ) {
     /// Update the upload sync status
     record.syncState = RecordSyncState.uploading.stringValue
@@ -132,7 +141,10 @@ public final class RecordsRepo {
         documentOid: record.oid,
         syncStatus: RecordSyncState.upload(success: true)
       )
+<<<<<<< HEAD
       completion(record)
+=======
+>>>>>>> 1a0b9cd (Edit sheet immediately after add in database)
     }
   }
   
