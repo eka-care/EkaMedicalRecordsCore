@@ -100,11 +100,13 @@ public final class RecordsRepo {
     let addedRecord = databaseManager.addSingleRecord(from: record)
     didAddRecord(addedRecord)
     /// Upload to vault
-    uploadRecord(record: addedRecord)
+    uploadRecord(record: addedRecord) { _ in
+    }
   }
  
   public func uploadRecord(
-    record: Record
+      record: Record,
+      completion didUploadRecord: @escaping (Record?) -> Void
   ) {
     /// Update the upload sync status
     record.syncState = RecordSyncState.uploading.stringValue
@@ -116,13 +118,17 @@ public final class RecordsRepo {
     ) {
       [weak self] uploadFormsResponse,
       error in
-      guard let self else { return }
+      guard let self else {
+        didUploadRecord(nil)
+        return
+      }
       guard error == nil, let uploadFormsResponse else {
         databaseManager.updateRecord(recordID: record.objectID, syncStatus: RecordSyncState.upload(success: false))
         /// Make delete api record call so that its not availabe on server
         if let docId = uploadFormsResponse?.batchResponses?.first?.documentID  {
           deleteRecordV3(documentID: docId, oid: record.oid)
         }
+        didUploadRecord(nil)
         return
       }
       /// Update the database with document id
@@ -132,6 +138,9 @@ public final class RecordsRepo {
         documentOid: record.oid,
         syncStatus: RecordSyncState.upload(success: true)
       )
+      
+      record.documentID = uploadFormsResponse.batchResponses?.first?.documentID
+      didUploadRecord(record)
     }
   }
   
@@ -335,7 +344,8 @@ extension RecordsRepo {
     fetchRecords(fetchRequest: QueryHelper.fetchRecordsWithNilDocumentID()) { unsyncedRecords in
       unsyncedRecords.forEach { [weak self] unsyncedRecord in
         guard let self else { return }
-        uploadRecord(record: unsyncedRecord)
+        uploadRecord(record: unsyncedRecord) { _ in
+        }
       }
     }
   }
