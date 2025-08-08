@@ -23,7 +23,7 @@ public final class RecordsRepo {
   
   // MARK: - Init
   
-  public init() {}
+  private init() {}
   
   // MARK: - Sync Records
   
