@@ -129,10 +129,15 @@ extension RecordsDatabaseManager {
 
   /// Used to add single record to the database, this will be faster than batch insert for single record
   func addSingleRecord(
-    from record: RecordModel
+    from record: RecordModel,
+    associatedCase: CaseModel?
   ) -> Record {
     let newRecord = Record(context: container.viewContext)
     newRecord.update(from: record)
+    if let associatedCase = associatedCase {
+      newRecord.addToToCaseModel(associatedCase)
+    }
+    
     do {
       try container.viewContext.save()
       /// Add record meta data after saving record entity
