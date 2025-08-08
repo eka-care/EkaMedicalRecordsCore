@@ -94,10 +94,11 @@ public final class RecordsRepo {
   /// - Parameter record: record to be added
   public func addSingleRecord(
     record: RecordModel,
+    associatedCase: CaseModel? = nil,
     completion didAddRecord: @escaping (Record?) -> Void
   ) {
     /// Add in database and store it in addedRecord
-    let addedRecord = databaseManager.addSingleRecord(from: record)
+    let addedRecord = databaseManager.addSingleRecord(from: record, associatedCase: associatedCase)
     didAddRecord(addedRecord)
     /// Upload to vault
     uploadRecord(record: addedRecord)
