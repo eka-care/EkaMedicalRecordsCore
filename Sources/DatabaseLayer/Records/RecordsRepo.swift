@@ -11,7 +11,7 @@ import CoreData
 public final class RecordsRepo {
   
   // MARK: - Properties
-  
+  public static let shared = RecordsRepo()
   public let databaseManager = RecordsDatabaseManager.shared
   public let databaseAdapter = RecordDatabaseAdapter()
   let uploadManager = RecordUploadManager()
