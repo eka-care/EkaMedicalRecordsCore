@@ -14,6 +14,7 @@ public final class RecordsRepo {
   public static let shared = RecordsRepo()
   public let databaseManager = RecordsDatabaseManager.shared
   public let databaseAdapter = RecordDatabaseAdapter()
+  private var isSyncing = false
   let uploadManager = RecordUploadManager()
   let service: RecordsProvider = RecordsApiService()
   /// The offset token for getting the next page of records
@@ -341,11 +342,24 @@ extension RecordsRepo {
   
   /// Used to sync the unuploaded records
   public func syncUnuploadedRecords() {
-    fetchRecords(fetchRequest: QueryHelper.fetchRecordsWithNilDocumentID()) { unsyncedRecords in
-      unsyncedRecords.forEach { [weak self] unsyncedRecord in
-        guard let self else { return }
-        uploadRecord(record: unsyncedRecord) { _ in
+    guard !isSyncing else { return }
+    isSyncing = true
+    fetchRecords(fetchRequest: QueryHelper.fetchRecordsWithNilDocumentID()) { [weak self] records in
+      guard let self else { return }
+      guard !records.isEmpty else {
+        self.isSyncing = false
+        return
+      }
+      let group = DispatchGroup()
+      
+      records.forEach { record in
+        group.enter()
+        self.uploadRecord(record: record) { _ in
+          group.leave()
         }
+      }
+      group.notify(queue: .global(qos: .utility)) {
+        self.isSyncing = false
       }
     }
   }
