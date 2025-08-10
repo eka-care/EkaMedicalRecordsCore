@@ -115,7 +115,8 @@ public final class RecordsRepo {
     uploadRecordsV3(
       recordURLs: documentURIs,
       documentDate: record.documentDate?.toEpochInt(),
-      contentType: FileType.getFileTypeFromFilePath(filePath: documentURIs.first ?? "")?.fileExtension ?? ""
+      contentType: FileType.getFileTypeFromFilePath(filePath: documentURIs.first ?? "")?.fileExtension ?? "",
+      userOid: record.oid
     ) {
       [weak self] uploadFormsResponse,
       error in
