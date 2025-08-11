@@ -361,7 +361,6 @@ extension RecordsRepo {
       let fetchGroup = DispatchGroup()
       
       var newRecords: [Record] = []
-      var editedRecords: [Record] = []
       
       // Fetch new records (no documentID)
       fetchGroup.enter()
@@ -370,19 +369,12 @@ extension RecordsRepo {
           fetchGroup.leave()
       }
       
-      // Fetch edited records
-      fetchGroup.enter()
-      fetchRecords(fetchRequest: QueryHelper.fetchRecordsForEditedRecordSync()) { records in
-          editedRecords = records
-          fetchGroup.leave()
-      }
-      
       fetchGroup.notify(queue: .global(qos: .utility)) { [weak self] in
           guard let self else { return }
           
           let uploadGroup = DispatchGroup()
           
-          // Upload NEW records
+          // Upload NEW records FIRST
           for record in newRecords {
               uploadGroup.enter()
               self.uploadRecord(record: record) { _ in
@@ -390,16 +382,37 @@ extension RecordsRepo {
               }
           }
           
-          // Call UPDATE API for EDITED records
-        for record in editedRecords {
-          uploadGroup.enter()
-          self.editDocument(documentID: record.documentID) { _ in
-            uploadGroup.leave()
-          }
-        }
-          
-          uploadGroup.notify(queue: .global(qos: .utility)) {
-              self.isSyncing = false
+          // After all uploads complete, handle edited records
+          uploadGroup.notify(queue: .global(qos: .utility)) { [weak self] in
+              guard let self else { return }
+              
+              let editFetchGroup = DispatchGroup()
+              var editedRecords: [Record] = []
+              
+              // Fetch edited records AFTER uploads are complete
+              editFetchGroup.enter()
+              self.fetchRecords(fetchRequest: QueryHelper.fetchRecordsForEditedRecordSync()) { records in
+                  editedRecords = records
+                  editFetchGroup.leave()
+              }
+              
+              editFetchGroup.notify(queue: .global(qos: .utility)) { [weak self] in
+                  guard let self else { return }
+                  
+                  let editGroup = DispatchGroup()
+                  
+                  // Call UPDATE API for EDITED records
+                  for record in editedRecords {
+                      editGroup.enter()
+                      self.editDocument(documentID: record.documentID) { _ in
+                          editGroup.leave()
+                      }
+                  }
+                  
+                  editGroup.notify(queue: .global(qos: .utility)) {
+                      self.isSyncing = false
+                  }
+              }
           }
       }
   }

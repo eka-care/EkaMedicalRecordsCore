@@ -48,8 +48,9 @@ public final class QueryHelper {
       // (syncState != "update_success" AND syncState != "uploading") OR syncState == "uploading"
       // Which simplifies to just: syncState != "update_success" OR syncState == "uploading"
       fetchRequest.predicate = NSPredicate(
-          format: "syncState == %@ AND documentID != nil",
-          RecordSyncState.update(success: false).stringValue
+          format: "(syncState == %@ OR syncState == %@ OR syncState == %@) AND documentID != nil",
+          RecordSyncState.update(success: false).stringValue,
+          RecordSyncState.upload(success: true).stringValue,
       )
       return fetchRequest
   }
