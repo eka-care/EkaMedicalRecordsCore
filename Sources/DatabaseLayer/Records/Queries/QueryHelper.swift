@@ -44,14 +44,16 @@ public final class QueryHelper {
   public static func fetchRecordsForEditedRecordSync() -> NSFetchRequest<Record> {
       let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
       
-      // Predicate:
-      // (syncState != "update_success" AND syncState != "uploading") OR syncState == "uploading"
-      // Which simplifies to just: syncState != "update_success" OR syncState == "uploading"
+      // Fetch records that need to be synced via edit API:
+      // - Records with update_failure (need to retry update)
+      // - Records with upload_success (successfully uploaded, may need to update)
+      // - Must have documentID (can't edit records without documentID)
       fetchRequest.predicate = NSPredicate(
-          format: "(syncState == %@ OR syncState == %@ OR syncState == %@) AND documentID != nil",
-          RecordSyncState.update(success: false).stringValue,
-          RecordSyncState.upload(success: true).stringValue,
+          format: "(syncState == %@ OR syncState == %@) AND documentID != nil",
+          RecordSyncState.update(success: false).stringValue,  // "update_failure"
+          RecordSyncState.upload(success: true).stringValue    // "upload_success"
       )
+      
       return fetchRequest
   }
   
