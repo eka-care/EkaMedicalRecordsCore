@@ -357,7 +357,7 @@ extension RecordsRepo {
   public func syncUnuploadedRecords() {
     guard !isSyncing else { return }
     isSyncing = true
-    fetchRecords(fetchRequest: QueryHelper.fetchRecordsWithNilDocumentID()) { [weak self] records in
+    fetchRecords(fetchRequest: QueryHelper.fetchRecordsForPendingOrUploadingSync()) { [weak self] records in
       guard let self else { return }
       guard !records.isEmpty else {
         self.isSyncing = false
