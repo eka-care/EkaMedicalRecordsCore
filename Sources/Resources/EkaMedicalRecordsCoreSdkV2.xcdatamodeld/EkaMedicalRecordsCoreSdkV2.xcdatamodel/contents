@@ -5,6 +5,7 @@
         <attribute name="caseName" optional="YES" attributeType="String"/>
         <attribute name="caseType" optional="YES" attributeType="String"/>
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="isSynced" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="oid" optional="YES" attributeType="String"/>
         <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="userAddedDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
