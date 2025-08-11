@@ -41,6 +41,21 @@ public final class QueryHelper {
     return fetchRequest
   }
   
+  public static func fetchRecordsForPendingOrUploadingSync() -> NSFetchRequest<Record> {
+      let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
+      
+      // Predicate:
+      // (syncState != "update_success" AND syncState != "uploading") OR syncState == "uploading"
+      // Which simplifies to just: syncState != "update_success" OR syncState == "uploading"
+      fetchRequest.predicate = NSPredicate(
+          format: "(syncState != %@ OR syncState == %@ OR syncState == %@) OR documentID == nil",
+          RecordSyncState.update(success: false).stringValue,
+          RecordSyncState.uploading.stringValue,
+          RecordSyncState.upload(success: false).stringValue
+      )
+      return fetchRequest
+  }
+  
   /// Query to fetch record for given documentID
   /// - Parameter documentID: The document ID to filter by
   /// - Returns: NSFetchRequest configured to fetch the matching record

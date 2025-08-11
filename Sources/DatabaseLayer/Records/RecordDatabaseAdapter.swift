@@ -14,6 +14,7 @@ import UIKit
 
 /// Model used for record insert
 public struct RecordModel {
+  public var id: UUID
   public var documentID: String?
   public var documentDate: Date?
   public var documentHash: String?
@@ -47,6 +48,7 @@ public struct RecordModel {
     contentType: String? = nil,
     caseModel: CaseModel? = nil
   ) {
+    self.id = UUID()
     self.documentID = documentID
     self.documentDate = documentDate
     self.documentHash = documentHash
@@ -67,8 +69,10 @@ public struct RecordModel {
 
 /// Used to get the records sync state
 public enum RecordSyncState: Equatable {
+  
   case uploading
   case upload(success: Bool)
+  case update(success: Bool)
   
   public var stringValue: String {
     switch self {
@@ -76,6 +80,8 @@ public enum RecordSyncState: Equatable {
       return "uploading"
     case .upload(let success):
       return success ? "upload_success" : "upload_failure"
+    case .update(let success):
+      return success ? "update_success" : "update_failure"
     }
   }
   
@@ -87,6 +93,10 @@ public enum RecordSyncState: Equatable {
       self = .upload(success: true)
     case "upload_failure":
       self = .upload(success: false)
+    case "update_success":
+      self = .update(success: true)
+    case "update_failure":
+      self = .update(success: false)
     default:
       return nil
     }

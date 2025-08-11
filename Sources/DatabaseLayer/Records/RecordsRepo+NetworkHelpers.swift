@@ -199,7 +199,8 @@ extension RecordsRepo {
     documentID: String?,
     documentDate: Date? = nil,
     documentType: Int? = nil,
-    documentFilterId: String? = nil
+    documentFilterId: String? = nil,
+    completion: @escaping (Bool) -> Void
   ) {
     guard let documentID,
           let documentFilterId else {
@@ -224,9 +225,11 @@ extension RecordsRepo {
       case .success:
         debugPrint("Updated document")
         updateRecordEvent(id: documentID, status: .success)
+        completion(true)
       case .failure(let error):
         debugPrint("Failure in document update network call \(error.localizedDescription)")
         updateRecordEvent(id: documentID, status: .failure, message: error.localizedDescription)
+        completion(false)
       }
     }
   }

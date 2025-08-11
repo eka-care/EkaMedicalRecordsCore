@@ -274,6 +274,7 @@ public final class RecordsRepo {
       documentDate: documentDate,
       documentType: documentType,
       documentOid: documentOid,
+      syncStatus: .update(success: false),
       caseModel: caseModel
     )
     /// Update call
@@ -282,7 +283,18 @@ public final class RecordsRepo {
       documentDate: documentDate,
       documentType: documentType,
       documentFilterId: documentOid
-    )
+    ) { [weak self] isSuccess in
+      guard let self = self else { return }
+      self.databaseManager.updateRecord(
+        recordID: recordID,
+        documentID: documentID,
+        documentDate: documentDate,
+        documentType: documentType,
+        documentOid: documentOid,
+        syncStatus: .update(success: isSuccess),
+        caseModel: caseModel
+      )
+    }
   }
   
   // MARK: - Delete
