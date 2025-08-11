@@ -41,17 +41,15 @@ public final class QueryHelper {
     return fetchRequest
   }
   
-  public static func fetchRecordsForPendingOrUploadingSync() -> NSFetchRequest<Record> {
+  public static func fetchRecordsForEditedRecordSync() -> NSFetchRequest<Record> {
       let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
       
       // Predicate:
       // (syncState != "update_success" AND syncState != "uploading") OR syncState == "uploading"
       // Which simplifies to just: syncState != "update_success" OR syncState == "uploading"
       fetchRequest.predicate = NSPredicate(
-          format: "(syncState != %@ OR syncState == %@ OR syncState == %@) OR documentID == nil",
-          RecordSyncState.update(success: false).stringValue,
-          RecordSyncState.uploading.stringValue,
-          RecordSyncState.upload(success: false).stringValue
+          format: "syncState == %@",
+          RecordSyncState.update(success: false).stringValue
       )
       return fetchRequest
   }

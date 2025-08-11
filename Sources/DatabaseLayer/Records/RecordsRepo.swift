@@ -355,25 +355,52 @@ extension RecordsRepo {
   
   /// Used to sync the unuploaded records
   public func syncUnuploadedRecords() {
-    guard !isSyncing else { return }
-    isSyncing = true
-    fetchRecords(fetchRequest: QueryHelper.fetchRecordsForPendingOrUploadingSync()) { [weak self] records in
-      guard let self else { return }
-      guard !records.isEmpty else {
-        self.isSyncing = false
-        return
-      }
-      let group = DispatchGroup()
+      guard !isSyncing else { return }
+      isSyncing = true
       
-      records.forEach { record in
-        group.enter()
-        self.uploadRecord(record: record) { _ in
-          group.leave()
+      let fetchGroup = DispatchGroup()
+      
+      var newRecords: [Record] = []
+      var editedRecords: [Record] = []
+      
+      // Fetch new records (no documentID)
+      fetchGroup.enter()
+      fetchRecords(fetchRequest: QueryHelper.fetchRecordsWithNilDocumentID()) { records in
+          newRecords = records
+          fetchGroup.leave()
+      }
+      
+      // Fetch edited records
+      fetchGroup.enter()
+      fetchRecords(fetchRequest: QueryHelper.fetchRecordsForEditedRecordSync()) { records in
+          editedRecords = records
+          fetchGroup.leave()
+      }
+      
+      fetchGroup.notify(queue: .global(qos: .utility)) { [weak self] in
+          guard let self else { return }
+          
+          let uploadGroup = DispatchGroup()
+          
+          // Upload NEW records
+          for record in newRecords {
+              uploadGroup.enter()
+              self.uploadRecord(record: record) { _ in
+                  uploadGroup.leave()
+              }
+          }
+          
+          // Call UPDATE API for EDITED records
+        for record in editedRecords {
+          uploadGroup.enter()
+          self.editDocument(documentID: record.documentID) { _ in
+            uploadGroup.leave()
+          }
         }
+          
+          uploadGroup.notify(queue: .global(qos: .utility)) {
+              self.isSyncing = false
+          }
       }
-      group.notify(queue: .global(qos: .utility)) {
-        self.isSyncing = false
-      }
-    }
   }
 }
