@@ -315,7 +315,7 @@ extension RecordsDatabaseManager {
     documentType: Int? = nil,
     documentOid: String? = nil,
     syncStatus: RecordSyncState? = nil,
-    isEdited: Bool?,
+    isEdited: Bool? = nil,
     caseModel: CaseModel? = nil
   ) {
     do {

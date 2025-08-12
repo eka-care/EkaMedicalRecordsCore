@@ -127,7 +127,7 @@ public final class RecordsRepo {
         return
       }
       guard error == nil, let uploadFormsResponse else {
-        databaseManager.updateRecord(recordID: record.objectID, isEdited: true)
+        databaseManager.updateRecord(recordID: record.objectID,syncStatus: RecordSyncState.upload(success: false))
         /// Make delete api record call so that its not availabe on server
         if let docId = uploadFormsResponse?.batchResponses?.first?.documentID  {
           deleteRecordV3(documentID: docId, oid: record.oid)
@@ -140,7 +140,7 @@ public final class RecordsRepo {
         recordID: record.objectID,
         documentID: uploadFormsResponse.batchResponses?.first?.documentID,
         documentOid: record.oid,
-        isEdited: true
+        syncStatus: RecordSyncState.upload(success: true)
       )
       
       record.documentID = uploadFormsResponse.batchResponses?.first?.documentID
@@ -361,61 +361,62 @@ extension RecordsRepo {
       guard !isSyncing else { return }
       isSyncing = true
       
-      let fetchGroup = DispatchGroup()
-      
-      var newRecords: [Record] = []
-      
-      // Fetch new records (no documentID)
-      fetchGroup.enter()
-      fetchRecords(fetchRequest: QueryHelper.fetchRecordsWithNilDocumentID()) { records in
-          newRecords = records
-          fetchGroup.leave()
+      syncNewRecords { [weak self] in
+          guard let self = self else { return }
+          self.syncEditedRecords { [weak self] in
+              self?.isSyncing = false
+          }
       }
-      
-      fetchGroup.notify(queue: .global(qos: .utility)) { [weak self] in
-          guard let self else { return }
+  }
+
+  private func syncNewRecords(completion: @escaping () -> Void) {
+      fetchRecords(fetchRequest: QueryHelper.fetchRecordsWithUploadingOrFailedState()) { [weak self] records in
+          guard let self = self else {
+              completion()
+              return
+          }
+          
+          // Handle case where there are no records to upload
+          guard !records.isEmpty else {
+              completion()
+              return
+          }
           
           let uploadGroup = DispatchGroup()
           
-          // Upload NEW records FIRST
-          for record in newRecords {
+          for record in records {
               uploadGroup.enter()
               self.uploadRecord(record: record) { _ in
                   uploadGroup.leave()
               }
           }
           
-          // After all uploads complete, handle edited records
-          uploadGroup.notify(queue: .global(qos: .utility)) { [weak self] in
-              guard let self else { return }
-              
-              let editFetchGroup = DispatchGroup()
-              var editedRecords: [Record] = []
-              
-              // Fetch edited records AFTER uploads are complete
-              editFetchGroup.enter()
-              self.fetchRecords(fetchRequest: QueryHelper.fetchRecordsForEditedRecordSync()) { records in
-                  editedRecords = records
-                  editFetchGroup.leave()
+          uploadGroup.notify(queue: .global(qos: .utility)) {
+              completion()
+          }
+      }
+  }
+
+  private func syncEditedRecords(completion: @escaping () -> Void) {
+      fetchRecords(fetchRequest: QueryHelper.fetchRecordsForEditedRecordSync()) { [weak self] records in
+          guard let self = self else {
+              completion()
+              return
+          }
+          // Handle case where there are no records to edit
+          guard !records.isEmpty else {
+              completion()
+              return
+          }
+          let editGroup = DispatchGroup()
+          for record in records {
+              editGroup.enter()
+              self.editDocument(documentID: record.documentID) { _ in
+                  editGroup.leave()
               }
-              
-              editFetchGroup.notify(queue: .global(qos: .utility)) { [weak self] in
-                  guard let self else { return }
-                  
-                  let editGroup = DispatchGroup()
-                  
-                  // Call UPDATE API for EDITED records
-                  for record in editedRecords {
-                      editGroup.enter()
-                      self.editDocument(documentID: record.documentID) { _ in
-                          editGroup.leave()
-                      }
-                  }
-                  
-                  editGroup.notify(queue: .global(qos: .utility)) {
-                      self.isSyncing = false
-                  }
-              }
+          }
+          editGroup.notify(queue: .global(qos: .utility)) {
+              completion()
           }
       }
   }

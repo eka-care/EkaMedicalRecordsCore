@@ -41,10 +41,22 @@ public final class QueryHelper {
     return fetchRequest
   }
   
+  public static func fetchRecordsWithUploadingOrFailedState() -> NSFetchRequest<Record> {
+    // Create a fetch request for the Record entity
+    let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
+    // Add a predicate to filter records where syncState is uploading or upload_failure
+    fetchRequest.predicate = NSPredicate(
+      format: "syncState == %@ OR syncState == %@",
+      RecordSyncState.uploading.stringValue,
+      RecordSyncState.upload(success: false).stringValue
+    )
+    return fetchRequest
+  }
+  
   public static func fetchRecordsForEditedRecordSync() -> NSFetchRequest<Record> {
       let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
       fetchRequest.predicate = NSPredicate(
-          format: "isEdited == %@ AND documentID != nil",
+          format: "isEdited == %@",
           NSNumber(value: false)
       )
       return fetchRequest
