@@ -99,7 +99,7 @@ extension RecordsDatabaseManager {
 // MARK: - Upsert
 
 extension RecordsDatabaseManager {
-  func upsertRecords(
+  func upsertCases(
     from cases: [CaseArguementModel],
     completion: @escaping () -> Void
   ) {
@@ -117,7 +117,7 @@ extension RecordsDatabaseManager {
         do {
           if let existingCase = try self.backgroundContext.fetch(fetchRequest).first {
             // Update existing record
-            print("Document id of document being updated is \(caseEntry.caseId ?? "")")
+            print("cased updated for \(caseEntry.caseId ?? "")")
             existingCase.update(from: caseEntry)
 //            updateRecordEvent(
 //              id: record.documentID ?? existingRecord.objectID.uriRepresentation().absoluteString,

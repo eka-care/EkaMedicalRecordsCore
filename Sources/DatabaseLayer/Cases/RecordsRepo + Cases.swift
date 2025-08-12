@@ -176,9 +176,9 @@ extension RecordsRepo {
 
 extension RecordsRepo {
   
-  /// Fetches the latest updated timestamp for all configured OIDs and starts case records sync from server.
+  /// Fetches the latest updated timestamp for all configured OIDs and starts case  sync from server.
   /// - Parameter completion: Completion handler called after records sync for each OID.
-  public func getUpdatedAtAndStartCasesRecords(completion: @escaping (Bool) -> Void) {
+  public func getUpdatedAtAndStartCases(completion: @escaping (Bool) -> Void) {
     guard let oids = CoreInitConfigurations.shared.filterID else { return }
     
     for oid in oids {
@@ -228,18 +228,18 @@ extension RecordsRepo {
   public func fetchCasesFromServer(oid: String, completion: @escaping (Bool) -> Void) {
     syncCasesForPage(
       token: pageOffsetToken,
-      updatedAt: recordsUpdateEpoch,
+      updatedAt: casesUpdateEpoch,
       oid: oid
     ) { [weak self] nextPageToken, caseItems, error in
       guard let self else { return }
       if error != nil {
         completion(false)
       }
-      /// Add records to the database in batches
+      /// Add cases to the database in batches
       databaseAdapter.convertNetworkToCaseDatabaseModel(from: caseItems) { [weak self] databaseInsertModels in
         guard let self else { return }
         
-        databaseManager.upsertRecords(from: databaseInsertModels) {
+        databaseManager.upsertCases(from: databaseInsertModels) {
           debugPrint("Batch added to database, count -> \(databaseInsertModels.count)")
           /// If it was last page means all batches are added to database, hence send completion
           if nextPageToken == nil {
@@ -252,7 +252,7 @@ extension RecordsRepo {
         /// Update the page offset token
         pageOffsetToken = nextPageToken
         /// Call for next page
-        fetchRecordsFromServer(oid: oid, completion: completion)
+        fetchCasesFromServer(oid: oid, completion: completion)
       }
     }
   }
@@ -281,7 +281,7 @@ extension RecordsRepo {
         let nextPageToken = response.nextToken
         completion(nextPageToken, casesItems, nil)
       case .failure(let error):
-        debugPrint("Error in fetching records -> \(error.localizedDescription)")
+        debugPrint("Error in fetching Cases -> \(error.localizedDescription)")
         completion(nil, [], error)
       }
     }
