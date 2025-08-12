@@ -44,7 +44,7 @@ public final class QueryHelper {
   public static func fetchRecordsForEditedRecordSync() -> NSFetchRequest<Record> {
       let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
       fetchRequest.predicate = NSPredicate(
-          format: "isEdited == %@ AND documentId != nil",
+          format: "isEdited == %@ AND documentID != nil",
           NSNumber(value: false)
       )
       return fetchRequest
