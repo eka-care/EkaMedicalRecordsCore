@@ -256,3 +256,71 @@ extension RecordDatabaseAdapter {
     return smartReportObject
   }
 }
+
+// MARK: - Cases
+
+extension RecordDatabaseAdapter {
+  /// Used to serialize smart report info
+  /// - Parameter smartReport: smartReportInfo object that is to be serialized
+  /// - Returns: serialized data for the smart report
+  func convertNetworkToCaseDatabaseModel(
+    from networkModels: [CaseElement],
+    completion: @escaping ([CaseArguementModel]) -> Void
+  ) {
+    var insertModels = [CaseArguementModel]()
+    /// Dispatch group to handle async conversion
+    let dispatchGroup = DispatchGroup()
+    networkModels.forEach { networkModel in
+      dispatchGroup.enter()
+      convertNetworkModelToInsertCaseModel(from: networkModel) { insertModel in
+        insertModels.append(insertModel)
+        dispatchGroup.leave()
+      }
+    }
+    /// Once we have all insert models we send in completion
+    dispatchGroup.notify(queue: .main) {
+      completion(insertModels)
+    }
+  }
+  
+  private func convertNetworkModelToInsertCaseModel(
+      from networkModel: CaseElement,
+      completion: @escaping (CaseArguementModel) -> Void
+    ) {
+      var insertModel = CaseArguementModel()
+      
+      // Map the network model properties to CaseArguementModel properties
+      insertModel.caseId = networkModel.id
+      //TODO: - shekhar need to check how to get oid
+      insertModel.oid = CoreInitConfigurations.shared.filterID?.first
+      
+      // Map document type to case type if available
+      if let caseType = networkModel.item?.type {
+        insertModel.caseType = caseType
+      }
+      
+      // Map dates
+      if let createdDate = networkModel.item?.createdAt {
+        insertModel.createdAt = createdDate.toDate()
+      }
+      
+      if let updatedAt = networkModel.updatedAt {
+        insertModel.updatedAt = updatedAt.toDate()
+      }
+      
+      if let name = networkModel.item?.displayName {
+        insertModel.name = name
+      }
+      
+      if let status = networkModel.status {
+        insertModel.status = status.rawValue
+      }
+      
+      // Set remote creation flag
+      insertModel.isRemoteCreated = true
+      insertModel.isEdited = false
+      
+      completion(insertModel)
+    }
+}
+

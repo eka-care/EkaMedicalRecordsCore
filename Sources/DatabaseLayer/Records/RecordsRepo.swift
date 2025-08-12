@@ -22,7 +22,7 @@ public final class RecordsRepo {
   var pageOffsetToken: String?
   /// The epoch timestamp of the last update that will come from backend
   var recordsUpdateEpoch: String?
-  
+  var casesUpdateEpoch: String?
   // MARK: - Init
   
   private init() {}

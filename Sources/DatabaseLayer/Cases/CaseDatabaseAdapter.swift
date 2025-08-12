@@ -20,7 +20,9 @@ public struct CaseArguementModel {
   public var name: String? /// Name of the case
   public var updatedAt: Date? /// Updated at of the case
   public var userDate: Date? /// Date of the folder added by user
-  public var isSynced: Bool
+  public var isRemoteCreated: Bool?
+  public var isEdited: Bool?
+  public var status: String?
   
   public init(
     caseId: String? = nil,
@@ -30,7 +32,9 @@ public struct CaseArguementModel {
     name: String? = nil,
     updatedAt: Date? = nil,
     userDate: Date? = nil,
-    isSynced: Bool = false
+    isRemoteCreated: Bool = false,
+    isEdited: Bool = false,
+    status: String? = nil
   ) {
     self.caseId = caseId
     self.caseType = caseType
@@ -39,6 +43,8 @@ public struct CaseArguementModel {
     self.name = name
     self.updatedAt = updatedAt
     self.userDate = userDate
-    self.isSynced = isSynced
+    self.isRemoteCreated = isRemoteCreated
+    self.isEdited = isEdited
+    self.status = status
   }
 }

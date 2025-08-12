@@ -121,4 +121,15 @@ extension QueryHelper {
     fetchRequest.fetchLimit = 1
     return fetchRequest
   }
+  
+  public static func fetchLastCaseUpdatedAt(oid: String) -> NSFetchRequest<CaseModel> {
+    let fetchRequest: NSFetchRequest<CaseModel> = CaseModel.fetchRequest()
+    /// Predicate: documentID is not nil AND updatedAt is a valid date AND oid matches
+    fetchRequest.predicate = NSPredicate(format: "caseID != nil AND updatedAt != nil AND oid == %@", oid as CVarArg)
+    /// Sort by updatedAt in descending order (latest date first)
+    fetchRequest.sortDescriptors = [NSSortDescriptor(key: "updatedAt", ascending: false)]
+    /// Fetch only the latest record
+    fetchRequest.fetchLimit = 1
+    return fetchRequest
+  }
 }

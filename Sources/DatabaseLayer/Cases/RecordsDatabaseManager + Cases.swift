@@ -94,3 +94,58 @@ extension RecordsDatabaseManager {
     }
   }
 }
+
+
+// MARK: - Upsert
+
+extension RecordsDatabaseManager {
+  func upsertRecords(
+    from cases: [CaseArguementModel],
+    completion: @escaping () -> Void
+  ) {
+    backgroundContext.perform { [weak self] in
+      guard let self else {
+        completion()
+        return
+      }
+      
+      for caseEntry in cases {
+        // Check if the record already exists
+        let fetchRequest: NSFetchRequest<CaseModel> = CaseModel.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "caseID == %@", caseEntry.caseId ?? "")
+        
+        do {
+          if let existingCase = try self.backgroundContext.fetch(fetchRequest).first {
+            // Update existing record
+            print("Document id of document being updated is \(caseEntry.caseId ?? "")")
+            existingCase.update(from: caseEntry)
+//            updateRecordEvent(
+//              id: record.documentID ?? existingRecord.objectID.uriRepresentation().absoluteString,
+//              status: .success
+//            )
+          } else {
+            // Create new record
+            let newCase = CaseModel(context: self.backgroundContext)
+            newCase.update(from: caseEntry)
+//            createRecordEvent(
+//              id: record.documentID,
+//              status: .success
+//            )
+          }
+        } catch {
+          debugPrint("Error fetching record: \(error)")
+        }
+      }
+      
+      // Save all changes at once
+      do {
+        try self.backgroundContext.save()
+        DispatchQueue.main.async {
+          completion()
+        }
+      } catch {
+        debugPrint("Error saving records: \(error)")
+      }
+    }
+  }
+}

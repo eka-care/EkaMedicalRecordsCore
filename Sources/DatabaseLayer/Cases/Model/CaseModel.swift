@@ -36,6 +36,13 @@ extension CaseModel {
     if let userDate = caseArguementModel.userDate {
       self.userAddedDate = userDate
     }
-    self.isSynced = caseArguementModel.isSynced
+    
+    if let isRemoteCreated = caseArguementModel.isRemoteCreated {
+      self.isRemoteCreated = isRemoteCreated
+    }
+    
+    if let isEdited = caseArguementModel.isEdited {
+      self.isEdited = isEdited
+    }
   }
 }
