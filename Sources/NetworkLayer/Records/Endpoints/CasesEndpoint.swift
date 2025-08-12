@@ -12,7 +12,7 @@ enum CasesEndpoint {
   
   /// Create a new case
   case createCases(
-    oid: String?,
+    oid: String,
     request: CasesCreateRequest
   )
   
@@ -20,20 +20,20 @@ enum CasesEndpoint {
   case fetchCasesList(
     token: String?,
     updatedAt: String?,
-    oid: String?
+    oid: String
   )
   
   // TODO: Shekhar - Need to check how to send `oid` for delete API
   /// Delete a case by ID
   case delete(
     caseId: String,
-    oid: String?
+    oid: String
   )
   
   /// Update an existing case
   case updateCases(
     caseId: String,
-    oid: String?,
+    oid: String,
     request: CasesUpdateRequest
   )
 }
@@ -48,6 +48,7 @@ extension CasesEndpoint: RequestProvider {
         "\(DomainConfigurations.ekaURL)/mr/api/v1/cases",
         method: .post,
         parameters: request,
+        headers: HTTPHeaders([.contentType(HTTPHeader.contentTypeJson.rawValue), .init(name: "X-Pt-Id", value: oid)]),
         interceptor: CoreInitConfigurations.shared.requestInterceptor
       )
       .validate()
@@ -73,6 +74,7 @@ extension CasesEndpoint: RequestProvider {
         method: .get,
         parameters: params,
         encoding: URLEncoding.queryString,
+        headers: HTTPHeaders([.contentType(HTTPHeader.contentTypeJson.rawValue), .init(name: "X-Pt-Id", value: oid)]),
         interceptor: CoreInitConfigurations.shared.requestInterceptor
       )
       .validate()
@@ -89,6 +91,7 @@ extension CasesEndpoint: RequestProvider {
         "\(DomainConfigurations.ekaURL)/mr/api/v1/cases/\(caseId)",
         method: .delete,
         encoding: URLEncoding.queryString,
+        headers: HTTPHeaders([.contentType(HTTPHeader.contentTypeJson.rawValue), .init(name: "X-Pt-Id", value: oid)]),
         interceptor: CoreInitConfigurations.shared.requestInterceptor
       )
       .validate()
@@ -96,12 +99,13 @@ extension CasesEndpoint: RequestProvider {
       
       
       // MARK: Update existing case
-    case .updateCases(let caseId, let filterOID, let request):
+    case .updateCases(let caseId, let oid, let request):
       return AF.request(
         "\(DomainConfigurations.ekaURL)/mr/api/v1/cases/\(caseId)",
         method: .patch,
         parameters: request,
         encoder: JSONParameterEncoder.default,
+        headers: HTTPHeaders([.contentType(HTTPHeader.contentTypeJson.rawValue), .init(name: "X-Pt-Id", value: oid)]),
         interceptor: CoreInitConfigurations.shared.requestInterceptor
       )
       .validate()

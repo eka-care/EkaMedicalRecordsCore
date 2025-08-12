@@ -264,7 +264,7 @@ extension RecordsRepo {
   private func syncCasesForPage(
     token: String?,
     updatedAt: String?,
-    oid: String?,
+    oid: String,
     completion: @escaping (_ nextPageToken: String?, _ items: [CaseElement], _ error: Error?) -> Void
   ) {
     casesServeice.fetchCasesList(

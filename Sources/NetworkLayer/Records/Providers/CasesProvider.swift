@@ -12,7 +12,7 @@ protocol CasesProvider {
   
   /// Create a new case
   func createCases(
-    oid: String?,
+    oid: String,
     request: CasesCreateRequest,
     _ completion: @escaping (Result<CasesCreateResponse, Error>, Int?) -> Void
   )
@@ -21,21 +21,21 @@ protocol CasesProvider {
   func fetchCasesList(
     token: String?,
     updatedAt: String?,
-    oid: String?,
+    oid: String,
     _ completion: @escaping (Result<CasesListFetchResponse, Error>, Int?) -> Void
   )
   
   /// Delete a case by ID
   func delete(
     caseId: String,
-    oid: String?,
+    oid: String,
     _ completion: @escaping (Result<Bool, Error>, Int?) -> Void
   )
   
   /// Update an existing case
   func updateCases(
     caseId: String,
-    oid: String?,
+    oid: String,
     request: CasesUpdateRequest,
     _ completion: @escaping (Result<Bool, Error>, Int?) -> Void
   )
@@ -44,7 +44,7 @@ protocol CasesProvider {
 extension CasesProvider {
   /// Create a new case
   func createCases(
-    oid: String?,
+    oid: String,
     request: CasesCreateRequest,
     _ completion: @escaping (Result<CasesCreateResponse, Error>, Int?) -> Void
   ) {
@@ -58,7 +58,7 @@ extension CasesProvider {
   func fetchCasesList(
     token: String?,
     updatedAt: String?,
-    oid: String?,
+    oid: String,
     _ completion: @escaping (Result<CasesListFetchResponse, Error>, Int?) -> Void
   ) {
     networkService.execute(
@@ -74,7 +74,7 @@ extension CasesProvider {
   /// Delete a case by ID
   func delete(
     caseId: String,
-    oid: String?,
+    oid: String,
     _ completion: @escaping (Result<Bool, Error>, Int?) -> Void
   ) {
     networkService.execute(
@@ -86,7 +86,7 @@ extension CasesProvider {
   /// Update an existing case
   func updateCases(
     caseId: String,
-    oid: String?,
+    oid: String,
     request: CasesUpdateRequest,
     _ completion: @escaping (Result<Bool, Error>, Int?) -> Void
   ) {
