@@ -47,7 +47,7 @@ public struct RecordModel {
     uploadDate: Date? = nil,
     documentURIs: [String]? = nil,
     contentType: String? = nil,
-    isEdited: Bool? = false,
+    isEdited: Bool? = nil,
     caseModel: CaseModel? = nil
   ) {
     self.id = UUID().uuidString
