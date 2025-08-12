@@ -54,10 +54,6 @@ extension RecordsRepo {
   public func deleteCase(
     _ caseModel: CaseModel,
   ) {
-    // Delete locally first
-    databaseManager.deleteCase(caseModel: caseModel)
-    
-    // Delete on server if caseId exists
     guard let caseId = caseModel.caseID else {
       debugPrint("Case ID is missing, skipping server deletion.")
       return
@@ -75,8 +71,9 @@ extension RecordsRepo {
         debugPrint("Failed to delete case \(caseId) from server: \(error.localizedDescription)")
       }
     }
+    // Delete locally
+    databaseManager.deleteCase(caseModel: caseModel)
   }
-  
 }
 
 
