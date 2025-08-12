@@ -48,6 +48,7 @@ extension CasesEndpoint: RequestProvider {
         "\(DomainConfigurations.ekaURL)/mr/api/v1/cases",
         method: .post,
         parameters: request,
+        encoder: JSONParameterEncoder.default,
         headers: HTTPHeaders([.contentType(HTTPHeader.contentTypeJson.rawValue), .init(name: "X-Pt-Id", value: oid)]),
         interceptor: CoreInitConfigurations.shared.requestInterceptor
       )
