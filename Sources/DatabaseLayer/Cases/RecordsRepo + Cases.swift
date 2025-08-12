@@ -124,7 +124,7 @@ extension RecordsRepo {
     oid: String,
     completion: @escaping (Result<Bool, Error>) -> Void
   ) {
-    casesServeice.delete(caseId: caseId, oid: "") { [weak self] result, error in
+    casesServeice.delete(caseId: caseId, oid: oid) { [weak self] result, error in
       guard self != nil else { return }
       switch result {
       case .success:
