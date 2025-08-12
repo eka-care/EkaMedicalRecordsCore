@@ -31,6 +31,9 @@ extension Record {
     updatedAt = record.updatedAt
     uploadDate = record.uploadDate
     oid = record.oid
+    if let isEdited = record.isEdited {
+      self.isEdited = isEdited
+    }
     /// Add Case Models
     if let caseModel = record.caseModel {
       addToToCaseModel(caseModel)

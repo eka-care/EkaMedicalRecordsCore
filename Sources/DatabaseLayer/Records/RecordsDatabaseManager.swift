@@ -315,6 +315,7 @@ extension RecordsDatabaseManager {
     documentType: Int? = nil,
     documentOid: String? = nil,
     syncStatus: RecordSyncState? = nil,
+    isEdited: Bool?,
     caseModel: CaseModel? = nil
   ) {
     do {
@@ -341,6 +342,10 @@ extension RecordsDatabaseManager {
       if let caseModel {
         record.addToToCaseModel(caseModel)
       }
+      if let isEdited {
+        record.isEdited = isEdited
+      }
+      
       try container.viewContext.save()
       updateRecordEvent(
         id: record.documentID,

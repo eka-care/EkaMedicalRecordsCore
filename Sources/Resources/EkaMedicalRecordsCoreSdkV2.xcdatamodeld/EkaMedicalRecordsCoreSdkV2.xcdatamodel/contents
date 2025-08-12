@@ -24,9 +24,10 @@
         <attribute name="documentID" optional="YES" attributeType="String"/>
         <attribute name="documentType" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="hasSyncedEdit" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
-        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="id" optional="YES" attributeType="String"/>
         <attribute name="isAnalyzing" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="isArchived" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isEdited" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="isSmart" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="oid" optional="YES" attributeType="String"/>
         <attribute name="syncState" optional="YES" attributeType="String"/>
