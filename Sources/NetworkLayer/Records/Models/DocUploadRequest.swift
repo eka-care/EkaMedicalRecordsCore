@@ -21,6 +21,7 @@ struct DocUploadRequest: Codable {
     let documentType: String?
     let documentDate: Int?
     let patientOID: String?
+    let documentID: String
     let tags: [String]?
     let files: [FileMetaData]?
     
@@ -30,15 +31,18 @@ struct DocUploadRequest: Codable {
       case tags = "tg"
       case patientOID = "patient_oid"
       case files
+      case documentID = "document_id"
     }
     
     init(
+      documentID: String,
       documentType: String? = nil,
       documentDate: Int? = nil,
       patientOID: String? = nil,
       tags: [String]? = nil,
       files: [DocUploadRequest.FileMetaData]? = nil
     ) {
+      self.documentID = documentID
       self.documentType = documentType
       self.documentDate = documentDate
       self.patientOID = patientOID

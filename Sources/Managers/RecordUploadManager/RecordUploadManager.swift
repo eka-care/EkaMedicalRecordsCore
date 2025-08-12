@@ -19,6 +19,7 @@ final class RecordUploadManager {
   ///   - documentDate: Document date
   ///   - recordUploadCompletion: Completion Block providing submit file status, document IDs, error
   func uploadRecordsToVault(
+    documentID: String,
     nestedFiles: [DocumentMetaData],
     tags: [String]?,
     recordType: String?,
@@ -32,6 +33,7 @@ final class RecordUploadManager {
     
     /// Making Batch Request
     let batchRequests: [DocUploadRequest.BatchRequest] = createBatchRequest(
+      documentID: documentID,
       nestedFiles: nestedFiles,
       tags: tags,
       recordType: recordType,
@@ -185,6 +187,7 @@ final class RecordUploadManager {
   
   // MARK: - Create Batch Request
   private func createBatchRequest(
+    documentID: String,
     nestedFiles: [DocumentMetaData],
     tags: [String]?,
     recordType: String?,
@@ -205,6 +208,7 @@ final class RecordUploadManager {
     }
 
     let batchRequest = DocUploadRequest.BatchRequest(
+      documentID: documentID,
       documentType: recordType,
       documentDate: documentDate,
       patientOID: userOid ?? CoreInitConfigurations.shared.primaryFilterID,

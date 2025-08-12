@@ -14,8 +14,7 @@ import UIKit
 
 /// Model used for record insert
 public struct RecordModel {
-  public var id: String
-  public var documentID: String?
+  public var documentID: String
   public var documentDate: Date?
   public var documentHash: String?
   public var documentType: RecordDocumentType?
@@ -33,7 +32,6 @@ public struct RecordModel {
   public var caseModel: CaseModel?
   
   public init(
-    documentID: String? = nil,
     documentDate: Date? = nil,
     documentHash: String? = nil,
     documentType: RecordDocumentType? = nil,
@@ -50,8 +48,7 @@ public struct RecordModel {
     isEdited: Bool? = nil,
     caseModel: CaseModel? = nil
   ) {
-    self.id = UUID().uuidString
-    self.documentID = documentID
+    self.documentID = UUID().uuidString
     self.documentDate = documentDate
     self.documentHash = documentHash
     self.documentType = documentType

@@ -47,6 +47,7 @@ extension RecordsRepo {
   ///   - contentType: Extension type of file Eg: .jpeg, .pdf
   ///   - completion: Returns docUploadResponse and Record Upload Error
   func uploadRecordsV3(
+    documentID: String,
     tags: [String]? = nil,
     recordType: String? = nil,
     recordURLs: [String]?,
@@ -60,6 +61,7 @@ extension RecordsRepo {
           let documentsMetaData = RecordUploadManager.formDocumentsMetaData(recordsPath: recordURLs, contentType: contentType) else { return }
     
     uploadManager.uploadRecordsToVault(
+      documentID: documentID,
       nestedFiles: documentsMetaData,
       tags: tags,
       recordType: recordType,

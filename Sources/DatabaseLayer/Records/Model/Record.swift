@@ -10,7 +10,6 @@ import CoreData
 
 extension Record {
   func update(from record: RecordModel) {
-    id = record.id
     bid = CoreInitConfigurations.shared.ownerID
     documentDate = record.documentDate
     documentHash = record.documentHash

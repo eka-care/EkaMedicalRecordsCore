@@ -34,7 +34,7 @@ struct RecordDocument: Codable {
 
 // MARK: - RecordItem
 struct RecordItem: Codable {
-  let documentID: String?
+  let documentID: String
   let uploadDate: Int?
   let documentType: String?
   let metadata: Metadata?

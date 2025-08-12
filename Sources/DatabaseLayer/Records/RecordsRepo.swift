@@ -17,6 +17,7 @@ public final class RecordsRepo {
   private var isSyncing = false
   let uploadManager = RecordUploadManager()
   let service: RecordsProvider = RecordsApiService()
+  let casesServeice: CasesProvider = CasesApiService()
   /// The offset token for getting the next page of records
   var pageOffsetToken: String?
   /// The epoch timestamp of the last update that will come from backend
@@ -113,6 +114,7 @@ public final class RecordsRepo {
     record.syncState = RecordSyncState.uploading.stringValue
     let documentURIs: [String] = record.toRecordMeta?.allObjects.compactMap { ($0 as? RecordMeta)?.documentURI } ?? []
     uploadRecordsV3(
+      documentID: record.documentID ?? "",
       recordURLs: documentURIs,
       documentDate: record.documentDate?.toEpochInt(),
       contentType: FileType.getFileTypeFromFilePath(filePath: documentURIs.first ?? "")?.fileExtension ?? "",
