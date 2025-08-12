@@ -19,7 +19,6 @@ public struct RecordModel {
   public var documentHash: String?
   public var documentType: RecordDocumentType?
   public var syncState: RecordSyncState?
-  public var hasSyncedEdit: Bool?
   public var isAnalyzing: Bool?
   public var isSmart: Bool?
   public var oid: String?
@@ -36,7 +35,6 @@ public struct RecordModel {
     documentHash: String? = nil,
     documentType: RecordDocumentType? = nil,
     syncState: RecordSyncState? = nil,
-    hasSyncedEdit: Bool? = nil,
     isAnalyzing: Bool? = nil,
     isSmart: Bool? = nil,
     oid: String? = nil,
@@ -53,7 +51,6 @@ public struct RecordModel {
     self.documentHash = documentHash
     self.documentType = documentType
     self.syncState = syncState
-    self.hasSyncedEdit = hasSyncedEdit
     self.isAnalyzing = isAnalyzing
     self.isSmart = isSmart
     self.oid = oid
