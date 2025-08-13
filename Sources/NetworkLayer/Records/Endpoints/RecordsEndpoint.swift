@@ -141,8 +141,11 @@ extension RecordsEndpoint: RequestProvider {
       
       params["p_oid"] = patientOID
       
+      // Encode the documentID for safe URL interpolation
+      let encodedDocumentID = documentID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? documentID
+      
       return AF.request(
-        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/\(documentID)",
+        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/\(encodedDocumentID)",
         method: .get,
         parameters: params,
         interceptor: CoreInitConfigurations.shared.requestInterceptor
