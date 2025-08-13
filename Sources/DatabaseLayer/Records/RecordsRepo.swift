@@ -15,6 +15,7 @@ public final class RecordsRepo {
   public let databaseManager = RecordsDatabaseManager.shared
   public let databaseAdapter = RecordDatabaseAdapter()
   private var isSyncing = false
+  private var casesSyncing = false
   let uploadManager = RecordUploadManager()
   let service: RecordsProvider = RecordsApiService()
   let casesServeice: CasesProvider = CasesApiService()
@@ -358,13 +359,9 @@ extension RecordsRepo {
   
   /// Used to sync the unuploaded records
   public func syncUnuploadedRecords() {
-      guard !isSyncing else { return }
-      isSyncing = true
-      
       syncNewRecords { [weak self] in
           guard let self = self else { return }
-          self.syncEditedRecords { [weak self] in
-              self?.isSyncing = false
+        self.syncEditedRecords { 
           }
       }
   }
@@ -421,3 +418,100 @@ extension RecordsRepo {
       }
   }
 }
+//
+//extension RecordsRepo {
+//  
+//  /// Used to sync the unuploaded records
+//  public func syncUnsyncedcases() {
+//    guard !casesSyncing else { return }
+//    casesSyncing = true
+//    
+//    syncNewCases { [weak self] in
+//      guard let self = self else { return }
+//      self.syncEditedCases { [weak self] in
+//        self?.casesSyncing = false
+//      }
+//    }
+//  }
+//  
+//  private func syncNewCases(completion: @escaping () -> Void) {
+//    databaseManager.fetchCase(fetchRequest: QueryHelper.fetchCasesForUnCretedOnServerSync()) { [weak self] cases in
+//      guard let self = self else {
+//        completion()
+//        return
+//      }
+//      
+//      // Handle case where there are no cases to upload
+//      guard !cases.isEmpty else {
+//        completion()
+//        return
+//      }
+//      
+//      let uploadGroup = DispatchGroup()
+//      
+//      for uploadcase in cases {
+//        uploadGroup.enter()
+//        
+//        self.casesServeice.createCases(oid: uploadcase.oid ?? "", request: CasesCreateRequest(id: uploadcase.caseID ?? "", displayName: uploadcase.caseName ?? "", type: uploadcase.caseType ?? "", occurredAt: uploadcase.createdAt?.toEpochInt() ?? Date().toEpochInt())) { [weak self] result, statusCode in
+//          guard self != nil else {
+//            uploadGroup.leave()
+//            return
+//          }
+//          
+//          switch result {
+//          case .success(let caseDetails):
+//            debugPrint("Case successfully created on the server.")
+//            
+//          case .failure(let error):
+//            debugPrint("Failed to create case on server: \(error.localizedDescription)")
+//          }
+//          uploadGroup.leave()
+//        }
+//      }
+//      
+//      uploadGroup.notify(queue: .global(qos: .utility)) {
+//        completion()
+//      }
+//    }
+//  }
+//  
+//  private func syncEditedCases(completion: @escaping () -> Void) {
+//    databaseManager.fetchCase(fetchRequest: QueryHelper.fetchCasesForEditedSync()) { [weak self] cases in
+//      guard let self = self else {
+//        completion()
+//        return
+//      }
+//      
+//      // Handle case where there are no cases to edit
+//      guard !cases.isEmpty else {
+//        completion()
+//        return
+//      }
+//      
+//      let editGroup = DispatchGroup()
+//      
+//      for caseItem in cases {
+//        editGroup.enter()
+//        self.casesServeice.updateCases(caseId: caseItem.caseID ?? "", oid: caseItem.oid ?? "", request: CasesUpdateRequest(displayName: caseItem.caseName, type: caseItem.caseType)) { [weak self] result, statusCode in
+//          guard self != nil else {
+//            editGroup.leave()
+//            return
+//          }
+//          
+//          switch result {
+//          case .success(let caseDetails):
+//            debugPrint("Case successfully created on the server.")
+//            
+//          case .failure(let error):
+//            debugPrint("Failed to create case on server: \(error.localizedDescription)")
+//          }
+//          editGroup.leave()
+//        }
+//      }
+//      
+//      editGroup.notify(queue: .global(qos: .utility)) {
+//        completion()
+//      }
+//    }
+//  }
+//}

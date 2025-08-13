@@ -12,7 +12,12 @@ public final class QueryHelper {
   public static func fetchLastUpdatedAt(oid: String) -> NSFetchRequest<Record> {
     let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
     /// Predicate: documentID is not nil AND updatedAt is a valid date AND oid matches
-    fetchRequest.predicate = NSPredicate(format: "documentID != nil AND updatedAt != nil AND oid == %@", oid as CVarArg)
+    fetchRequest.predicate = NSPredicate(
+        format: "updatedAt != nil AND oid == %@ AND (syncState != %@ OR syncState != %@)",
+        oid as CVarArg,
+        RecordSyncState.uploading.stringValue,
+        RecordSyncState.upload(success: false).stringValue
+    )
     /// Sort by updatedAt in descending order (latest date first)
     fetchRequest.sortDescriptors = [NSSortDescriptor(key: "updatedAt", ascending: false)]
     /// Fetch only the latest record
@@ -143,5 +148,23 @@ extension QueryHelper {
     /// Fetch only the latest record
     fetchRequest.fetchLimit = 1
     return fetchRequest
+  }
+  
+  public static func fetchCasesForEditedSync() -> NSFetchRequest<CaseModel> {
+      let fetchRequest: NSFetchRequest<CaseModel> = CaseModel.fetchRequest()
+      fetchRequest.predicate = NSPredicate(
+          format: "isEdited == %@",
+          NSNumber(value: false)
+      )
+      return fetchRequest
+  }
+  
+  public static func fetchCasesForUnCretedOnServerSync() -> NSFetchRequest<CaseModel> {
+      let fetchRequest: NSFetchRequest<CaseModel> = CaseModel.fetchRequest()
+      fetchRequest.predicate = NSPredicate(
+          format: "isRemoteCreated == %@",
+          NSNumber(value: false)
+      )
+      return fetchRequest
   }
 }
