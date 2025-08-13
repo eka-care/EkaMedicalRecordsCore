@@ -128,7 +128,7 @@ public final class RecordsRepo {
         return
       }
       guard error == nil, let uploadFormsResponse else {
-        databaseManager.updateRecord(recordID: record.objectID,syncStatus: RecordSyncState.upload(success: false))
+        databaseManager.updateRecord(syncStatus: RecordSyncState.upload(success: false))
         /// Make delete api record call so that its not availabe on server
         if let docId = uploadFormsResponse?.batchResponses?.first?.documentID  {
           deleteRecordV3(documentID: docId, oid: record.oid)
@@ -138,7 +138,7 @@ public final class RecordsRepo {
       }
       /// Update the database with document id
       databaseManager.updateRecord(
-        recordID: record.objectID,
+//        recordID: record.objectID,
         documentID: uploadFormsResponse.batchResponses?.first?.documentID,
         documentOid: record.oid,
         syncStatus: RecordSyncState.upload(success: true)
@@ -273,7 +273,7 @@ public final class RecordsRepo {
   ) {
     /// Update in database
     databaseManager.updateRecord(
-      recordID: recordID,
+//      recordID: recordID,
       documentID: documentID,
       documentDate: documentDate,
       documentType: documentType,
@@ -290,7 +290,7 @@ public final class RecordsRepo {
     ) { [weak self] isSuccess in
       guard let self = self else { return }
       self.databaseManager.updateRecord(
-        recordID: recordID,
+//        recordID: recordID,
         documentID: documentID,
         documentDate: documentDate,
         documentType: documentType,

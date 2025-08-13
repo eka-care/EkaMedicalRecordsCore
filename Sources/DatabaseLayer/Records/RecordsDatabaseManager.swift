@@ -308,58 +308,129 @@ extension RecordsDatabaseManager {
   ///   - documentOid: document oid of the record
   ///   - syncStatus: document sync state of the record
   ///   - caseModel: case to which document is attached to
+//  func updateRecord(
+//    recordID: NSManagedObjectID,
+//    documentID: String? = nil,
+//    documentDate: Date? = nil,
+//    documentType: Int? = nil,
+//    documentOid: String? = nil,
+//    syncStatus: RecordSyncState? = nil,
+//    isEdited: Bool? = nil,
+//    caseModel: CaseModel? = nil
+//  ) {
+//    do {
+//      guard let record = try container.viewContext.existingObject(with: recordID) as? Record else {
+//        debugPrint("Record not found")
+//        updateRecordEvent(
+//          id: documentID ?? recordID.uriRepresentation().absoluteString,
+//          status: .failure,
+//          message: "Record not found"
+//        )
+//        return
+//      }
+//      record.documentID = documentID
+//      record.documentDate = documentDate
+//      if let documentType {
+//        record.documentType = Int64(documentType)
+//      }
+//      if let documentOid {
+//        record.oid = documentOid
+//      }
+//      if let syncStatus {
+//        record.syncState = syncStatus.stringValue
+//      }
+//      if let caseModel {
+//        record.addToToCaseModel(caseModel)
+//      }
+//      if let isEdited {
+//        record.isEdited = isEdited
+//      }
+//      
+//      try container.viewContext.save()
+//      updateRecordEvent(
+//        id: record.documentID,
+//        status: .success
+//      )
+//    } catch {
+//      debugPrint("Failed to update record: \(error)")
+//      updateRecordEvent(
+//        id: documentID ?? recordID.uriRepresentation().absoluteString,
+//        status: .failure,
+//        message: error.localizedDescription
+//      )
+//    }
+//  }
   func updateRecord(
-    recordID: NSManagedObjectID,
-    documentID: String? = nil,
-    documentDate: Date? = nil,
-    documentType: Int? = nil,
-    documentOid: String? = nil,
-    syncStatus: RecordSyncState? = nil,
-    isEdited: Bool? = nil,
-    caseModel: CaseModel? = nil
-  ) {
-    do {
-      guard let record = try container.viewContext.existingObject(with: recordID) as? Record else {
-        debugPrint("Record not found")
+      documentID: String? = nil,
+      documentDate: Date? = nil,
+      documentType: Int? = nil,
+      documentOid: String? = nil,
+      syncStatus: RecordSyncState? = nil,
+      isEdited: Bool? = nil,
+      caseModel: CaseModel? = nil
+    ) {
+      do {
+        // First get the reference from document ID
+        guard let documentID = documentID else {
+          debugPrint("Document ID is required")
+          updateRecordEvent(
+            id: "unknown",
+            status: .failure,
+            message: "Document ID is required"
+          )
+          return
+        }
+        
+        // Fetch the record by document ID
+        let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "documentID == %@", documentID)
+        fetchRequest.fetchLimit = 1
+        
+        let records = try container.viewContext.fetch(fetchRequest)
+        guard let record = records.first else {
+          debugPrint("Record not found for document ID: \(documentID)")
+          updateRecordEvent(
+            id: documentID,
+            status: .failure,
+            message: "Record not found"
+          )
+          return
+        }
+        
+        // Update the record properties
+        record.documentID = documentID
+        record.documentDate = documentDate
+        if let documentType {
+          record.documentType = Int64(documentType)
+        }
+        if let documentOid {
+          record.oid = documentOid
+        }
+        if let syncStatus {
+          record.syncState = syncStatus.stringValue
+        }
+        if let caseModel {
+          record.addToToCaseModel(caseModel)
+        }
+        if let isEdited {
+          record.isEdited = isEdited
+        }
+        
+        // Save the changes to the database
+        try container.viewContext.save()
         updateRecordEvent(
-          id: documentID ?? recordID.uriRepresentation().absoluteString,
-          status: .failure,
-          message: "Record not found"
+          id: record.documentID,
+          status: .success
         )
-        return
+      } catch {
+        debugPrint("Failed to update record: \(error)")
+        updateRecordEvent(
+          id: documentID ?? "unknown",
+          status: .failure,
+          message: error.localizedDescription
+        )
       }
-      record.documentID = documentID
-      record.documentDate = documentDate
-      if let documentType {
-        record.documentType = Int64(documentType)
-      }
-      if let documentOid {
-        record.oid = documentOid
-      }
-      if let syncStatus {
-        record.syncState = syncStatus.stringValue
-      }
-      if let caseModel {
-        record.addToToCaseModel(caseModel)
-      }
-      if let isEdited {
-        record.isEdited = isEdited
-      }
-      
-      try container.viewContext.save()
-      updateRecordEvent(
-        id: record.documentID,
-        status: .success
-      )
-    } catch {
-      debugPrint("Failed to update record: \(error)")
-      updateRecordEvent(
-        id: documentID ?? recordID.uriRepresentation().absoluteString,
-        status: .failure,
-        message: error.localizedDescription
-      )
     }
-  }
 }
 
 // MARK: - Delete
