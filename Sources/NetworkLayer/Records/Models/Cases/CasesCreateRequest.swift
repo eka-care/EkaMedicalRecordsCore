@@ -8,13 +8,13 @@
 import Foundation
 
 struct CasesCreateRequest: Codable {
-    let id: String
-    let displayName: String?
-    let type: String?
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case displayName = "display_name"
-        case type
-    }
+  let id, displayName, type: String
+  let occurredAt: Int
+  
+  enum CodingKeys: String, CodingKey {
+    case id
+    case displayName = "display_name"
+    case type
+    case occurredAt = "occurred_at"
+  }
 }

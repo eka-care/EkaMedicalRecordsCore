@@ -17,6 +17,7 @@ extension RecordsRepo {
     caseArguementModel: CaseArguementModel
   ) {
     // Create the case locally first
+    
     let createCase = databaseManager.createCase(from: caseArguementModel)
     
     // Attempt to create the case on the server
@@ -94,11 +95,24 @@ extension RecordsRepo {
       debugPrint("Case ID is missing. Cannot create case on server.")
       return
     }
+    
+    guard let caseName = createCase.caseName, !caseName.isEmpty  else {
+      debugPrint("Case name is missing. Cannot create case on server.")
+      return
+    }
+    
+    guard let caseType = createCase.caseType, !caseType.isEmpty  else {
+      debugPrint("Case type is missing. Cannot create case on server.")
+      return
+    }
+    
     let request = CasesCreateRequest(
       id: caseId,
-      displayName: createCase.caseName,
-      type: createCase.caseType
+      displayName: caseName,
+      type: caseType,
+      occurredAt: createCase.createdAt?.toEpochInt() ?? Date().toEpochInt()
     )
+    
     casesServeice.createCases(oid: oid, request: request) { [weak self] result, statusCode in
       guard self != nil else { return }
       
