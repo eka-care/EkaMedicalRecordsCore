@@ -361,7 +361,7 @@ extension RecordsDatabaseManager {
 //    }
 //  }
   func updateRecord(
-      documentID: String? = nil,
+      documentID: String,
       documentDate: Date? = nil,
       documentType: Int? = nil,
       documentOid: String? = nil,
@@ -370,17 +370,6 @@ extension RecordsDatabaseManager {
       caseModel: CaseModel? = nil
     ) {
       do {
-        // First get the reference from document ID
-        guard let documentID = documentID else {
-          debugPrint("Document ID is required")
-          updateRecordEvent(
-            id: "unknown",
-            status: .failure,
-            message: "Document ID is required"
-          )
-          return
-        }
-        
         // Fetch the record by document ID
         let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "documentID == %@", documentID)

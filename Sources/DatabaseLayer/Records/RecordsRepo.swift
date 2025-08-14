@@ -127,8 +127,14 @@ public final class RecordsRepo {
         didUploadRecord(nil)
         return
       }
+      guard let documentId = record.documentID else {
+        didUploadRecord(nil)
+        return
+      }
+      
+      
       guard error == nil, let uploadFormsResponse else {
-        databaseManager.updateRecord(syncStatus: RecordSyncState.upload(success: false))
+        databaseManager.updateRecord(documentID: documentId,syncStatus: RecordSyncState.upload(success: false))
         /// Make delete api record call so that its not availabe on server
         if let docId = uploadFormsResponse?.batchResponses?.first?.documentID  {
           deleteRecordV3(documentID: docId, oid: record.oid)
@@ -136,10 +142,16 @@ public final class RecordsRepo {
         didUploadRecord(nil)
         return
       }
+      
+      guard let documentId = record.documentID else {
+        didUploadRecord(nil)
+        return
+      }
+      
       /// Update the database with document id
       databaseManager.updateRecord(
 //        recordID: record.objectID,
-        documentID: uploadFormsResponse.batchResponses?.first?.documentID,
+        documentID: uploadFormsResponse.batchResponses?.first?.documentID ?? documentId,
         documentOid: record.oid,
         syncStatus: RecordSyncState.upload(success: true)
       )
@@ -264,7 +276,7 @@ public final class RecordsRepo {
   ///   - caseModel: case model of the record
   public func updateRecord(
     recordID: NSManagedObjectID,
-    documentID: String? = nil,
+    documentID: String,
     documentDate: Date? = nil,
     documentType: Int? = nil,
     documentOid: String? = CoreInitConfigurations.shared.primaryFilterID,
