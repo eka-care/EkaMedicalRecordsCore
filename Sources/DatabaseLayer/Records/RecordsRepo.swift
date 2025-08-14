@@ -419,8 +419,22 @@ extension RecordsRepo {
           }
           let editGroup = DispatchGroup()
           for record in records {
+              // Skip if documentID is missing
+              guard let documentID = record.documentID else {
+                  continue
+              }
               editGroup.enter()
-            self.editDocument(documentID: record.documentID, documentFilterId: record.oid) { _ in
+              self.editDocument(documentID: documentID, documentFilterId: record.oid) { [weak self] isSuccess in
+                  guard let self = self else {
+                      editGroup.leave()
+                      return
+                  }
+                  self.databaseManager.updateRecord(
+                      documentID: documentID,
+                      documentOid: record.oid,
+                      isEdited: !isSuccess // mark as not edited if sync succeeded
+                  )
+                  
                   editGroup.leave()
               }
           }
