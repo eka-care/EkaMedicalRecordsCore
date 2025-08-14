@@ -128,13 +128,22 @@ extension QueryHelper {
   public static func fetchCase(caseID: String?) -> NSFetchRequest<CaseModel> {
     // Create a fetch request for the CaseMOdel entity
     let fetchRequest: NSFetchRequest<CaseModel> = CaseModel.fetchRequest()
+    var predicates: [NSPredicate] = []
+    
     // Set the predicate to filter case where caseID matches the input
     if let caseID {
-      fetchRequest.predicate = NSPredicate(format: "caseID == %@", caseID)
+      predicates.append(NSPredicate(format: "caseID == %@", caseID))
     } else {
       // This will match nothing
-      fetchRequest.predicate = NSPredicate(value: false)
+      predicates.append(NSPredicate(value: false))
     }
+    
+    // Add predicate to check status should be "A"
+    predicates.append(NSPredicate(format: "status == %@", CaseStatus.active.rawValue))
+    
+    // Combine predicates with AND logic
+    fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+    
     // Optionally set a fetch limit since we expect at most one case
     fetchRequest.fetchLimit = 1
     return fetchRequest

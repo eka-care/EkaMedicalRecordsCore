@@ -44,5 +44,9 @@ extension CaseModel {
     if let isEdited = caseArguementModel.isEdited {
       self.isEdited = isEdited
     }
+    
+    if let status = caseArguementModel.status {
+      self.status = status.rawValue
+    }
   }
 }

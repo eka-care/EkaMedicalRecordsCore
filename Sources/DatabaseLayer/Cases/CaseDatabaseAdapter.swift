@@ -22,7 +22,7 @@ public struct CaseArguementModel {
   public var userDate: Date? /// Date of the folder added by user
   public var isRemoteCreated: Bool?
   public var isEdited: Bool?
-  public var status: String?
+  public var status: CaseStatus?
   
   public init(
     caseId: String? = nil,
@@ -34,7 +34,7 @@ public struct CaseArguementModel {
     userDate: Date? = nil,
     isRemoteCreated: Bool = false,
     isEdited: Bool = false,
-    status: String? = nil
+    status: CaseStatus? = nil
   ) {
     self.caseId = caseId
     self.caseType = caseType

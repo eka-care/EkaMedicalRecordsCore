@@ -313,7 +313,7 @@ extension RecordDatabaseAdapter {
       }
       
       if let status = networkModel.status {
-        insertModel.status = status.rawValue
+        insertModel.status = status
       }
       
       // Set remote creation flag

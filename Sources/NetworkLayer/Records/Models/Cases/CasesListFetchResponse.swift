@@ -9,7 +9,7 @@
 import Foundation
 
 // MARK: - Status Enum
-enum CaseStatus: String, Codable {
+public enum CaseStatus: String, Codable {
     case active = "A"
     case deleted = "D"
 }
