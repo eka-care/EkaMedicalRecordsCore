@@ -7,16 +7,30 @@
 
 import Foundation
 
+//enum DomainConfigurations {
+//  public static var apiURL: String {
+//    return "https://api.eka.care"
+//  }
+//  
+//  public static var vaultURL: String {
+//    return "https://vault.eka.care"
+//  }
+//  
+//  public static var ekaURL: String {
+//    return "https://api.eka.care"
+//  }
+//}
+
 enum DomainConfigurations {
   public static var apiURL: String {
-    return "https://api.eka.care"
+    return "https://api.dev.eka.care"
   }
   
   public static var vaultURL: String {
-    return "https://vault.eka.care"
+    return "https://api.dev.eka.care"
   }
   
   public static var ekaURL: String {
-    return "https://api.eka.care"
+    return "https://api.dev.eka.care"
   }
 }
