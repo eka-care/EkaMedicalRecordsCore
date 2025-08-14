@@ -420,7 +420,7 @@ extension RecordsRepo {
           let editGroup = DispatchGroup()
           for record in records {
               editGroup.enter()
-              self.editDocument(documentID: record.documentID) { _ in
+            self.editDocument(documentID: record.documentID, documentFilterId: record.oid) { _ in
                   editGroup.leave()
               }
           }
