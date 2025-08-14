@@ -26,7 +26,9 @@ extension Record {
     if let isSmart = record.isSmart {
       self.isSmart = isSmart
     }
-    thumbnail = record.thumbnail
+    if let thumbnail = record.thumbnail {
+      self.thumbnail = thumbnail
+    }
     updatedAt = record.updatedAt
     uploadDate = record.uploadDate
     oid = record.oid
