@@ -388,7 +388,10 @@ extension RecordsDatabaseManager {
         
         // Update the record properties
         record.documentID = documentID
-        record.documentDate = documentDate
+        if let documentDate = documentDate {
+          record.documentDate = documentDate
+        }
+       
         if let documentType {
           record.documentType = Int64(documentType)
         }
