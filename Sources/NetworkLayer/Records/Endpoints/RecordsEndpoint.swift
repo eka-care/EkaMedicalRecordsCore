@@ -145,6 +145,7 @@ extension RecordsEndpoint: RequestProvider {
         "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/\(documentID)",
         method: .get,
         parameters: params,
+        encoding: URLEncoding.queryString,
         interceptor: CoreInitConfigurations.shared.requestInterceptor
       )
       .validate()
