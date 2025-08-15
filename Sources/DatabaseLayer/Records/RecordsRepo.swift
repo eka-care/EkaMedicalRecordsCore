@@ -19,9 +19,6 @@ public final class RecordsRepo {
   let uploadManager = RecordUploadManager()
   let service: RecordsProvider = RecordsApiService()
   let casesServeice: CasesProvider = CasesApiService()
-  /// The offset token for getting the next page of records
-  var pageOffsetToken: String?
-  var pageOffsetTokenCases: String?
   /// The epoch timestamp of the last update that will come from backend
   var recordsUpdateEpoch: String?
   var casesUpdateEpoch: String?
@@ -67,6 +64,7 @@ public final class RecordsRepo {
   /// Used to fetch records from the server and store them in the database
   /// - Parameter completion: completion block to be executed after fetching
   public func fetchRecordsFromServer(oid: String, completion: @escaping (Bool) -> Void) {
+    var pageOffsetToken: String?
     syncRecordsForPage(
       token: pageOffsetToken,
       updatedAt: recordsUpdateEpoch,

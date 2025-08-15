@@ -260,6 +260,7 @@ extension RecordsRepo {
   ///   - oid: Organization ID.
   ///   - completion: Completion handler called after all batches are added.
   public func fetchCasesFromServer(oid: String, completion: @escaping (Bool) -> Void) {
+    var pageOffsetTokenCases: String?
     syncCasesForPage(
       token: pageOffsetTokenCases,
       updatedAt: casesUpdateEpoch,
@@ -284,7 +285,7 @@ extension RecordsRepo {
           debugPrint("Batch added to database, count -> \(databaseInsertModels.count)")
           /// If it was last page means all batches are added to database, hence send completion
           if nextPageToken == nil {
-            self.pageOffsetTokenCases = nil
+            pageOffsetTokenCases = nil
             completion(true)
           }
         }
