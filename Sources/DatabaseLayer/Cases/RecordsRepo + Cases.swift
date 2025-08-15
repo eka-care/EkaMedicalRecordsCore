@@ -284,6 +284,7 @@ extension RecordsRepo {
           debugPrint("Batch added to database, count -> \(databaseInsertModels.count)")
           /// If it was last page means all batches are added to database, hence send completion
           if nextPageToken == nil {
+            self.pageOffsetTokenCases = nil
             completion(true)
           }
         }
