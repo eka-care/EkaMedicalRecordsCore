@@ -210,7 +210,7 @@ extension RecordsRepo {
           return
         }
         casesUpdateEpoch = updatedAt
-        fetchCasesFromServer(oid: oid) { success in
+        fetchCasesFromServer(oid: oid, pageOffsetTokenCases: nil) { success in
           if !success {
             hasError = true
           }
@@ -259,8 +259,7 @@ extension RecordsRepo {
   /// - Parameters:
   ///   - oid: Organization ID.
   ///   - completion: Completion handler called after all batches are added.
-  public func fetchCasesFromServer(oid: String, completion: @escaping (Bool) -> Void) {
-    var pageOffsetTokenCases: String?
+    public func fetchCasesFromServer(oid: String, pageOffsetTokenCases: String? = nil, completion: @escaping (Bool) -> Void) {
     syncCasesForPage(
       token: pageOffsetTokenCases,
       updatedAt: casesUpdateEpoch,
@@ -285,17 +284,14 @@ extension RecordsRepo {
           debugPrint("Batch added to database, count -> \(databaseInsertModels.count)")
           /// If it was last page means all batches are added to database, hence send completion
           if nextPageToken == nil {
-            pageOffsetTokenCases = nil
             completion(true)
           }
         }
       }
       /// Call for next page if available
       if let nextPageToken {
-        /// Update the page offset token
-        pageOffsetTokenCases = nextPageToken
-        /// Call for next page
-        fetchCasesFromServer(oid: oid, completion: completion)
+        /// Call for next page with the new token
+        self.fetchCasesFromServer(oid: oid, pageOffsetTokenCases: nextPageToken, completion: completion)
       }
     }
   }

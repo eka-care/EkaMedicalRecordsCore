@@ -62,9 +62,11 @@ public final class RecordsRepo {
   }
   
   /// Used to fetch records from the server and store them in the database
-  /// - Parameter completion: completion block to be executed after fetching
-  public func fetchRecordsFromServer(oid: String, completion: @escaping (Bool) -> Void) {
-    var pageOffsetToken: String?
+  /// - Parameters:
+  ///   - oid: Organization ID
+  ///   - pageOffsetToken: Token for pagination, pass nil for first page
+  ///   - completion: completion block to be executed after fetching
+  public func fetchRecordsFromServer(oid: String, pageOffsetToken: String? = nil, completion: @escaping (Bool) -> Void) {
     syncRecordsForPage(
       token: pageOffsetToken,
       updatedAt: recordsUpdateEpoch,
@@ -89,17 +91,14 @@ public final class RecordsRepo {
           debugPrint("Batch added to database, count -> \(databaseInsertModels.count)")
           /// If it was last page means all batches are added to database, hence send completion
           if nextPageToken == nil {
-            pageOffsetToken = nil
             completion(true)
           }
         }
       }
       /// Call for next page
       if let nextPageToken {
-        /// Update the page offset token
-        pageOffsetToken = nextPageToken
-        /// Call for next page
-        fetchRecordsFromServer(oid: oid, completion: completion)
+        /// Call for next page with the new token
+        self.fetchRecordsFromServer(oid: oid, pageOffsetToken: nextPageToken, completion: completion)
       }
     }
   }
