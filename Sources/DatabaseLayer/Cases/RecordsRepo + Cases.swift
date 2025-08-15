@@ -93,16 +93,19 @@ extension RecordsRepo {
   ) {
     guard let caseId = createCase.caseID, let oid = createCase.oid else {
       debugPrint("Case ID is missing. Cannot create case on server.")
+      completion(.failure(NSError(domain: "CaseError", code: 1001, userInfo: [NSLocalizedDescriptionKey: "Case ID or OID is missing"])))
       return
     }
     
     guard let caseName = createCase.caseName, !caseName.isEmpty  else {
       debugPrint("Case name is missing. Cannot create case on server.")
+      completion(.failure(NSError(domain: "CaseError", code: 1002, userInfo: [NSLocalizedDescriptionKey: "Case name is missing"])))
       return
     }
     
     guard let caseType = createCase.caseType, !caseType.isEmpty  else {
       debugPrint("Case type is missing. Cannot create case on server.")
+      completion(.failure(NSError(domain: "CaseError", code: 1003, userInfo: [NSLocalizedDescriptionKey: "Case type is missing"])))
       return
     }
     
@@ -190,14 +193,34 @@ extension RecordsRepo {
   /// Fetches the latest updated timestamp for all configured OIDs and starts case  sync from server.
   /// - Parameter completion: Completion handler called after records sync for each OID.
   public func getUpdatedAtAndStartCases(completion: @escaping (Bool) -> Void) {
-    guard let oids = CoreInitConfigurations.shared.filterID else { return }
+    guard let oids = CoreInitConfigurations.shared.filterID, !oids.isEmpty else {
+      completion(false)
+      return
+    }
+    
+    let dispatchGroup = DispatchGroup()
+    var hasError = false
     
     for oid in oids {
+      dispatchGroup.enter()
       fetchLatestCasesUpdatedAtString(oid: oid) { [weak self] updatedAt in
-        guard let self else { return }
+        guard let self else {
+          hasError = true
+          dispatchGroup.leave()
+          return
+        }
         casesUpdateEpoch = updatedAt
-        fetchCasesFromServer(oid: oid, completion: completion)
+        fetchCasesFromServer(oid: oid) { success in
+          if !success {
+            hasError = true
+          }
+          dispatchGroup.leave()
+        }
       }
+    }
+    
+    dispatchGroup.notify(queue: .main) {
+      completion(!hasError)
     }
   }
   
@@ -242,13 +265,20 @@ extension RecordsRepo {
       updatedAt: casesUpdateEpoch,
       oid: oid
     ) { [weak self] nextPageToken, caseItems, error in
-      guard let self else { return }
+      guard let self else { 
+        completion(false)
+        return 
+      }
       if error != nil {
         completion(false)
+        return
       }
       /// Add cases to the database in batches
       databaseAdapter.convertNetworkToCaseDatabaseModel(from: caseItems) { [weak self] databaseInsertModels in
-        guard let self else { return }
+        guard let self else { 
+          completion(false)
+          return 
+        }
         
         databaseManager.upsertCases(from: databaseInsertModels) {
           debugPrint("Batch added to database, count -> \(databaseInsertModels.count)")

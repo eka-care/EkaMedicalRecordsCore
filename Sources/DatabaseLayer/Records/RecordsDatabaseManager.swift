@@ -123,6 +123,9 @@ extension RecordsDatabaseManager {
         }
       } catch {
         debugPrint("Error saving records: \(error)")
+        DispatchQueue.main.async {
+          completion()
+        }
       }
     }
   }
@@ -221,9 +224,16 @@ extension RecordsDatabaseManager {
     completion: @escaping ([Record]) -> Void
   ) {
     backgroundContext.perform { [weak self] in
-      guard let self else { return }
+      guard let self else { 
+        DispatchQueue.main.async {
+          completion([])
+        }
+        return 
+      }
       let records = try? backgroundContext.fetch(fetchRequest)
-      completion(records ?? [])
+      DispatchQueue.main.async {
+        completion(records ?? [])
+      }
     }
   }
   
@@ -438,13 +448,24 @@ extension RecordsDatabaseManager {
     completion: @escaping () -> Void
   ) {
     backgroundContext.perform { [weak self] in
-      guard let self else { return }
+      guard let self else { 
+        DispatchQueue.main.async {
+          completion()
+        }
+        return 
+      }
       let deleteRequest = NSBatchDeleteRequest(fetchRequest: request)
       do {
         try backgroundContext.execute(deleteRequest)
         try container.viewContext.save()
+        DispatchQueue.main.async {
+          completion()
+        }
       } catch {
         debugPrint("There was an error deleting entity")
+        DispatchQueue.main.async {
+          completion()
+        }
       }
     }
   }

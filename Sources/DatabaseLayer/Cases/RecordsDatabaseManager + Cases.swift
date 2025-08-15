@@ -38,9 +38,16 @@ extension RecordsDatabaseManager {
     completion: @escaping ([CaseModel]) -> Void
   ) {
     backgroundContext.perform { [weak self] in
-      guard let self else { return }
+      guard let self else { 
+        DispatchQueue.main.async {
+          completion([])
+        }
+        return 
+      }
       let cases = try? backgroundContext.fetch(fetchRequest)
-      completion(cases ?? [])
+      DispatchQueue.main.async {
+        completion(cases ?? [])
+      }
     }
   }
   
@@ -144,7 +151,10 @@ extension RecordsDatabaseManager {
           completion()
         }
       } catch {
-        debugPrint("Error saving records: \(error)")
+        debugPrint("Error saving cases: \(error)")
+        DispatchQueue.main.async {
+          completion()
+        }
       }
     }
   }
