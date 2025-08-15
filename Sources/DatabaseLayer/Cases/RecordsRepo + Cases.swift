@@ -238,7 +238,7 @@ extension RecordsRepo {
   ///   - completion: Completion handler called after all batches are added.
   public func fetchCasesFromServer(oid: String, completion: @escaping (Bool) -> Void) {
     syncCasesForPage(
-      token: pageOffsetToken,
+      token: pageOffsetTokenCases,
       updatedAt: casesUpdateEpoch,
       oid: oid
     ) { [weak self] nextPageToken, caseItems, error in
@@ -261,7 +261,7 @@ extension RecordsRepo {
       /// Call for next page if available
       if let nextPageToken {
         /// Update the page offset token
-        pageOffsetToken = nextPageToken
+        pageOffsetTokenCases = nextPageToken
         /// Call for next page
         fetchCasesFromServer(oid: oid, completion: completion)
       }

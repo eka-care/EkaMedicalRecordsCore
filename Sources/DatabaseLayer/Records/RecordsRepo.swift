@@ -21,6 +21,7 @@ public final class RecordsRepo {
   let casesServeice: CasesProvider = CasesApiService()
   /// The offset token for getting the next page of records
   var pageOffsetToken: String?
+  var pageOffsetTokenCases: String?
   /// The epoch timestamp of the last update that will come from backend
   var recordsUpdateEpoch: String?
   var casesUpdateEpoch: String?
