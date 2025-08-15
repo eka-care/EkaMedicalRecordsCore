@@ -140,6 +140,20 @@ extension QueryHelper {
     return fetchRequest
   }
   
+  /// Query to fetch multiple cases for given caseIDs
+  /// - Parameter caseIDs: Array of case IDs to filter by
+  /// - Returns: NSFetchRequest configured to fetch the matching cases
+  public static func fetchCases(caseIDs: [String]) -> NSFetchRequest<CaseModel> {
+    let fetchRequest: NSFetchRequest<CaseModel> = CaseModel.fetchRequest()
+    if !caseIDs.isEmpty {
+      fetchRequest.predicate = NSPredicate(format: "caseID IN %@", caseIDs)
+    } else {
+      // This will match nothing
+      fetchRequest.predicate = NSPredicate(value: false)
+    }
+    return fetchRequest
+  }
+  
   public static func fetchLastCaseUpdatedAt(oid: String) -> NSFetchRequest<CaseModel> {
     let fetchRequest: NSFetchRequest<CaseModel> = CaseModel.fetchRequest()
     /// Predicate: documentID is not nil AND updatedAt is a valid date AND oid matches

@@ -29,6 +29,7 @@ public struct RecordModel {
   public var contentType: String?
   public var isEdited: Bool?
   public var caseModel: CaseModel?
+  public var caseIDs: [String]?
   
   public init(
     documentDate: Date? = nil,
@@ -44,7 +45,8 @@ public struct RecordModel {
     documentURIs: [String]? = nil,
     contentType: String? = nil,
     isEdited: Bool? = nil,
-    caseModel: CaseModel? = nil
+    caseModel: CaseModel? = nil,
+    caseIDs: [String]? = nil
   ) {
     self.documentID = UUID().uuidString
     self.documentDate = documentDate
@@ -61,6 +63,7 @@ public struct RecordModel {
     self.isEdited = isEdited
     self.contentType = contentType
     self.caseModel = caseModel
+    self.caseIDs = caseIDs
   }
 }
 
