@@ -370,8 +370,8 @@ public final class RecordsRepo {
   
   /// Clears all data from the database on user logout
   /// This function destroys and recreates the entire persistent store for complete data wipe
-  /// - Parameter completion: Completion handler that returns true if successful, false otherwise
-  public func clearAllDataOnLogout(completion: @escaping (Bool) -> Void) {
+  /// - Parameter completion: Completion handler with Result<Void, Error> for detailed error handling
+  public func clearAllDataOnLogout(completion: @escaping (Result<Void, Error>) -> Void) {
     databaseManager.onLogoutClearData(completion: completion)
   }
 }

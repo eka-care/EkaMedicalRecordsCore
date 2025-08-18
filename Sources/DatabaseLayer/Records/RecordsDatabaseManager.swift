@@ -493,15 +493,20 @@ extension RecordsDatabaseManager {
   /// Clears all data from the EkaMedicalRecordsCoreSdkV2 database on logout
   /// This function destroys and recreates the persistent store (equivalent to dropping tables)
   /// This is much more efficient than batch deleting for complete data wipe
-  public func onLogoutClearData(completion: @escaping (Bool) -> Void) {
+  public func onLogoutClearData(completion: @escaping (Result<Void, Error>) -> Void) {
     DispatchQueue.global(qos: .utility).async { [weak self] in
       guard let self else {
-        DispatchQueue.main.async { completion(false) }
+        let error = NSError(
+          domain: "EkaMedicalRecordsCore.DatabaseManager",
+          code: 1000,
+          userInfo: [NSLocalizedDescriptionKey: "Database manager instance is nil"]
+        )
+        DispatchQueue.main.async { completion(.failure(error)) }
         return
       }
       
       do {
-        debugPrint("🗑️ Starting logout clear data operation - destroying persistent store...")
+        debugPrint(" Starting logout clear data operation - destroying persistent store...")
         
         let coordinator = self.container.persistentStoreCoordinator
         let stores = coordinator.persistentStores
@@ -515,8 +520,8 @@ extension RecordsDatabaseManager {
         }
         
         guard !storeURLs.isEmpty else {
-          debugPrint("⚠️ No persistent stores found to destroy")
-          DispatchQueue.main.async { completion(true) }
+          debugPrint("No persistent stores found to destroy")
+          DispatchQueue.main.async { completion(.success(())) }
           return
         }
         
@@ -529,7 +534,7 @@ extension RecordsDatabaseManager {
           
           // Remove the store from coordinator
           try coordinator.remove(store)
-          debugPrint("✅ Removed store \(index + 1)/\(stores.count) from coordinator")
+          debugPrint(" Removed store \(index + 1)/\(stores.count) from coordinator")
           
           // Destroy the actual store file (this is like "DROP DATABASE")
           try coordinator.destroyPersistentStore(at: storeURL, type: storeType)
@@ -540,31 +545,36 @@ extension RecordsDatabaseManager {
         self.lastToken = nil
         
         // Recreate the persistent store (this creates fresh empty tables)
-        debugPrint("🔄 Recreating fresh persistent store...")
+        debugPrint(" Recreating fresh persistent store...")
         self.recreatePersistentStore(completion: completion)
         
       } catch {
-        debugPrint("❌ Failed to destroy persistent store on logout: \(error.localizedDescription)")
-        DispatchQueue.main.async { completion(false) }
+        debugPrint(" Failed to destroy persistent store on logout: \(error.localizedDescription)")
+        DispatchQueue.main.async { completion(.failure(error)) }
       }
     }
   }
   
   /// Helper function to recreate the persistent store
-  private func recreatePersistentStore(completion: @escaping (Bool) -> Void) {
+  private func recreatePersistentStore(completion: @escaping (Result<Void, Error>) -> Void) {
     container.loadPersistentStores { [weak self] (storeDescription, error) in
       guard self != nil else {
-        DispatchQueue.main.async { completion(false) }
+        let error = NSError(
+          domain: "EkaMedicalRecordsCore.DatabaseManager",
+          code: 1002,
+          userInfo: [NSLocalizedDescriptionKey: "Database manager instance is nil during store recreation"]
+        )
+        DispatchQueue.main.async { completion(.failure(error)) }
         return
       }
       
       if let error = error {
         debugPrint("❌ Failed to recreate store: \(error.localizedDescription)")
-        DispatchQueue.main.async { completion(false) }
+        DispatchQueue.main.async { completion(.failure(error)) }
       } else {
         debugPrint("✅ Successfully recreated fresh persistent store")
         debugPrint("🎯 Logout clear data operation completed successfully")
-        DispatchQueue.main.async { completion(true) }
+        DispatchQueue.main.async { completion(.success(())) }
       }
     }
   }
