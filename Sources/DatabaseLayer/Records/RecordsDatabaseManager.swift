@@ -494,136 +494,83 @@ extension RecordsDatabaseManager {
   /// This function destroys and recreates the persistent container (equivalent to dropping database)
   /// This is much more efficient than batch deleting for complete data wipe
   public func onLogoutClearData(completion: @escaping (Result<Void, Error>) -> Void) {
-    DispatchQueue.global(qos: .utility).async { [weak self] in
-      guard let self else {
-        let error = NSError(
-          domain: "EkaMedicalRecordsCore.DatabaseManager",
-          code: 1000,
-          userInfo: [NSLocalizedDescriptionKey: "Database manager instance is nil"]
-        )
-        DispatchQueue.main.async { completion(.failure(error)) }
-        return
-      }
-      
-      do {
-        debugPrint("🗑️ Starting logout clear data operation - destroying persistent container...")
-        
-        // Get a reference to the persistent store coordinator
-        let storeContainer = self.container.persistentStoreCoordinator
-        
-        // Delete each existing persistent store
-        for store in storeContainer.persistentStores {
-          guard let storeURL = store.url else { continue }
-          
-          try storeContainer.destroyPersistentStore(
-            at: storeURL,
-            ofType: store.type,
-            options: nil
-          )
-          debugPrint("🔥 Destroyed persistent store at: \(storeURL.lastPathComponent)")
+    do {
+      let storeContainer = container.persistentStoreCoordinator
+
+      // Delete each existing persistent store
+      for store in storeContainer.persistentStores {
+        // Safely unwrap store URL to prevent force unwrap crash
+        guard let storeURL = store.url else {
+          debugPrint("Store URL is nil, skipping store destruction")
+          continue
         }
         
-        // Reset persistent history token since we're destroying everything
-        self.lastToken = nil
-        
-        // CRITICAL: Clear any cached contexts to prevent entity mapping errors
-        self.clearContextReferences()
-        
-        // Re-create the persistent container
-        self.recreatePersistentContainer(completion: completion)
-        
-      } catch {
-        debugPrint("❌ Failed to destroy persistent store on logout: \(error.localizedDescription)")
-        DispatchQueue.main.async { completion(.failure(error)) }
-      }
-    }
-  }
-  
-  /// Clears context references to prevent entity mapping errors
-  /// This ensures no stale references remain when recreating the container
-  private func clearContextReferences() {
-    // Reset contexts to clear any cached entities
-    backgroundContext.reset()
-    
-    // Perform on main thread to ensure UI context is properly cleared
-    DispatchQueue.main.sync {
-      container.viewContext.reset()
-    }
-    
-    debugPrint("🧹 Cleared context references to prevent entity mapping errors")
-  }
-  
-  /// Helper function to recreate the persistent container
-  /// Based on the pattern: recreate entire NSPersistentContainer
-  private func recreatePersistentContainer(completion: @escaping (Result<Void, Error>) -> Void) {
-    // CRITICAL: Perform container recreation on main thread to avoid entity mapping issues
-    DispatchQueue.main.async { [weak self] in
-      guard let self else {
-        let error = NSError(
-          domain: "EkaMedicalRecordsCore.DatabaseManager",
-          code: 1002,
-          userInfo: [NSLocalizedDescriptionKey: "Database manager instance is nil during container recreation"]
+        try storeContainer.destroyPersistentStore(
+          at: storeURL,
+          ofType: store.type,
+          options: nil
         )
-        completion(.failure(error))
-        return
       }
-      
-      // Re-create the persistent container with fresh model
+
+      // Re-create the persistent container with proper configuration
       let bundle = Bundle.module
-      guard let modelURL = bundle.url(forResource: RecordsDatabaseVersion.containerName, withExtension: "momd"),
-            let model = NSManagedObjectModel(contentsOf: modelURL) else {
-        let error = NSError(
-          domain: "EkaMedicalRecordsCore.DatabaseManager",
-          code: 1003,
-          userInfo: [NSLocalizedDescriptionKey: "Failed to load Core Data model"]
-        )
+      
+      // Safely unwrap model URL to prevent force unwrap crash
+      guard let modelURL = bundle.url(forResource: RecordsDatabaseVersion.containerName, withExtension: "momd") else {
+        let error = NSError(domain: "RecordsDatabaseManager", code: -2, userInfo: [NSLocalizedDescriptionKey: "Could not find Core Data model file"])
         completion(.failure(error))
         return
       }
       
-      // Create new container with fresh model
-      self.container = NSPersistentContainer(name: RecordsDatabaseVersion.containerName, managedObjectModel: model)
+      // Safely create model to prevent force unwrap crash
+      guard let model = NSManagedObjectModel(contentsOf: modelURL) else {
+        let error = NSError(domain: "RecordsDatabaseManager", code: -3, userInfo: [NSLocalizedDescriptionKey: "Could not load Core Data model"])
+        completion(.failure(error))
+        return
+      }
       
-      // Setting notification tracking (same as original setup)
-      let description = self.container.persistentStoreDescriptions.first!
+      container = NSPersistentContainer(name: RecordsDatabaseVersion.containerName, managedObjectModel: model)
+      
+      // Safely get store description to prevent force unwrap crash
+      guard let description = container.persistentStoreDescriptions.first else {
+        let error = NSError(domain: "RecordsDatabaseManager", code: -4, userInfo: [NSLocalizedDescriptionKey: "No persistent store descriptions found"])
+        completion(.failure(error))
+        return
+      }
+      
+      // Set notification tracking
       description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
       description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
-      
-      // Calling loadPersistentStores will re-create the persistent stores
-      self.container.loadPersistentStores { [weak self] (store, error) in
+
+      // Load persistent stores and handle completion
+      container.loadPersistentStores { [weak self] (storeDescription, error) in
         guard let self else {
-          let error = NSError(
-            domain: "EkaMedicalRecordsCore.DatabaseManager",
-            code: 1004,
-            userInfo: [NSLocalizedDescriptionKey: "Database manager instance is nil during store loading"]
-          )
-          DispatchQueue.main.async { completion(.failure(error)) }
+          completion(.failure(NSError(domain: "RecordsDatabaseManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Database manager was deallocated"])))
           return
         }
         
         if let error = error {
-          debugPrint("❌ Failed to recreate container: \(error.localizedDescription)")
-          DispatchQueue.main.async { completion(.failure(error)) }
+          debugPrint("Failed to load store after logout clear: \(error)")
+          completion(.failure(error))
         } else {
-          // Configure the viewContext (main context) - same as original setup
+          // Configure the viewContext (main context)
           self.container.viewContext.automaticallyMergesChangesFromParent = true
           self.container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
           
-          // CRITICAL: Recreate background context on main thread to ensure proper entity mapping
+          // Reset background context
           self.backgroundContext = self.newTaskContext()
           
-          // Reset batch index
-          self.batchIndex = 0
-          
-          debugPrint("✅ Successfully recreated fresh persistent container with proper entity mapping")
-          debugPrint("🎯 Logout clear data operation completed successfully")
+          // Reset persistent history token
+          self.lastToken = nil
           
           completion(.success(()))
         }
       }
+    } catch {
+      debugPrint("Failed to clear data on logout: \(error)")
+      completion(.failure(error))
     }
   }
-
 }
 
 // MARK: - Fetch History
