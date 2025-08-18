@@ -491,7 +491,7 @@ extension RecordsDatabaseManager {
   }
   
   /// Clears all data from the EkaMedicalRecordsCoreSdkV2 database on logout
-  /// This function destroys and recreates the persistent store (equivalent to dropping tables)
+  /// This function destroys and recreates the persistent container (equivalent to dropping database)
   /// This is much more efficient than batch deleting for complete data wipe
   public func onLogoutClearData(completion: @escaping (Result<Void, Error>) -> Void) {
     DispatchQueue.global(qos: .utility).async { [weak self] in
@@ -506,73 +506,77 @@ extension RecordsDatabaseManager {
       }
       
       do {
-        debugPrint(" Starting logout clear data operation - destroying persistent store...")
+        debugPrint("🗑️ Starting logout clear data operation - destroying persistent container...")
         
-        let coordinator = self.container.persistentStoreCoordinator
-        let stores = coordinator.persistentStores
-        var storeURLs: [URL] = []
+        // Get a reference to the persistent store coordinator
+        let storeContainer = self.container.persistentStoreCoordinator
         
-        // Collect store URLs before removing them
-        for store in stores {
-          if let storeURL = store.url {
-            storeURLs.append(storeURL)
-          }
-        }
-        
-        guard !storeURLs.isEmpty else {
-          debugPrint("No persistent stores found to destroy")
-          DispatchQueue.main.async { completion(.success(())) }
-          return
-        }
-        
-        // Remove and destroy each persistent store
-        for (index, store) in stores.enumerated() {
+        // Delete each existing persistent store
+        for store in storeContainer.persistentStores {
           guard let storeURL = store.url else { continue }
           
-          // Get the store type directly (it's not optional)
-          let storeType = NSPersistentStore.StoreType(rawValue: store.type)
-          
-          // Remove the store from coordinator
-          try coordinator.remove(store)
-          debugPrint(" Removed store \(index + 1)/\(stores.count) from coordinator")
-          
-          // Destroy the actual store file (this is like "DROP DATABASE")
-          try coordinator.destroyPersistentStore(at: storeURL, type: storeType)
-          debugPrint(" Destroyed persistent store at: \(storeURL.lastPathComponent)")
+          try storeContainer.destroyPersistentStore(
+            at: storeURL,
+            ofType: store.type,
+            options: nil
+          )
+          debugPrint("🔥 Destroyed persistent store at: \(storeURL.lastPathComponent)")
         }
         
         // Reset persistent history token since we're destroying everything
         self.lastToken = nil
         
-        // Recreate the persistent store (this creates fresh empty tables)
-        debugPrint(" Recreating fresh persistent store...")
-        self.recreatePersistentStore(completion: completion)
+        // Re-create the persistent container
+        self.recreatePersistentContainer(completion: completion)
         
       } catch {
-        debugPrint(" Failed to destroy persistent store on logout: \(error.localizedDescription)")
+        debugPrint("❌ Failed to destroy persistent store on logout: \(error.localizedDescription)")
         DispatchQueue.main.async { completion(.failure(error)) }
       }
     }
   }
   
-  /// Helper function to recreate the persistent store
-  private func recreatePersistentStore(completion: @escaping (Result<Void, Error>) -> Void) {
-    container.loadPersistentStores { [weak self] (storeDescription, error) in
-      guard self != nil else {
+  /// Helper function to recreate the persistent container
+  /// Based on the pattern: recreate entire NSPersistentContainer
+  private func recreatePersistentContainer(completion: @escaping (Result<Void, Error>) -> Void) {
+    // Re-create the persistent container
+    let bundle = Bundle.module
+    let modelURL = bundle.url(forResource: RecordsDatabaseVersion.containerName, withExtension: "momd")!
+    let model = NSManagedObjectModel(contentsOf: modelURL)!
+    self.container = NSPersistentContainer(name: RecordsDatabaseVersion.containerName, managedObjectModel: model)
+    
+    // Setting notification tracking (same as original setup)
+    let description = self.container.persistentStoreDescriptions.first!
+    description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
+    description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
+    
+    // Calling loadPersistentStores will re-create the persistent stores
+    self.container.loadPersistentStores { [weak self] (store, error) in
+      guard let self else {
         let error = NSError(
           domain: "EkaMedicalRecordsCore.DatabaseManager",
           code: 1002,
-          userInfo: [NSLocalizedDescriptionKey: "Database manager instance is nil during store recreation"]
+          userInfo: [NSLocalizedDescriptionKey: "Database manager instance is nil during container recreation"]
         )
         DispatchQueue.main.async { completion(.failure(error)) }
         return
       }
       
       if let error = error {
-        debugPrint("❌ Failed to recreate store: \(error.localizedDescription)")
+        debugPrint("❌ Failed to recreate container: \(error.localizedDescription)")
         DispatchQueue.main.async { completion(.failure(error)) }
       } else {
-        debugPrint("✅ Successfully recreated fresh persistent store")
+        // Configure the viewContext (main context) - same as original setup
+        self.container.viewContext.automaticallyMergesChangesFromParent = true
+        self.container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        
+        // Recreate the background context to get a fresh one
+        self.backgroundContext = self.newTaskContext()
+        
+        // Reset batch index
+        self.batchIndex = 0
+        
+        debugPrint("✅ Successfully recreated fresh persistent container")
         debugPrint("🎯 Logout clear data operation completed successfully")
         DispatchQueue.main.async { completion(.success(())) }
       }
