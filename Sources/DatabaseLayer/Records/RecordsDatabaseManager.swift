@@ -526,6 +526,9 @@ extension RecordsDatabaseManager {
         // Reset persistent history token since we're destroying everything
         self.lastToken = nil
         
+        // CRITICAL: Clear any cached contexts to prevent entity mapping errors
+        self.clearContextReferences()
+        
         // Re-create the persistent container
         self.recreatePersistentContainer(completion: completion)
         
@@ -536,49 +539,87 @@ extension RecordsDatabaseManager {
     }
   }
   
+  /// Clears context references to prevent entity mapping errors
+  /// This ensures no stale references remain when recreating the container
+  private func clearContextReferences() {
+    // Reset contexts to clear any cached entities
+    backgroundContext.reset()
+    
+    // Perform on main thread to ensure UI context is properly cleared
+    DispatchQueue.main.sync {
+      container.viewContext.reset()
+    }
+    
+    debugPrint("🧹 Cleared context references to prevent entity mapping errors")
+  }
+  
   /// Helper function to recreate the persistent container
   /// Based on the pattern: recreate entire NSPersistentContainer
   private func recreatePersistentContainer(completion: @escaping (Result<Void, Error>) -> Void) {
-    // Re-create the persistent container
-    let bundle = Bundle.module
-    let modelURL = bundle.url(forResource: RecordsDatabaseVersion.containerName, withExtension: "momd")!
-    let model = NSManagedObjectModel(contentsOf: modelURL)!
-    self.container = NSPersistentContainer(name: RecordsDatabaseVersion.containerName, managedObjectModel: model)
-    
-    // Setting notification tracking (same as original setup)
-    let description = self.container.persistentStoreDescriptions.first!
-    description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
-    description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
-    
-    // Calling loadPersistentStores will re-create the persistent stores
-    self.container.loadPersistentStores { [weak self] (store, error) in
+    // CRITICAL: Perform container recreation on main thread to avoid entity mapping issues
+    DispatchQueue.main.async { [weak self] in
       guard let self else {
         let error = NSError(
           domain: "EkaMedicalRecordsCore.DatabaseManager",
           code: 1002,
           userInfo: [NSLocalizedDescriptionKey: "Database manager instance is nil during container recreation"]
         )
-        DispatchQueue.main.async { completion(.failure(error)) }
+        completion(.failure(error))
         return
       }
       
-      if let error = error {
-        debugPrint("❌ Failed to recreate container: \(error.localizedDescription)")
-        DispatchQueue.main.async { completion(.failure(error)) }
-      } else {
-        // Configure the viewContext (main context) - same as original setup
-        self.container.viewContext.automaticallyMergesChangesFromParent = true
-        self.container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+      // Re-create the persistent container with fresh model
+      let bundle = Bundle.module
+      guard let modelURL = bundle.url(forResource: RecordsDatabaseVersion.containerName, withExtension: "momd"),
+            let model = NSManagedObjectModel(contentsOf: modelURL) else {
+        let error = NSError(
+          domain: "EkaMedicalRecordsCore.DatabaseManager",
+          code: 1003,
+          userInfo: [NSLocalizedDescriptionKey: "Failed to load Core Data model"]
+        )
+        completion(.failure(error))
+        return
+      }
+      
+      // Create new container with fresh model
+      self.container = NSPersistentContainer(name: RecordsDatabaseVersion.containerName, managedObjectModel: model)
+      
+      // Setting notification tracking (same as original setup)
+      let description = self.container.persistentStoreDescriptions.first!
+      description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
+      description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
+      
+      // Calling loadPersistentStores will re-create the persistent stores
+      self.container.loadPersistentStores { [weak self] (store, error) in
+        guard let self else {
+          let error = NSError(
+            domain: "EkaMedicalRecordsCore.DatabaseManager",
+            code: 1004,
+            userInfo: [NSLocalizedDescriptionKey: "Database manager instance is nil during store loading"]
+          )
+          DispatchQueue.main.async { completion(.failure(error)) }
+          return
+        }
         
-        // Recreate the background context to get a fresh one
-        self.backgroundContext = self.newTaskContext()
-        
-        // Reset batch index
-        self.batchIndex = 0
-        
-        debugPrint("✅ Successfully recreated fresh persistent container")
-        debugPrint("🎯 Logout clear data operation completed successfully")
-        DispatchQueue.main.async { completion(.success(())) }
+        if let error = error {
+          debugPrint("❌ Failed to recreate container: \(error.localizedDescription)")
+          DispatchQueue.main.async { completion(.failure(error)) }
+        } else {
+          // Configure the viewContext (main context) - same as original setup
+          self.container.viewContext.automaticallyMergesChangesFromParent = true
+          self.container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+          
+          // CRITICAL: Recreate background context on main thread to ensure proper entity mapping
+          self.backgroundContext = self.newTaskContext()
+          
+          // Reset batch index
+          self.batchIndex = 0
+          
+          debugPrint("✅ Successfully recreated fresh persistent container with proper entity mapping")
+          debugPrint("🎯 Logout clear data operation completed successfully")
+          
+          completion(.success(()))
+        }
       }
     }
   }
