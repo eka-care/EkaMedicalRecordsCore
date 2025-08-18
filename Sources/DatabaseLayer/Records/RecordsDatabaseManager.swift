@@ -489,6 +489,86 @@ extension RecordsDatabaseManager {
       )
     }
   }
+  
+  /// Clears all data from the EkaMedicalRecordsCoreSdkV2 database on logout
+  /// This function destroys and recreates the persistent store (equivalent to dropping tables)
+  /// This is much more efficient than batch deleting for complete data wipe
+  public func onLogoutClearData(completion: @escaping (Bool) -> Void) {
+    DispatchQueue.global(qos: .utility).async { [weak self] in
+      guard let self else {
+        DispatchQueue.main.async { completion(false) }
+        return
+      }
+      
+      do {
+        debugPrint("🗑️ Starting logout clear data operation - destroying persistent store...")
+        
+        let coordinator = self.container.persistentStoreCoordinator
+        let stores = coordinator.persistentStores
+        var storeURLs: [URL] = []
+        
+        // Collect store URLs before removing them
+        for store in stores {
+          if let storeURL = store.url {
+            storeURLs.append(storeURL)
+          }
+        }
+        
+        guard !storeURLs.isEmpty else {
+          debugPrint("⚠️ No persistent stores found to destroy")
+          DispatchQueue.main.async { completion(true) }
+          return
+        }
+        
+        // Remove and destroy each persistent store
+        for (index, store) in stores.enumerated() {
+          guard let storeURL = store.url else { continue }
+          
+          // Get the store type directly (it's not optional)
+          let storeType = NSPersistentStore.StoreType(rawValue: store.type)
+          
+          // Remove the store from coordinator
+          try coordinator.remove(store)
+          debugPrint("✅ Removed store \(index + 1)/\(stores.count) from coordinator")
+          
+          // Destroy the actual store file (this is like "DROP DATABASE")
+          try coordinator.destroyPersistentStore(at: storeURL, type: storeType)
+          debugPrint(" Destroyed persistent store at: \(storeURL.lastPathComponent)")
+        }
+        
+        // Reset persistent history token since we're destroying everything
+        self.lastToken = nil
+        
+        // Recreate the persistent store (this creates fresh empty tables)
+        debugPrint("🔄 Recreating fresh persistent store...")
+        self.recreatePersistentStore(completion: completion)
+        
+      } catch {
+        debugPrint("❌ Failed to destroy persistent store on logout: \(error.localizedDescription)")
+        DispatchQueue.main.async { completion(false) }
+      }
+    }
+  }
+  
+  /// Helper function to recreate the persistent store
+  private func recreatePersistentStore(completion: @escaping (Bool) -> Void) {
+    container.loadPersistentStores { [weak self] (storeDescription, error) in
+      guard self != nil else {
+        DispatchQueue.main.async { completion(false) }
+        return
+      }
+      
+      if let error = error {
+        debugPrint("❌ Failed to recreate store: \(error.localizedDescription)")
+        DispatchQueue.main.async { completion(false) }
+      } else {
+        debugPrint("✅ Successfully recreated fresh persistent store")
+        debugPrint("🎯 Logout clear data operation completed successfully")
+        DispatchQueue.main.async { completion(true) }
+      }
+    }
+  }
+
 }
 
 // MARK: - Fetch History
