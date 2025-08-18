@@ -493,52 +493,58 @@ extension RecordsDatabaseManager {
   /// Clears all data from the EkaMedicalRecordsCoreSdkV2 database on logout
   /// This function uses batch deletion to remove all entities from the database
   public func onLogoutClearData(completion: @escaping (Result<Void, Error>) -> Void) {
-    backgroundContext.perform { [weak self] in
-      guard let self else {
-        DispatchQueue.main.async {
-          completion(.failure(NSError(domain: "RecordsDatabaseManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Database manager was deallocated"])))
-        }
-        return
-      }
-      
-      do {
-        // Get all entity names from the managed object model
-        let entityNames = self.container.managedObjectModel.entities.compactMap { $0.name }
-        
-        // Delete all entities using batch delete requests
-        for entityName in entityNames {
-          let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
-          let batchDeleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
-          batchDeleteRequest.resultType = .resultTypeObjectIDs
-          
-          // Execute batch delete on background context
-          let result = try self.backgroundContext.execute(batchDeleteRequest) as? NSBatchDeleteResult
-          
-          // Get the object IDs that were deleted
-          if let objectIDs = result?.result as? [NSManagedObjectID] {
-            // Merge changes to view context on main queue
-            let changes = [NSDeletedObjectsKey: objectIDs]
-            NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [self.container.viewContext])
+      backgroundContext.perform { [weak self] in
+          guard let self else {
+              DispatchQueue.main.async {
+                  completion(.failure(NSError(
+                      domain: "RecordsDatabaseManager",
+                      code: -1,
+                      userInfo: [NSLocalizedDescriptionKey: "Database manager was deallocated"]
+                  )))
+              }
+              return
           }
-        }
-        
-        // Save the background context to persist deletions
-        try self.backgroundContext.save()
-        
-        // Reset persistent history token
-        self.lastToken = nil
-        
-        DispatchQueue.main.async {
-          completion(.success(()))
-        }
-        
-      } catch {
-        debugPrint("Failed to clear data on logout using batch deletion: \(error)")
-        DispatchQueue.main.async {
-          completion(.failure(error))
-        }
+          
+          do {
+              // Loop through all entities in the model
+              for entity in self.container.managedObjectModel.entities {
+                  guard let entityName = entity.name else { continue }
+                  
+                  let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
+                  let batchDeleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+                  batchDeleteRequest.resultType = .resultTypeObjectIDs
+                  
+                  let result = try self.backgroundContext.execute(batchDeleteRequest) as? NSBatchDeleteResult
+                  if let objectIDs = result?.result as? [NSManagedObjectID] {
+                      let changes = [NSDeletedObjectsKey: objectIDs]
+                      NSManagedObjectContext.mergeChanges(
+                          fromRemoteContextSave: changes,
+                          into: [self.container.viewContext]
+                      )
+                  }
+              }
+              
+              // Reset tokens & contexts
+              self.lastToken = nil
+              self.backgroundContext = self.newTaskContext()
+              self.container.viewContext.reset()
+              
+              DispatchQueue.main.async {
+                  completion(.success(()))
+              }
+          } catch {
+              debugPrint("❌ Failed to clear Core Data on logout: \(error)")
+              
+              // Still reset contexts so app won’t be stuck
+              self.lastToken = nil
+              self.backgroundContext = self.newTaskContext()
+              self.container.viewContext.reset()
+              
+              DispatchQueue.main.async {
+                  completion(.failure(error))
+              }
+          }
       }
-    }
   }
 }
 
