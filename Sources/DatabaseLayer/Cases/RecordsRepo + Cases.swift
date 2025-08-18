@@ -116,7 +116,7 @@ extension RecordsRepo {
       occurredAt: createCase.createdAt?.toEpochInt() ?? Date().toEpochInt()
     )
     
-    casesServeice.createCases(oid: oid, request: request) { [weak self] result, statusCode in
+    casesService.createCases(oid: oid, request: request) { [weak self] result, statusCode in
       guard self != nil else { return }
       
       switch result {
@@ -141,7 +141,7 @@ extension RecordsRepo {
     oid: String,
     completion: @escaping (Result<Bool, Error>) -> Void
   ) {
-    casesServeice.delete(caseId: caseId, oid: oid) { [weak self] result, error in
+    casesService.delete(caseId: caseId, oid: oid) { [weak self] result, error in
       guard self != nil else { return }
       switch result {
       case .success:
@@ -171,7 +171,7 @@ extension RecordsRepo {
       type: updateCase.caseType
     )
     
-    casesServeice.updateCases(caseId: caseId, oid: oid, request: request) { [weak self] result, error in
+    casesService.updateCases(caseId: caseId, oid: oid, request: request) { [weak self] result, error in
       guard self != nil else { return }
       switch result {
       case .success:
@@ -309,7 +309,7 @@ extension RecordsRepo {
     oid: String,
     completion: @escaping (_ nextPageToken: String?, _ items: [CaseElement], _ error: Error?) -> Void
   ) {
-    casesServeice.fetchCasesList(
+    casesService.fetchCasesList(
       token: token,
       updatedAt: updatedAt,
       oid: oid

@@ -174,7 +174,7 @@ extension QueryHelper {
       return fetchRequest
   }
   
-  public static func fetchCasesForUnCretedOnServerSync() -> NSFetchRequest<CaseModel> {
+  public static func fetchCasesForUncreatedOnServerSync() -> NSFetchRequest<CaseModel> {
       let fetchRequest: NSFetchRequest<CaseModel> = CaseModel.fetchRequest()
       fetchRequest.predicate = NSPredicate(
           format: "isRemoteCreated == %@",

@@ -18,7 +18,7 @@ public final class RecordsRepo {
   private var casesSyncing = false
   let uploadManager = RecordUploadManager()
   let service: RecordsProvider = RecordsApiService()
-  let casesServeice: CasesProvider = CasesApiService()
+  let casesService: CasesProvider = CasesApiService()
   /// The epoch timestamp of the last update that will come from backend
   var recordsUpdateEpoch: String?
   var casesUpdateEpoch: String?
@@ -481,100 +481,137 @@ extension RecordsRepo {
       }
   }
 }
-//
-//extension RecordsRepo {
-//  
-//  /// Used to sync the unuploaded records
-//  public func syncUnsyncedcases() {
-//    guard !casesSyncing else { return }
-//    casesSyncing = true
-//    
-//    syncNewCases { [weak self] in
-//      guard let self = self else { return }
-//      self.syncEditedCases { [weak self] in
-//        self?.casesSyncing = false
-//      }
-//    }
-//  }
-//  
-//  private func syncNewCases(completion: @escaping () -> Void) {
-//    databaseManager.fetchCase(fetchRequest: QueryHelper.fetchCasesForUnCretedOnServerSync()) { [weak self] cases in
-//      guard let self = self else {
-//        completion()
-//        return
-//      }
-//      
-//      // Handle case where there are no cases to upload
-//      guard !cases.isEmpty else {
-//        completion()
-//        return
-//      }
-//      
-//      let uploadGroup = DispatchGroup()
-//      
-//      for uploadcase in cases {
-//        uploadGroup.enter()
-//        
-//        self.casesServeice.createCases(oid: uploadcase.oid ?? "", request: CasesCreateRequest(id: uploadcase.caseID ?? "", displayName: uploadcase.caseName ?? "", type: uploadcase.caseType ?? "", occurredAt: uploadcase.createdAt?.toEpochInt() ?? Date().toEpochInt())) { [weak self] result, statusCode in
-//          guard self != nil else {
-//            uploadGroup.leave()
-//            return
-//          }
-//          
-//          switch result {
-//          case .success(let caseDetails):
-//            debugPrint("Case successfully created on the server.")
-//            
-//          case .failure(let error):
-//            debugPrint("Failed to create case on server: \(error.localizedDescription)")
-//          }
-//          uploadGroup.leave()
-//        }
-//      }
-//      
-//      uploadGroup.notify(queue: .global(qos: .utility)) {
-//        completion()
-//      }
-//    }
-//  }
-//  
-//  private func syncEditedCases(completion: @escaping () -> Void) {
-//    databaseManager.fetchCase(fetchRequest: QueryHelper.fetchCasesForEditedSync()) { [weak self] cases in
-//      guard let self = self else {
-//        completion()
-//        return
-//      }
-//      
-//      // Handle case where there are no cases to edit
-//      guard !cases.isEmpty else {
-//        completion()
-//        return
-//      }
-//      
-//      let editGroup = DispatchGroup()
-//      
-//      for caseItem in cases {
-//        editGroup.enter()
-//        self.casesServeice.updateCases(caseId: caseItem.caseID ?? "", oid: caseItem.oid ?? "", request: CasesUpdateRequest(displayName: caseItem.caseName, type: caseItem.caseType)) { [weak self] result, statusCode in
-//          guard self != nil else {
-//            editGroup.leave()
-//            return
-//          }
-//          
-//          switch result {
-//          case .success(let caseDetails):
-//            debugPrint("Case successfully created on the server.")
-//            
-//          case .failure(let error):
-//            debugPrint("Failed to create case on server: \(error.localizedDescription)")
-//          }
-//          editGroup.leave()
-//        }
-//      }
-//      
-//      editGroup.notify(queue: .global(qos: .utility)) {
-//        completion()
-//      }
-//    }
-//  }
-//}
+
+extension RecordsRepo {
+  
+  /// Used to sync the unuploaded records
+  public func syncUnsyncedCases(completion: @escaping () -> Void) {
+    syncNewCases { [weak self] in
+      guard let self = self else { 
+        completion()
+        return 
+      }
+      self.syncEditedCases {
+        completion()
+      }
+    }
+  }
+  
+  private func syncNewCases(completion: @escaping () -> Void) {
+    databaseManager.fetchCase(fetchRequest: QueryHelper.fetchCasesForUncreatedOnServerSync()) { [weak self] cases in
+      guard let self = self else {
+        completion()
+        return
+      }
+      
+      // Handle case where there are no cases to upload
+      guard !cases.isEmpty else {
+        completion()
+        return
+      }
+      
+      let uploadGroup = DispatchGroup()
+      
+      for uploadcase in cases {
+        uploadGroup.enter()
+        
+        // Validate that all required data is available before making the API call
+        guard let caseID = uploadcase.caseID, !caseID.isEmpty,
+              let caseName = uploadcase.caseName, !caseName.isEmpty,
+              let caseType = uploadcase.caseType, !caseType.isEmpty,
+              let oid = uploadcase.oid, !oid.isEmpty else {
+          debugPrint("Skipping case creation - missing required data: caseID=\(uploadcase.caseID ?? "nil"), caseName=\(uploadcase.caseName ?? "nil"), caseType=\(uploadcase.caseType ?? "nil"), oid=\(uploadcase.oid ?? "nil")")
+          uploadGroup.leave()
+          continue
+        }
+        
+        self.casesService.createCases(oid: oid, request: CasesCreateRequest(id: caseID, displayName: caseName, type: caseType, occurredAt: uploadcase.createdAt?.toEpochInt() ?? Date().toEpochInt())) { [weak self] result, statusCode in
+          guard self != nil else {
+            uploadGroup.leave()
+            return
+          }
+          
+          switch result {
+          case .success(_):
+            debugPrint("Case successfully created on the server.")
+            // Update the case to mark it as remotely created
+            let updateModel = CaseArguementModel(
+              caseId: uploadcase.caseID,
+              isRemoteCreated: true
+            )
+            self?.databaseManager.updateCase(
+              caseModel: uploadcase,
+              caseArguementModel: updateModel
+            )
+            
+          case .failure(let error):
+            debugPrint("Failed to create case on server: \(error.localizedDescription)")
+          }
+          uploadGroup.leave()
+        }
+      }
+      
+      uploadGroup.notify(queue: .global(qos: .utility)) {
+        completion()
+      }
+    }
+  }
+  
+  private func syncEditedCases(completion: @escaping () -> Void) {
+    databaseManager.fetchCase(fetchRequest: QueryHelper.fetchCasesForEditedSync()) { [weak self] cases in
+      guard let self = self else {
+        completion()
+        return
+      }
+      
+      // Handle case where there are no cases to edit
+      guard !cases.isEmpty else {
+        completion()
+        return
+      }
+      
+      let editGroup = DispatchGroup()
+      
+      for caseItem in cases {
+        editGroup.enter()
+        
+        // Validate that all required data is available before making the API call
+        guard let caseID = caseItem.caseID, !caseID.isEmpty,
+              let oid = caseItem.oid, !oid.isEmpty else {
+          debugPrint("Skipping case update - missing required data: caseID=\(caseItem.caseID ?? "nil"), oid=\(caseItem.oid ?? "nil")")
+          editGroup.leave()
+          continue
+        }
+        
+        self.casesService.updateCases(caseId: caseID, oid: oid, request: CasesUpdateRequest(displayName: caseItem.caseName, type: caseItem.caseType)) { [weak self] result, statusCode in
+          guard self != nil else {
+            editGroup.leave()
+            return
+          }
+          
+          switch result {
+          case .success(_):
+            debugPrint("Case successfully updated on the server.")
+            // Update the case to mark it as not edited (sync completed)
+            let updateModel = CaseArguementModel(
+              caseId: caseItem.caseID,
+              isEdited: false
+            )
+            self?.databaseManager.updateCase(
+              caseModel: caseItem,
+              caseArguementModel: updateModel
+            )
+            
+          case .failure(let error):
+            debugPrint("Failed to update case on server: \(error.localizedDescription)")
+          }
+          editGroup.leave()
+        }
+      }
+      
+      editGroup.notify(queue: .global(qos: .utility)) {
+        completion()
+      }
+    }
+  }
+}
