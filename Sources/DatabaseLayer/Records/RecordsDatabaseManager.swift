@@ -491,84 +491,53 @@ extension RecordsDatabaseManager {
   }
   
   /// Clears all data from the EkaMedicalRecordsCoreSdkV2 database on logout
-  /// This function destroys and recreates the persistent container (equivalent to dropping database)
-  /// This is much more efficient than batch deleting for complete data wipe
+  /// This function uses batch deletion to remove all entities from the database
   public func onLogoutClearData(completion: @escaping (Result<Void, Error>) -> Void) {
-    do {
-      let storeContainer = container.persistentStoreCoordinator
-
-      // Delete each existing persistent store
-      for store in storeContainer.persistentStores {
-        // Safely unwrap store URL to prevent force unwrap crash
-        guard let storeURL = store.url else {
-          debugPrint("Store URL is nil, skipping store destruction")
-          continue
-        }
-        
-        try storeContainer.destroyPersistentStore(
-          at: storeURL,
-          ofType: store.type,
-          options: nil
-        )
-      }
-
-      // Re-create the persistent container with proper configuration
-      let bundle = Bundle.module
-      
-      // Safely unwrap model URL to prevent force unwrap crash
-      guard let modelURL = bundle.url(forResource: RecordsDatabaseVersion.containerName, withExtension: "momd") else {
-        let error = NSError(domain: "RecordsDatabaseManager", code: -2, userInfo: [NSLocalizedDescriptionKey: "Could not find Core Data model file"])
-        completion(.failure(error))
-        return
-      }
-      
-      // Safely create model to prevent force unwrap crash
-      guard let model = NSManagedObjectModel(contentsOf: modelURL) else {
-        let error = NSError(domain: "RecordsDatabaseManager", code: -3, userInfo: [NSLocalizedDescriptionKey: "Could not load Core Data model"])
-        completion(.failure(error))
-        return
-      }
-      
-      container = NSPersistentContainer(name: RecordsDatabaseVersion.containerName, managedObjectModel: model)
-      
-      // Safely get store description to prevent force unwrap crash
-      guard let description = container.persistentStoreDescriptions.first else {
-        let error = NSError(domain: "RecordsDatabaseManager", code: -4, userInfo: [NSLocalizedDescriptionKey: "No persistent store descriptions found"])
-        completion(.failure(error))
-        return
-      }
-      
-      // Set notification tracking
-      description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
-      description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
-
-      // Load persistent stores and handle completion
-      container.loadPersistentStores { [weak self] (storeDescription, error) in
-        guard let self else {
+    backgroundContext.perform { [weak self] in
+      guard let self else {
+        DispatchQueue.main.async {
           completion(.failure(NSError(domain: "RecordsDatabaseManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Database manager was deallocated"])))
-          return
+        }
+        return
+      }
+      
+      do {
+        // Get all entity names from the managed object model
+        let entityNames = self.container.managedObjectModel.entities.compactMap { $0.name }
+        
+        // Delete all entities using batch delete requests
+        for entityName in entityNames {
+          let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
+          let batchDeleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+          batchDeleteRequest.resultType = .resultTypeObjectIDs
+          
+          // Execute batch delete on background context
+          let result = try self.backgroundContext.execute(batchDeleteRequest) as? NSBatchDeleteResult
+          
+          // Get the object IDs that were deleted
+          if let objectIDs = result?.result as? [NSManagedObjectID] {
+            // Merge changes to view context on main queue
+            let changes = [NSDeletedObjectsKey: objectIDs]
+            NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [self.container.viewContext])
+          }
         }
         
-        if let error = error {
-          debugPrint("Failed to load store after logout clear: \(error)")
-          completion(.failure(error))
-        } else {
-          // Configure the viewContext (main context)
-          self.container.viewContext.automaticallyMergesChangesFromParent = true
-          self.container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-          
-          // Reset background context
-          self.backgroundContext = self.newTaskContext()
-          
-          // Reset persistent history token
-          self.lastToken = nil
-          
+        // Save the background context to persist deletions
+        try self.backgroundContext.save()
+        
+        // Reset persistent history token
+        self.lastToken = nil
+        
+        DispatchQueue.main.async {
           completion(.success(()))
         }
+        
+      } catch {
+        debugPrint("Failed to clear data on logout using batch deletion: \(error)")
+        DispatchQueue.main.async {
+          completion(.failure(error))
+        }
       }
-    } catch {
-      debugPrint("Failed to clear data on logout: \(error)")
-      completion(.failure(error))
     }
   }
 }
