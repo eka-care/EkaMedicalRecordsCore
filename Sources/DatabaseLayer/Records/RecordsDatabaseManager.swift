@@ -98,18 +98,33 @@ extension RecordsDatabaseManager {
         return
       }
       
-      for record in records {
-        // Check if the record already exists
-        let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "documentID == %@", record.documentID ?? "")
+      // Batch fetch existing records to avoid N+1 problem
+      let documentIDs = records.compactMap { $0.documentID }
+      guard !documentIDs.isEmpty else {
+        completion()
+        return
+      }
+      
+      let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
+      fetchRequest.predicate = NSPredicate(format: "documentID IN %@", documentIDs)
+      
+      do {
+        let existingRecords = try self.backgroundContext.fetch(fetchRequest)
+        let existingRecordMap = Dictionary<String, Record>(uniqueKeysWithValues: existingRecords.compactMap { record in
+          guard let documentID = record.documentID else { return nil }
+          return (documentID, record)
+        })
         
-        do {
-          if let existingRecord = try self.backgroundContext.fetch(fetchRequest).first {
+        // Process records efficiently
+        for record in records {
+          let documentID = record.documentID
+          
+          if let existingRecord = existingRecordMap[documentID] {
             // Update existing record
-            print("Document id of document being updated is \(record.documentID ?? "")")
+            debugPrint("Document id of document being updated is \(documentID)")
             existingRecord.update(from: record)
             updateRecordEvent(
-              id: record.documentID ?? existingRecord.objectID.uriRepresentation().absoluteString,
+              id: documentID,
               status: .success
             )
           } else {
@@ -117,23 +132,20 @@ extension RecordsDatabaseManager {
             let newRecord = Record(context: self.backgroundContext)
             newRecord.update(from: record)
             createRecordEvent(
-              id: record.documentID,
+              id: documentID,
               status: .success
             )
           }
-        } catch {
-          debugPrint("Error fetching record: \(error)")
         }
-      }
-      
-      // Save all changes at once
-      do {
+        
+        // Save all changes at once
         try self.backgroundContext.save()
         DispatchQueue.main.async {
           completion()
         }
+        
       } catch {
-        debugPrint("Error saving records: \(error)")
+        debugPrint("Error processing records: \(error)")
         DispatchQueue.main.async {
           completion()
         }
@@ -329,58 +341,7 @@ extension RecordsDatabaseManager {
   ///   - documentOid: document oid of the record
   ///   - syncStatus: document sync state of the record
   ///   - caseModel: case to which document is attached to
-//  func updateRecord(
-//    recordID: NSManagedObjectID,
-//    documentID: String? = nil,
-//    documentDate: Date? = nil,
-//    documentType: Int? = nil,
-//    documentOid: String? = nil,
-//    syncStatus: RecordSyncState? = nil,
-//    isEdited: Bool? = nil,
-//    caseModel: CaseModel? = nil
-//  ) {
-//    do {
-//      guard let record = try container.viewContext.existingObject(with: recordID) as? Record else {
-//        debugPrint("Record not found")
-//        updateRecordEvent(
-//          id: documentID ?? recordID.uriRepresentation().absoluteString,
-//          status: .failure,
-//          message: "Record not found"
-//        )
-//        return
-//      }
-//      record.documentID = documentID
-//      record.documentDate = documentDate
-//      if let documentType {
-//        record.documentType = Int64(documentType)
-//      }
-//      if let documentOid {
-//        record.oid = documentOid
-//      }
-//      if let syncStatus {
-//        record.syncState = syncStatus.stringValue
-//      }
-//      if let caseModel {
-//        record.addToToCaseModel(caseModel)
-//      }
-//      if let isEdited {
-//        record.isEdited = isEdited
-//      }
-//      
-//      try container.viewContext.save()
-//      updateRecordEvent(
-//        id: record.documentID,
-//        status: .success
-//      )
-//    } catch {
-//      debugPrint("Failed to update record: \(error)")
-//      updateRecordEvent(
-//        id: documentID ?? recordID.uriRepresentation().absoluteString,
-//        status: .failure,
-//        message: error.localizedDescription
-//      )
-//    }
-//  }
+
   func updateRecord(
       documentID: String,
       documentDate: Date? = nil,
@@ -438,7 +399,7 @@ extension RecordsDatabaseManager {
       } catch {
         debugPrint("Failed to update record: \(error)")
         updateRecordEvent(
-          id: documentID ?? "unknown",
+          id: documentID,
           status: .failure,
           message: error.localizedDescription
         )
@@ -468,12 +429,12 @@ extension RecordsDatabaseManager {
       let deleteRequest = NSBatchDeleteRequest(fetchRequest: request)
       do {
         try backgroundContext.execute(deleteRequest)
-        try container.viewContext.save()
+        try backgroundContext.save()
         DispatchQueue.main.async {
           completion()
         }
       } catch {
-        debugPrint("There was an error deleting entity")
+        debugPrint("There was an error deleting entity: \(error)")
         DispatchQueue.main.async {
           completion()
         }
