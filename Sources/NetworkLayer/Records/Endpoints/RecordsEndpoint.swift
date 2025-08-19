@@ -125,9 +125,9 @@ extension RecordsEndpoint: RequestProvider {
       if let oid {
         params["p_oid"] = oid
       }
-      
+      let encodedDocID = documentID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? documentID
       return AF.request(
-        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/\(documentID)",
+        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/\(encodedDocID)",
         method: .delete,
         parameters: params,
         encoding: URLEncoding.queryString,
@@ -140,9 +140,9 @@ extension RecordsEndpoint: RequestProvider {
       var params = [String: String]()
       
       params["p_oid"] = patientOID
-      
+      let encodedDocID = documentID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? documentID
       return AF.request(
-        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/\(documentID)",
+        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/\(encodedDocID)",
         method: .get,
         parameters: params,
         encoding: URLEncoding.queryString,
@@ -156,8 +156,9 @@ extension RecordsEndpoint: RequestProvider {
       let request
     ):
       let patientOidString = filterOID != nil ? "?p_oid=\(filterOID ?? "")" : ""
+      let encodedDocID = documentID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? documentID
       return AF.request(
-        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/\(documentID)\(patientOidString)",
+        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/\(encodedDocID)\(patientOidString)",
         method: .patch,
         parameters: request,
         encoder: JSONParameterEncoder.default,
