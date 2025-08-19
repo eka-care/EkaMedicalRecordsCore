@@ -210,7 +210,12 @@ extension RecordsRepo {
           return
         }
         casesUpdateEpoch = updatedAt
-        fetchCasesFromServer(oid: oid, pageOffsetTokenCases: nil) { success in
+        fetchCasesFromServer(oid: oid, pageOffsetTokenCases: nil) { [weak self] success in
+          guard let self = self else {
+            hasError = true
+            dispatchGroup.leave()
+            return
+          }
           if !success {
             hasError = true
           }
@@ -249,7 +254,8 @@ extension RecordsRepo {
   ///   - oid: Organization ID.
   ///   - completion: Completion handler with CaseModel.
   func fetchLatestCases(oid: String, completion: @escaping (CaseModel?) -> Void) {
-    databaseManager.fetchCase(fetchRequest: QueryHelper.fetchLastCaseUpdatedAt(oid: oid), completion: { cases in
+    databaseManager.fetchCase(fetchRequest: QueryHelper.fetchLastCaseUpdatedAt(oid: oid), completion: { [weak self] cases in
+      guard let self = self else { return }
       completion(cases.first)
     })
   }

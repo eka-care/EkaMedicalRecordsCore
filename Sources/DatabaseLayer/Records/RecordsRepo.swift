@@ -41,13 +41,18 @@ public final class RecordsRepo {
     for oid in oids {
       dispatchGroup.enter()
       fetchLatestRecordUpdatedAtString(oid: oid) { [weak self] updatedAt in
-        guard let self else { 
+        guard let self else {
           hasError = true
           dispatchGroup.leave()
-          return 
+          return
         }
         recordsUpdateEpoch = updatedAt
-        fetchRecordsFromServer(oid: oid) { success in
+        fetchRecordsFromServer(oid: oid) { [weak self] success in
+          guard self != nil else {
+            hasError = true
+            dispatchGroup.leave()
+            return
+          }
           if !success {
             hasError = true
           }
@@ -129,7 +134,8 @@ public final class RecordsRepo {
     let addedRecord = databaseManager.addSingleRecord(from: record)
     didAddRecord(addedRecord)
     /// Upload to vault
-    uploadRecord(record: addedRecord) { _ in
+    uploadRecord(record: addedRecord) { [weak self] _ in
+      guard self != nil else { return }
     }
   }
  
@@ -218,7 +224,11 @@ public final class RecordsRepo {
     let dispatchGroup = DispatchGroup()
     records.forEach { record in
       dispatchGroup.enter()
-      fetchRecordMetaData(for: record) { documentURIs, _ in
+      fetchRecordMetaData(for: record) { [weak self] documentURIs, _ in
+        guard self != nil else {
+          dispatchGroup.leave()
+          return
+        }
         recordDocumentURIs.append(documentURIs)
         dispatchGroup.leave()
       }
@@ -432,7 +442,11 @@ extension RecordsRepo {
           
           for record in records {
               uploadGroup.enter()
-              self.uploadRecord(record: record) { _ in
+              self.uploadRecord(record: record) { [weak self] _ in
+                guard self != nil else {
+                      uploadGroup.leave()
+                      return
+                  }
                   uploadGroup.leave()
               }
           }
@@ -491,7 +505,11 @@ extension RecordsRepo {
         completion()
         return 
       }
-      self.syncEditedCases {
+      self.syncEditedCases { [weak self] in
+        guard self != nil else {
+          completion()
+          return
+        }
         completion()
       }
     }

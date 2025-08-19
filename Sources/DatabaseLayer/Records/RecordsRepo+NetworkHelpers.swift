@@ -22,7 +22,8 @@ extension RecordsRepo {
       token: token,
       updatedAt: updatedAt,
       oid: oid
-    ) { result, metaData in
+    ) { [weak self] result, metaData in
+      guard let self = self else { return }
       switch result {
       case .success(let response):
         let recordsItems = response.items
