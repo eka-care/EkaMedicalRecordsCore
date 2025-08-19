@@ -169,7 +169,7 @@ extension QueryHelper {
       let fetchRequest: NSFetchRequest<CaseModel> = CaseModel.fetchRequest()
       fetchRequest.predicate = NSPredicate(
           format: "isEdited == %@",
-          NSNumber(value: false)
+          NSNumber(value: true)
       )
       return fetchRequest
   }
