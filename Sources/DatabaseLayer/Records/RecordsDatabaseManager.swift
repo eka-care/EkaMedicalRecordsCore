@@ -98,33 +98,18 @@ extension RecordsDatabaseManager {
         return
       }
       
-      // Batch fetch existing records to avoid N+1 problem
-      let documentIDs = records.compactMap { $0.documentID }
-      guard !documentIDs.isEmpty else {
-        completion()
-        return
-      }
-      
-      let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
-      fetchRequest.predicate = NSPredicate(format: "documentID IN %@", documentIDs)
-      
-      do {
-        let existingRecords = try self.backgroundContext.fetch(fetchRequest)
-        let existingRecordMap = Dictionary<String, Record>(uniqueKeysWithValues: existingRecords.compactMap { record in
-          guard let documentID = record.documentID else { return nil }
-          return (documentID, record)
-        })
+      for record in records {
+        // Check if the record already exists
+        let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "documentID == %@", record.documentID ?? "")
         
-        // Process records efficiently
-        for record in records {
-          let documentID = record.documentID
-          
-          if let existingRecord = existingRecordMap[documentID] {
+        do {
+          if let existingRecord = try self.backgroundContext.fetch(fetchRequest).first {
             // Update existing record
-            debugPrint("Document id of document being updated is \(documentID)")
+            print("Document id of document being updated is \(record.documentID ?? "")")
             existingRecord.update(from: record)
             updateRecordEvent(
-              id: documentID,
+              id: record.documentID ?? existingRecord.objectID.uriRepresentation().absoluteString,
               status: .success
             )
           } else {
@@ -132,20 +117,23 @@ extension RecordsDatabaseManager {
             let newRecord = Record(context: self.backgroundContext)
             newRecord.update(from: record)
             createRecordEvent(
-              id: documentID,
+              id: record.documentID,
               status: .success
             )
           }
+        } catch {
+          debugPrint("Error fetching record: \(error)")
         }
-        
-        // Save all changes at once
+      }
+      
+      // Save all changes at once
+      do {
         try self.backgroundContext.save()
         DispatchQueue.main.async {
           completion()
         }
-        
       } catch {
-        debugPrint("Error processing records: \(error)")
+        debugPrint("Error saving records: \(error)")
         DispatchQueue.main.async {
           completion()
         }
