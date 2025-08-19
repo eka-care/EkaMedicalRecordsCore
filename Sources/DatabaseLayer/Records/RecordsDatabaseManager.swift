@@ -50,6 +50,10 @@ public final class RecordsDatabaseManager {
   private var notificationToken: NSObjectProtocol?
   /// A peristent history token used for fetching transactions from the store.
   private var lastToken: NSPersistentHistoryToken?
+  /// Queue for thread-safe access to lastToken
+  private let tokenQueue = DispatchQueue(label: "com.eka.records.token", attributes: .concurrent)
+  /// Flag to indicate if the manager is being cleared (during logout)
+  private var isClearing = false
   /// Current batch index for batch insert
   var batchIndex: Int = 0
   private let databaseAdapter = RecordDatabaseAdapter()
@@ -60,6 +64,13 @@ public final class RecordsDatabaseManager {
     /// Observe Core Data remote change notifications on the queue where the changes were made.
     notificationToken = NotificationCenter.default.addObserver(forName: .NSPersistentStoreRemoteChange, object: nil, queue: nil) { [weak self] note in
       guard let self else { return }
+      
+      // Check if we're currently clearing data (during logout)
+      guard !self.isClearing else {
+        debugPrint("Ignoring persistent store change notification during logout")
+        return
+      }
+      
       debugPrint("Received a persistent store remote change notification.")
       Task {
         await self.fetchPersistentHistory()
@@ -493,6 +504,9 @@ extension RecordsDatabaseManager {
   /// Clears all data from the EkaMedicalRecordsCoreSdkV2 database on logout
   /// This function uses batch deletion to remove all entities from the database
   public func onLogoutClearData(completion: @escaping (Result<Void, Error>) -> Void) {
+      // Set clearing flag to prevent race conditions with persistent history
+      isClearing = true
+      
       backgroundContext.perform { [weak self] in
           guard let self else {
               DispatchQueue.main.async {
@@ -524,10 +538,15 @@ extension RecordsDatabaseManager {
                   }
               }
               
-              // Reset tokens & contexts
-              self.lastToken = nil
+              // Reset tokens & contexts in a thread-safe manner
+              self.tokenQueue.async(flags: .barrier) {
+                  self.lastToken = nil
+              }
               self.backgroundContext = self.newTaskContext()
               self.container.viewContext.reset()
+              
+              // Reset clearing flag
+              self.isClearing = false
               
               DispatchQueue.main.async {
                   completion(.success(()))
@@ -535,10 +554,15 @@ extension RecordsDatabaseManager {
           } catch {
               debugPrint("❌ Failed to clear Core Data on logout: \(error)")
               
-              // Still reset contexts so app won’t be stuck
-              self.lastToken = nil
+              // Still reset contexts so app won't be stuck
+              self.tokenQueue.async(flags: .barrier) {
+                  self.lastToken = nil
+              }
               self.backgroundContext = self.newTaskContext()
               self.container.viewContext.reset()
+              
+              // Reset clearing flag
+              self.isClearing = false
               
               DispatchQueue.main.async {
                   completion(.failure(error))
@@ -577,9 +601,19 @@ extension RecordsDatabaseManager {
     
     try await backgroundContext.perform { [weak self] in
       guard let self else { return }
+      
+      // Check if we're currently clearing data (during logout)
+      guard !self.isClearing else {
+        debugPrint("Skipping persistent history fetch during logout")
+        return
+      }
+      
+      // Get lastToken in a thread-safe manner
+      let currentToken = self.tokenQueue.sync { self.lastToken }
+      
       // Execute the persistent history change since the last transaction.
       /// - Tag: fetchHistory
-      let changeRequest = NSPersistentHistoryChangeRequest.fetchHistory(after: self.lastToken)
+      let changeRequest = NSPersistentHistoryChangeRequest.fetchHistory(after: currentToken)
       let historyResult = try backgroundContext.execute(changeRequest) as? NSPersistentHistoryResult
       if let history = historyResult?.result as? [NSPersistentHistoryTransaction],
          !history.isEmpty {
@@ -597,9 +631,18 @@ extension RecordsDatabaseManager {
     /// - Tag: mergeChanges
     let viewContext = container.viewContext
     viewContext.perform {
+      guard !self.isClearing else {
+        debugPrint("Skipping history merge during logout")
+        return
+      }
+      
       for transaction in history {
         viewContext.mergeChanges(fromContextDidSave: transaction.objectIDNotification())
-        self.lastToken = transaction.token
+        
+        // Update lastToken in a thread-safe manner
+        self.tokenQueue.async(flags: .barrier) {
+          self.lastToken = transaction.token
+        }
       }
     }
   }
