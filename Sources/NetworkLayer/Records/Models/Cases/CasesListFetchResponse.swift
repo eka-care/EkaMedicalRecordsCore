@@ -41,13 +41,15 @@ struct CaseElement: Codable {
 
 // MARK: - Item
 struct Item: Codable {
-    let displayName: String?
-    let type: String?
-    let createdAt: Int?
+  let displayName, type, hiType: String?
+  let partnerMeta: PartnerMeta
+  let createdAt: Int?
 
-    enum CodingKeys: String, CodingKey {
-        case displayName = "display_name"
-        case type
-        case createdAt = "created_at"
-    }
+  enum CodingKeys: String, CodingKey {
+      case displayName = "display_name"
+      case type
+      case hiType = "hi_type"
+      case partnerMeta = "partner_meta"
+      case createdAt = "created_at"
+  }
 }

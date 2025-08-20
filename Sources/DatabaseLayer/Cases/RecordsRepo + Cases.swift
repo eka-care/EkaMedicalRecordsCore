@@ -112,8 +112,10 @@ extension RecordsRepo {
     let request = CasesCreateRequest(
       id: caseId,
       displayName: caseName,
+      hiType: nil,
+      occurredAt: createCase.createdAt?.toEpochInt() ?? Date().toEpochInt(),
       type: caseType,
-      occurredAt: createCase.createdAt?.toEpochInt() ?? Date().toEpochInt()
+      partnerMeta: nil,
     )
     
     casesService.createCases(oid: oid, request: request) { [weak self] result, statusCode in
@@ -168,7 +170,8 @@ extension RecordsRepo {
   ) {
     let request = CasesUpdateRequest(
       displayName: updateCase.caseName,
-      type: updateCase.caseType
+      type: updateCase.caseType,
+      hiType: nil
     )
     
     casesService.updateCases(caseId: caseId, oid: oid, request: request) { [weak self] result, error in

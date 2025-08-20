@@ -543,7 +543,7 @@ extension RecordsRepo {
           continue
         }
         
-        self.casesService.createCases(oid: oid, request: CasesCreateRequest(id: caseID, displayName: caseName, type: caseType, occurredAt: uploadcase.createdAt?.toEpochInt() ?? Date().toEpochInt())) { [weak self] result, statusCode in
+        self.casesService.createCases(oid: oid, request: CasesCreateRequest(id: caseID, displayName: caseName, hiType: nil ,occurredAt: uploadcase.createdAt?.toEpochInt() ?? Date().toEpochInt(), type: caseType, partnerMeta: nil)) { [weak self] result, statusCode in
           guard self != nil else {
             uploadGroup.leave()
             return
@@ -601,7 +601,7 @@ extension RecordsRepo {
           continue
         }
         
-        self.casesService.updateCases(caseId: caseID, oid: oid, request: CasesUpdateRequest(displayName: caseItem.caseName, type: caseItem.caseType)) { [weak self] result, statusCode in
+        self.casesService.updateCases(caseId: caseID, oid: oid, request: CasesUpdateRequest(displayName: caseItem.caseName, type: caseItem.caseType, hiType: nil)) { [weak self] result, statusCode in
           guard self != nil else {
             editGroup.leave()
             return
