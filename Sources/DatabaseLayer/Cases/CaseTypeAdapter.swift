@@ -14,10 +14,8 @@ import Foundation
 /// Model used for casetype insert
 public struct CaseTypeModel {
   public var name: String
-  public var icon: String
  
-  public init(name: String, icon: String) {
+  public init(name: String) {
     self.name = name
-    self.icon = icon
   }
 }

@@ -300,8 +300,8 @@ extension RecordDatabaseAdapter {
       insertModel.oid = CoreInitConfigurations.shared.filterID?.first
       
       // Map document type to case type if available
-      if let caseType = networkModel.item?.type {
-        insertModel.caseType = caseType
+      if let caseTypeString = networkModel.item?.type {
+        insertModel.caseType = caseTypeString
       }
       
       // Map dates

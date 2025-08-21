@@ -25,6 +25,52 @@ extension RecordsDatabaseManager {
     }
   }
   
+  // To Upsert CaseType In DB (Update if exists, Insert if not)
+  func upsertCaseType(from model: CaseTypeModel, completion: @escaping (CaseType) -> Void) {
+    backgroundContext.perform { [weak self] in
+      guard let self else { return }
+      
+      // Check if CaseType with same name already exists
+      let fetchRequest: NSFetchRequest<CaseType> = CaseType.fetchRequest()
+      fetchRequest.predicate = NSPredicate(format: "name == %@", model.name)
+      fetchRequest.fetchLimit = 1
+      
+      do {
+        let existingCaseTypes = try self.backgroundContext.fetch(fetchRequest)
+        
+        if let existingCaseType = existingCaseTypes.first {
+          // Update existing CaseType
+          existingCaseType.update(from: model)
+          debugPrint("CaseType '\(model.name)' updated successfully in background!")
+          try self.backgroundContext.save()
+          
+          DispatchQueue.main.async {
+            completion(existingCaseType)
+          }
+        } else {
+          // Create new CaseType
+          let newCaseType = CaseType(context: self.backgroundContext)
+          newCaseType.update(from: model)
+          debugPrint("CaseType '\(model.name)' created successfully in background!")
+          try self.backgroundContext.save()
+          
+          DispatchQueue.main.async {
+            completion(newCaseType)
+          }
+        }
+      } catch {
+        debugPrint("Error upserting CaseType in background: \(error.localizedDescription)")
+        // Fallback to creating new one
+        let newCaseType = CaseType(context: self.backgroundContext)
+        newCaseType.update(from: model)
+        
+        DispatchQueue.main.async {
+          completion(newCaseType)
+        }
+      }
+    }
+  }
+  
   // To Fetch  all the CaseTypes from DB
   func fetchAllCasesType(
     fetchRequest: NSFetchRequest<CaseType>,

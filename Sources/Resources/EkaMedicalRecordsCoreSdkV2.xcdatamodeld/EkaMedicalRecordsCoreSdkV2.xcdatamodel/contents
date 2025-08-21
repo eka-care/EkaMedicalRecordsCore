@@ -15,7 +15,6 @@
         <relationship name="toRecord" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Record" inverseName="toCaseModel" inverseEntity="Record"/>
     </entity>
     <entity name="CaseType" representedClassName="CaseType" syncable="YES" codeGenerationType="class">
-        <attribute name="icon" optional="YES" attributeType="String"/>
         <attribute name="name" optional="YES" attributeType="String"/>
         <relationship name="toCaseModel" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CaseModel" inverseName="toCaseType" inverseEntity="CaseModel"/>
     </entity>
