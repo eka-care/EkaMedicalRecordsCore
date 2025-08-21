@@ -635,11 +635,19 @@ extension RecordsRepo {
 }
 
 extension RecordsRepo {
-  public func requestForceRefresh()  {
+  public func requestForceRefresh(completion: @escaping (Result<Bool, Error>, Int?) -> Void) {
     guard let oid = CoreInitConfigurations.shared.primaryFilterID else {
+      completion(.failure(NSError(domain: "RecordsRepo", code: 400, userInfo: [NSLocalizedDescriptionKey: "No primary filter ID available"])), nil)
       return
     }
-    self.service.sendSourceRefreshRequest(oid: oid) { [weak self] _ , _ in
+    
+    self.service.sendSourceRefreshRequest(oid: oid) { [weak self] result, statusCode in
+      switch result {
+      case .success(_):
+        completion(.success(true), statusCode)
+      case .failure(let error):
+        completion(.failure(error), statusCode)
+      }
     }
   }
 }
