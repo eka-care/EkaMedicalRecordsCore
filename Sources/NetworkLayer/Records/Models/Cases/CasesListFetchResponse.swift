@@ -53,35 +53,3 @@ struct Item: Codable {
       case createdAt = "created_at"
   }
 }
-//
-/// MARK: - CasesList
-//struct CasesList: Codable {
-//    let cases: [Case]
-//}
-//
-//// MARK: - Case
-//struct Case: Codable {
-//    let id, status: String
-//    let updatedAt: Int
-//    let item: Item
-//
-//    enum CodingKeys: String, CodingKey {
-//        case id, status
-//        case updatedAt = "updated_at"
-//        case item
-//    }
-//}
-//
-//// MARK: - Item
-//struct Item: Codable {
-//    let displayName, hiType: String
-//    let createdAt: Int
-//    let type: String?
-//
-//    enum CodingKeys: String, CodingKey {
-//        case displayName = "display_name"
-//        case hiType = "hi_type"
-//        case createdAt = "created_at"
-//        case type
-//    }
-//}

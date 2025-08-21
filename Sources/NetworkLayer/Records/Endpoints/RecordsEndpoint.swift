@@ -44,6 +44,10 @@ enum RecordsEndpoint {
     filterOID: String?,
     request: DocUpdateRequest
   )
+  
+  case refreshSourceRequest(
+    oid: String
+  )
 }
 
 extension RecordsEndpoint: RequestProvider {
@@ -163,6 +167,16 @@ extension RecordsEndpoint: RequestProvider {
         parameters: request,
         encoder: JSONParameterEncoder.default,
         interceptor: CoreInitConfigurations.shared.requestInterceptor
+      )
+      .validate()
+      
+    case .refreshSourceRequest(
+      let oid
+    ):
+      return AF.request(
+        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/refresh",
+        method: .get,
+        headers: HTTPHeaders([.contentType(HTTPHeader.contentTypeJson.rawValue), .init(name: "X-Pt-Id", value: oid)]),
       )
       .validate()
     }

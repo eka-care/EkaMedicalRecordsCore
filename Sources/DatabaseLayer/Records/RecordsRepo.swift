@@ -633,3 +633,13 @@ extension RecordsRepo {
     }
   }
 }
+
+extension RecordsRepo {
+  private func requestForceRefresh()  {
+    guard let oid = CoreInitConfigurations.shared.primaryFilterID else {
+      return
+    }
+    self.service.sendSourceRefreshRequest(oid: oid) { [weak self] _ , _ in
+    }
+  }
+}
