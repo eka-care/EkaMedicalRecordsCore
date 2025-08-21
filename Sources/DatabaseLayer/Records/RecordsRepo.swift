@@ -635,7 +635,7 @@ extension RecordsRepo {
 }
 
 extension RecordsRepo {
-  private func requestForceRefresh()  {
+  public func requestForceRefresh()  {
     guard let oid = CoreInitConfigurations.shared.primaryFilterID else {
       return
     }
