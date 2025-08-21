@@ -18,6 +18,7 @@ extension CaseModel {
     }
     
     if let caseType = caseArguementModel.caseType {
+      self.caseType = caseType
       associateCaseType(with: caseType)
     }
     

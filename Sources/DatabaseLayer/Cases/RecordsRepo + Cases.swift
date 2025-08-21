@@ -103,12 +103,6 @@ extension RecordsRepo {
       return
     }
     
-    guard let caseType = createCase.caseType, !caseType.isEmpty  else {
-      debugPrint("Case type is missing. Cannot create case on server.")
-      completion(.failure(NSError(domain: "CaseError", code: 1003, userInfo: [NSLocalizedDescriptionKey: "Case type is missing"])))
-      return
-    }
-    
     let request = CasesCreateRequest(
       id: caseId,
       displayName: caseName,
