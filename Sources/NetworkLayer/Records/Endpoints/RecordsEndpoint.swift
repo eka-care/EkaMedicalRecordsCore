@@ -176,7 +176,9 @@ extension RecordsEndpoint: RequestProvider {
       return AF.request(
         "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/refresh",
         method: .get,
+        encoding: URLEncoding.queryString,
         headers: HTTPHeaders([.contentType(HTTPHeader.contentTypeJson.rawValue), .init(name: "X-Pt-Id", value: oid)]),
+        interceptor: CoreInitConfigurations.shared.requestInterceptor
       )
       .validate()
     }
