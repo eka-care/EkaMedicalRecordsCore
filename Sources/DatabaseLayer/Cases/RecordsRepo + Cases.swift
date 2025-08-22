@@ -240,8 +240,7 @@ extension RecordsRepo {
   ///   - oid: Organization ID.
   ///   - completion: Completion handler with CaseModel.
   func fetchLatestCases(oid: String, completion: @escaping (CaseModel?) -> Void) {
-    databaseManager.fetchCase(fetchRequest: QueryHelper.fetchLastCaseUpdatedAt(oid: oid), completion: { [weak self] cases in
-      guard let self = self else { return }
+    databaseManager.fetchCase(fetchRequest: QueryHelper.fetchLastCaseUpdatedAt(oid: oid), completion: {  cases in
       completion(cases.first)
     })
   }
@@ -261,7 +260,7 @@ extension RecordsRepo {
         completion(false)
         return 
       }
-      if error != nil {
+      guard  error == nil  else {
         completion(false)
         return
       }

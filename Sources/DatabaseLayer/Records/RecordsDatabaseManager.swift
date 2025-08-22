@@ -470,7 +470,7 @@ extension RecordsDatabaseManager {
           
           do {
               // Loop through all entities in the model
-              for entity in self.container.managedObjectModel.entities {
+              for entity in container.managedObjectModel.entities {
                   guard let entityName = entity.name else { continue }
                   
                   let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
@@ -482,20 +482,21 @@ extension RecordsDatabaseManager {
                       let changes = [NSDeletedObjectsKey: objectIDs]
                       NSManagedObjectContext.mergeChanges(
                           fromRemoteContextSave: changes,
-                          into: [self.container.viewContext]
+                          into: [container.viewContext]
                       )
                   }
               }
               
               // Reset tokens & contexts in a thread-safe manner
-              self.tokenQueue.async(flags: .barrier) {
+              tokenQueue.async(flags: .barrier) { [weak self] in
+                  guard let self else { return }
                   self.lastToken = nil
               }
-              self.backgroundContext = self.newTaskContext()
-              self.container.viewContext.reset()
+              backgroundContext = self.newTaskContext()
+              container.viewContext.reset()
               
               // Reset clearing flag
-              self.isClearing = false
+              isClearing = false
               
               DispatchQueue.main.async {
                   completion(.success(()))
@@ -504,14 +505,15 @@ extension RecordsDatabaseManager {
               EkaMedicalRecordsCoreLogger.capture("❌ Failed to clear Core Data on logout: \(error)")
               
               // Still reset contexts so app won't be stuck
-              self.tokenQueue.async(flags: .barrier) {
+              tokenQueue.async(flags: .barrier) { [weak self] in
+                  guard let self else { return }
                   self.lastToken = nil
               }
-              self.backgroundContext = self.newTaskContext()
-              self.container.viewContext.reset()
+              backgroundContext = self.newTaskContext()
+              container.viewContext.reset()
               
               // Reset clearing flag
-              self.isClearing = false
+              isClearing = false
               
               DispatchQueue.main.async {
                   completion(.failure(error))
@@ -589,7 +591,8 @@ extension RecordsDatabaseManager {
         viewContext.mergeChanges(fromContextDidSave: transaction.objectIDNotification())
         
         // Update lastToken in a thread-safe manner
-        self.tokenQueue.async(flags: .barrier) {
+        self.tokenQueue.async(flags: .barrier) { [weak self] in
+          guard let self else { return }
           self.lastToken = transaction.token
         }
       }

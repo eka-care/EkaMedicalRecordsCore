@@ -77,7 +77,7 @@ public final class RecordsRepo {
         completion(false, nil)
         return
       }
-      if error != nil {
+      guard  error == nil else {
         completion(false, nil)
         return
       }
@@ -488,11 +488,11 @@ extension RecordsRepo {
   /// Used to sync the unuploaded records
   public func syncUnsyncedCases(completion: @escaping () -> Void) {
     syncNewCases { [weak self] in
-      guard let self = self else { 
+      guard let self  else {
         completion()
         return 
       }
-      self.syncEditedCases { 
+      syncEditedCases {
         completion()
       }
     }
@@ -500,7 +500,7 @@ extension RecordsRepo {
   
   private func syncNewCases(completion: @escaping () -> Void) {
     databaseManager.fetchCase(fetchRequest: QueryHelper.fetchCasesForUncreatedOnServerSync()) { [weak self] cases in
-      guard let self = self else {
+      guard let self else {
         completion()
         return
       }
@@ -560,7 +560,7 @@ extension RecordsRepo {
   
   private func syncEditedCases(completion: @escaping () -> Void) {
     databaseManager.fetchCase(fetchRequest: QueryHelper.fetchCasesForEditedSync()) { [weak self] cases in
-      guard let self = self else {
+      guard let self  else {
         completion()
         return
       }
