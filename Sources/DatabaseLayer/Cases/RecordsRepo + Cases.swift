@@ -13,40 +13,33 @@ extension RecordsRepo {
   /// - Returns: The case model that was added.
   /// On API success, the case is marked as remotely created and updated with the server response.
   /// On API failure, the case is marked as not synced.
-  public func addCase(
-    caseArguementModel: CaseArguementModel
-  ) {
-    // Create the case locally first
+  public func addCase(caseArguementModel: CaseArguementModel) {
+    // Create locally
+    let localCase = databaseManager.createCase(from: caseArguementModel)
     
-    let createCase = databaseManager.createCase(from: caseArguementModel)
-    
-    // Attempt to create the case on the server
-    createCaseOnServer(createCase: createCase) { [weak self] result in
+    // Try syncing with server
+    createCaseOnServer(createCase: localCase) { [weak self] result in
+      guard let self else { return }
+      
+      let isRemoteCreated: Bool
       switch result {
-      case .success(_):
-        // API success - update the case with server response details
-        let receivedFromServer = CaseArguementModel(
-          caseId: createCase.caseID,
-          updatedAt: Date(),
-          isRemoteCreated: true
-        )
-        self?.databaseManager.updateCase(
-          caseModel: createCase,
-          caseArguementModel: receivedFromServer
-        )
-        
+      case .success:
+        isRemoteCreated = true
       case .failure(let error):
-        // API failure - mark case as not synced
-        EkaMedicalRecordsCoreLogger.capture("Failed to create case on server: \(error.localizedDescription)")
-        let failedSync = CaseArguementModel(
-          caseId: createCase.caseID,
-          isRemoteCreated: false
-        )
-        self?.databaseManager.updateCase(
-          caseModel: createCase,
-          caseArguementModel: failedSync
+        isRemoteCreated = false
+        EkaMedicalRecordsCoreLogger.capture(
+          "Failed to create case on server: \(error.localizedDescription)"
         )
       }
+      
+      let updateModel = CaseArguementModel(
+        caseId: localCase.caseID,
+        isRemoteCreated: isRemoteCreated
+      )
+      self.databaseManager.updateCase(
+        caseModel: localCase,
+        caseArguementModel: updateModel
+      )
     }
   }
   
