@@ -48,13 +48,7 @@ public final class RecordsRepo {
           return
         }
         recordsUpdateEpoch = updatedAt
-        fetchRecordsFromServer(oid: oid) { [weak self] success , lastSourceRefreshedAt in
-          guard self != nil else {
-            hasError = true
-            lastourceRefreshedAtServer = lastSourceRefreshedAt
-            dispatchGroup.leave()
-            return
-          }
+        fetchRecordsFromServer(oid: oid) {  success , lastSourceRefreshedAt in
           if !success {
             hasError = true
           }
@@ -136,8 +130,7 @@ public final class RecordsRepo {
     let addedRecord = databaseManager.addSingleRecord(from: record)
     didAddRecord(addedRecord)
     /// Upload to vault
-    uploadRecord(record: addedRecord) { [weak self] _ in
-      guard self != nil else { return }
+    uploadRecord(record: addedRecord) { _ in
     }
   }
  
@@ -226,11 +219,7 @@ public final class RecordsRepo {
     let dispatchGroup = DispatchGroup()
     records.forEach { record in
       dispatchGroup.enter()
-      fetchRecordMetaData(for: record) { [weak self] documentURIs, _ in
-        guard self != nil else {
-          dispatchGroup.leave()
-          return
-        }
+      fetchRecordMetaData(for: record) { documentURIs, _ in
         recordDocumentURIs.append(documentURIs)
         dispatchGroup.leave()
       }
@@ -444,11 +433,7 @@ extension RecordsRepo {
           
           for record in records {
               uploadGroup.enter()
-              self.uploadRecord(record: record) { [weak self] _ in
-                guard self != nil else {
-                      uploadGroup.leave()
-                      return
-                  }
+              self.uploadRecord(record: record) { _ in
                   uploadGroup.leave()
               }
           }
@@ -507,11 +492,7 @@ extension RecordsRepo {
         completion()
         return 
       }
-      self.syncEditedCases { [weak self] in
-        guard self != nil else {
-          completion()
-          return
-        }
+      self.syncEditedCases { 
         completion()
       }
     }
@@ -546,7 +527,7 @@ extension RecordsRepo {
         }
         
         self.casesService.createCases(oid: oid, request: CasesCreateRequest(id: caseID, displayName: caseName, hiType: nil ,occurredAt: uploadcase.createdAt?.toEpochInt() ?? Date().toEpochInt(), type: caseType, partnerMeta: nil)) { [weak self] result, statusCode in
-          guard self != nil else {
+          guard let self else {
             uploadGroup.leave()
             return
           }
@@ -559,7 +540,7 @@ extension RecordsRepo {
               caseId: uploadcase.caseID,
               isRemoteCreated: true
             )
-            self?.databaseManager.updateCase(
+            self.databaseManager.updateCase(
               caseModel: uploadcase,
               caseArguementModel: updateModel
             )
@@ -604,7 +585,7 @@ extension RecordsRepo {
         }
         
         self.casesService.updateCases(caseId: caseID, oid: oid, request: CasesUpdateRequest(displayName: caseItem.caseName, type: caseItem.caseType, hiType: nil)) { [weak self] result, statusCode in
-          guard self != nil else {
+          guard let self else {
             editGroup.leave()
             return
           }
@@ -617,7 +598,7 @@ extension RecordsRepo {
               caseId: caseItem.caseID,
               isEdited: false
             )
-            self?.databaseManager.updateCase(
+            self.databaseManager.updateCase(
               caseModel: caseItem,
               caseArguementModel: updateModel
             )

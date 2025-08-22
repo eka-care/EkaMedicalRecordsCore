@@ -105,9 +105,7 @@ extension RecordsRepo {
       partnerMeta: nil,
     )
     
-    casesService.createCases(oid: oid, request: request) { [weak self] result, statusCode in
-      guard self != nil else { return }
-      
+    casesService.createCases(oid: oid, request: request) {  result, statusCode in
       switch result {
       case .success(let caseDetails):
         EkaMedicalRecordsCoreLogger.capture("Case successfully created on the server.")
@@ -130,8 +128,7 @@ extension RecordsRepo {
     oid: String,
     completion: @escaping (Result<Bool, Error>) -> Void
   ) {
-    casesService.delete(caseId: caseId, oid: oid) { [weak self] result, error in
-      guard self != nil else { return }
+    casesService.delete(caseId: caseId, oid: oid) { result, error in
       switch result {
       case .success:
         EkaMedicalRecordsCoreLogger.capture("Case deleted successfully")
@@ -161,8 +158,7 @@ extension RecordsRepo {
       hiType: nil
     )
     
-    casesService.updateCases(caseId: caseId, oid: oid, request: request) { [weak self] result, error in
-      guard self != nil else { return }
+    casesService.updateCases(caseId: caseId, oid: oid, request: request) { result, error in
       switch result {
       case .success:
         EkaMedicalRecordsCoreLogger.capture("Case updated successfully")
