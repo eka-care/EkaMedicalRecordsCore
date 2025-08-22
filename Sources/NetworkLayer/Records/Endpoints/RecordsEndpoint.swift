@@ -44,6 +44,10 @@ enum RecordsEndpoint {
     filterOID: String?,
     request: DocUpdateRequest
   )
+  
+  case refreshSourceRequest(
+    oid: String
+  )
 }
 
 extension RecordsEndpoint: RequestProvider {
@@ -125,9 +129,9 @@ extension RecordsEndpoint: RequestProvider {
       if let oid {
         params["p_oid"] = oid
       }
-      
+      let encodedDocID = documentID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? documentID
       return AF.request(
-        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/\(documentID)",
+        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/\(encodedDocID)",
         method: .delete,
         parameters: params,
         encoding: URLEncoding.queryString,
@@ -140,11 +144,12 @@ extension RecordsEndpoint: RequestProvider {
       var params = [String: String]()
       
       params["p_oid"] = patientOID
-      
+      let encodedDocID = documentID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? documentID
       return AF.request(
-        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/\(documentID)",
+        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/\(encodedDocID)",
         method: .get,
         parameters: params,
+        encoding: URLEncoding.queryString,
         interceptor: CoreInitConfigurations.shared.requestInterceptor
       )
       .validate()
@@ -155,11 +160,24 @@ extension RecordsEndpoint: RequestProvider {
       let request
     ):
       let patientOidString = filterOID != nil ? "?p_oid=\(filterOID ?? "")" : ""
+      let encodedDocID = documentID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? documentID
       return AF.request(
-        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/\(documentID)\(patientOidString)",
+        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/\(encodedDocID)\(patientOidString)",
         method: .patch,
         parameters: request,
         encoder: JSONParameterEncoder.default,
+        interceptor: CoreInitConfigurations.shared.requestInterceptor
+      )
+      .validate()
+      
+    case .refreshSourceRequest(
+      let oid
+    ):
+      return AF.request(
+        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/refresh",
+        method: .get,
+        encoding: URLEncoding.queryString,
+        headers: HTTPHeaders([.contentType(HTTPHeader.contentTypeJson.rawValue), .init(name: "X-Pt-Id", value: oid)]),
         interceptor: CoreInitConfigurations.shared.requestInterceptor
       )
       .validate()

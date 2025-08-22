@@ -1,20 +1,39 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23231" systemVersion="24A348" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23788.4" systemVersion="24G84" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="CaseModel" representedClassName="CaseModel" syncable="YES" codeGenerationType="class">
+        <attribute name="caseID" optional="YES" attributeType="String"/>
+        <attribute name="caseName" optional="YES" attributeType="String"/>
+        <attribute name="caseType" optional="YES" attributeType="String"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="isEdited" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isRemoteCreated" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="occuredAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="oid" optional="YES" attributeType="String"/>
+        <attribute name="status" optional="YES" attributeType="String"/>
+        <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="toCaseType" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="CaseType" inverseName="toCaseModel" inverseEntity="CaseType"/>
+        <relationship name="toRecord" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Record" inverseName="toCaseModel" inverseEntity="Record"/>
+    </entity>
+    <entity name="CaseType" representedClassName="CaseType" syncable="YES" codeGenerationType="class">
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="toCaseModel" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CaseModel" inverseName="toCaseType" inverseEntity="CaseModel"/>
+    </entity>
     <entity name="Record" representedClassName="Record" syncable="YES" codeGenerationType="class">
         <attribute name="bid" optional="YES" attributeType="String"/>
         <attribute name="documentDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="documentHash" optional="YES" attributeType="String"/>
         <attribute name="documentID" optional="YES" attributeType="String"/>
         <attribute name="documentType" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
-        <attribute name="hasSyncedEdit" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="isAnalyzing" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="isArchived" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isEdited" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="isSmart" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="oid" optional="YES" attributeType="String"/>
         <attribute name="syncState" optional="YES" attributeType="String"/>
         <attribute name="thumbnail" optional="YES" attributeType="String"/>
         <attribute name="updatedAt" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="uploadDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="toCaseModel" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="CaseModel" inverseName="toRecord" inverseEntity="CaseModel"/>
         <relationship name="toRecordMeta" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RecordMeta" inverseName="toRecord" inverseEntity="RecordMeta"/>
         <relationship name="toSmartReport" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="SmartReport" inverseName="toRecord" inverseEntity="SmartReport"/>
     </entity>

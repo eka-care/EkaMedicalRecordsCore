@@ -26,7 +26,7 @@ protocol Networking: Sendable {
     _ requestProvider: RequestProvider,
     completion: @escaping (Result<Bool, Error>, Int?) -> Void
   )
-
+  
   func execute<T: Decodable>(
     _ requestProvider: RequestProvider,
     completion: @escaping (Result<T, EkaAPIError>, Int?) -> Void
@@ -141,13 +141,13 @@ final class EkaErrorResponseSerializer<T: Decodable>: ResponseSerializer, @unche
   ) throws -> Result<T, EkaAPIError> {
     
     guard error == nil else {
-      debugPrint("Error in custom serializer \(String(describing: error?.localizedDescription))")
+      EkaMedicalRecordsCoreLogger.capture("Error in custom serializer \(String(describing: error?.localizedDescription))")
       return .failure(EkaAPIError(error: .init(message: "Something went wrong", type: nil)))
     }
     
     guard let response = response else { return .failure(EkaAPIError(error: .init(message: "Something went wrong", type: nil))) }
     
-    debugPrint("Response code - \(response.statusCode)")
+    EkaMedicalRecordsCoreLogger.capture("Response code - \(response.statusCode)")
     
     do {
       if response.statusCode < 200 || response.statusCode >= 300 {
@@ -158,7 +158,7 @@ final class EkaErrorResponseSerializer<T: Decodable>: ResponseSerializer, @unche
         return .success(result)
       }
     } catch(let error) {
-      debugPrint("Error in catch block of EkaErrorResponseSerializer custom serializer\(error)")
+      EkaMedicalRecordsCoreLogger.capture("Error in catch block of EkaErrorResponseSerializer custom serializer\(error)")
       return .failure(EkaAPIError(error: .init(message: "Something went wrong", type: nil)))
     }
     
@@ -177,7 +177,7 @@ extension DataRequest {
         case .success(let result):
           completionHandler(result, response.response?.statusCode)
         case .failure(let error):
-          debugPrint("ERROR IN RESPONSE DECODABLE\(error)")
+          EkaMedicalRecordsCoreLogger.capture("ERROR IN RESPONSE DECODABLE\(error)")
           completionHandler(.failure(EkaAPIError(error: .init(message: "Something went wrong", type: nil))), response.response?.statusCode)
         }
       }

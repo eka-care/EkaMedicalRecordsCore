@@ -14,12 +14,11 @@ import UIKit
 
 /// Model used for record insert
 public struct RecordModel {
-  public var documentID: String?
+  public var documentID: String
   public var documentDate: Date?
   public var documentHash: String?
   public var documentType: RecordDocumentType?
   public var syncState: RecordSyncState?
-  public var hasSyncedEdit: Bool?
   public var isAnalyzing: Bool?
   public var isSmart: Bool?
   public var oid: String?
@@ -28,14 +27,15 @@ public struct RecordModel {
   public var uploadDate: Date?
   public var documentURIs: [String]?
   public var contentType: String?
+  public var isEdited: Bool?
+  public var caseModel: CaseModel?
+  public var caseIDs: [String]?
   
   public init(
-    documentID: String? = nil,
     documentDate: Date? = nil,
     documentHash: String? = nil,
     documentType: RecordDocumentType? = nil,
     syncState: RecordSyncState? = nil,
-    hasSyncedEdit: Bool? = nil,
     isAnalyzing: Bool? = nil,
     isSmart: Bool? = nil,
     oid: String? = nil,
@@ -43,14 +43,16 @@ public struct RecordModel {
     updatedAt: Date? = nil,
     uploadDate: Date? = nil,
     documentURIs: [String]? = nil,
-    contentType: String? = nil
+    contentType: String? = nil,
+    isEdited: Bool? = nil,
+    caseModel: CaseModel? = nil,
+    caseIDs: [String]? = nil
   ) {
-    self.documentID = documentID
+    self.documentID = UUID().uuidString
     self.documentDate = documentDate
     self.documentHash = documentHash
     self.documentType = documentType
     self.syncState = syncState
-    self.hasSyncedEdit = hasSyncedEdit
     self.isAnalyzing = isAnalyzing
     self.isSmart = isSmart
     self.oid = oid
@@ -58,12 +60,16 @@ public struct RecordModel {
     self.updatedAt = updatedAt
     self.uploadDate = uploadDate
     self.documentURIs = documentURIs
+    self.isEdited = isEdited
     self.contentType = contentType
+    self.caseModel = caseModel
+    self.caseIDs = caseIDs
   }
 }
 
 /// Used to get the records sync state
 public enum RecordSyncState: Equatable {
+  
   case uploading
   case upload(success: Bool)
   
@@ -126,10 +132,12 @@ extension RecordDatabaseAdapter {
   /// - Parameters:
   ///   - data: Array of items within the record
   ///   - contentType: Type of content like for pdf it will be .pdf
+  ///   - caseID: caseID of the case to which the record will be attached to
   /// - Returns: RecordModel which will be used to insert in the database
   public func formRecordModelFromAddedData(
     data: [Data],
-    contentType: FileType
+    contentType: FileType,
+    caseModel: CaseModel? = nil
   ) -> RecordModel {
     let contentTypeString: String = contentType.fileExtension
     /// Form record local path
@@ -152,7 +160,7 @@ extension RecordDatabaseAdapter {
             fileExtension: contentType.fileExtension
           ) else {
       
-      debugPrint("Database entry denied as record thumbnail is not present")
+      EkaMedicalRecordsCoreLogger.capture("Database entry denied as record thumbnail is not present")
       return RecordModel()
     }
     
@@ -163,7 +171,8 @@ extension RecordDatabaseAdapter {
       updatedAt: Date(), // Current date
       uploadDate: Date(), // Current date
       documentURIs: recordsPath,
-      contentType: contentType.fileExtension
+      contentType: contentType.fileExtension,
+      caseModel: caseModel
     )
   }
 }
@@ -198,6 +207,8 @@ extension RecordDatabaseAdapter {
       insertModel.updatedAt = updatedAt.toDate()
     }
     insertModel.syncState = RecordSyncState.upload(success: true)
+    /// Assign cases array if available
+    insertModel.caseIDs = networkModel.recordDocument.item.cases
     /// Form Thumbnail asynchronously
     if let thumbnail = networkModel.recordDocument.item.metadata?.thumbnail, !thumbnail.isEmpty {
       formLocalThumbnailFileNameFromNetworkURL(
@@ -250,3 +261,71 @@ extension RecordDatabaseAdapter {
     return smartReportObject
   }
 }
+
+// MARK: - Cases
+
+extension RecordDatabaseAdapter {
+  /// Used to serialize smart report info
+  /// - Parameter smartReport: smartReportInfo object that is to be serialized
+  /// - Returns: serialized data for the smart report
+  func convertNetworkToCaseDatabaseModel(
+    from networkModels: [CaseElement],
+    completion: @escaping ([CaseArguementModel]) -> Void
+  ) {
+    var insertModels = [CaseArguementModel]()
+    /// Dispatch group to handle async conversion
+    let dispatchGroup = DispatchGroup()
+    networkModels.forEach { networkModel in
+      dispatchGroup.enter()
+      convertNetworkModelToInsertCaseModel(from: networkModel) { insertModel in
+        insertModels.append(insertModel)
+        dispatchGroup.leave()
+      }
+    }
+    /// Once we have all insert models we send in completion
+    dispatchGroup.notify(queue: .main) {
+      completion(insertModels)
+    }
+  }
+  
+  private func convertNetworkModelToInsertCaseModel(
+      from networkModel: CaseElement,
+      completion: @escaping (CaseArguementModel) -> Void
+    ) {
+      var insertModel = CaseArguementModel()
+      
+      // Map the network model properties to CaseArguementModel properties
+      insertModel.caseId = networkModel.id
+      //TODO: - shekhar need to check how to get oid
+      insertModel.oid = CoreInitConfigurations.shared.filterID?.first
+      
+      // Map document type to case type if available
+      if let caseTypeString = networkModel.item?.type {
+        insertModel.caseType = caseTypeString
+      }
+      
+      // Map dates
+      if let createdDate = networkModel.item?.createdAt {
+        insertModel.createdAt = createdDate.toDate()
+      }
+      
+      if let updatedAt = networkModel.updatedAt {
+        insertModel.updatedAt = updatedAt.toDate()
+      }
+      
+      if let name = networkModel.item?.displayName {
+        insertModel.name = name
+      }
+      
+      if let status = networkModel.status {
+        insertModel.status = status
+      }
+      
+      // Set remote creation flag
+      insertModel.isRemoteCreated = true
+      insertModel.isEdited = false
+      
+      completion(insertModel)
+    }
+}
+

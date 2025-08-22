@@ -11,10 +11,11 @@ import Foundation
 struct DocsListFetchResponse: Codable {
   let items: [RecordItemElement]
   let nextToken: String?
-  
+  let sourceRefreshedAt: Int?
   enum CodingKeys: String, CodingKey {
     case items
     case nextToken = "next_token"
+    case sourceRefreshedAt = "source_refreshed_at"
   }
 }
 
@@ -34,12 +35,13 @@ struct RecordDocument: Codable {
 
 // MARK: - RecordItem
 struct RecordItem: Codable {
-  let documentID: String?
+  let documentID: String
   let uploadDate: Int?
   let documentType: String?
   let metadata: Metadata?
   let patientID: String?
   let updatedAt: Int?
+  let cases: [String]?
   
   enum CodingKeys: String, CodingKey {
     case documentID = "document_id"
@@ -48,6 +50,7 @@ struct RecordItem: Codable {
     case metadata
     case patientID = "patient_id"
     case updatedAt = "u_at"
+    case cases
   }
 }
 

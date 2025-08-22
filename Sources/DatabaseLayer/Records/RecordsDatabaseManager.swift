@@ -14,7 +14,6 @@ import CoreData
 
 enum RecordsDatabaseVersion {
   static let containerName = "EkaMedicalRecordsCoreSdkV2"
-  static let entityName = "Record"
 }
 
 public final class RecordsDatabaseManager {
@@ -51,6 +50,10 @@ public final class RecordsDatabaseManager {
   private var notificationToken: NSObjectProtocol?
   /// A peristent history token used for fetching transactions from the store.
   private var lastToken: NSPersistentHistoryToken?
+  /// Queue for thread-safe access to lastToken
+  private let tokenQueue = DispatchQueue(label: "com.eka.records.token", attributes: .concurrent)
+  /// Flag to indicate if the manager is being cleared (during logout)
+  private var isClearing = false
   /// Current batch index for batch insert
   var batchIndex: Int = 0
   private let databaseAdapter = RecordDatabaseAdapter()
@@ -61,7 +64,14 @@ public final class RecordsDatabaseManager {
     /// Observe Core Data remote change notifications on the queue where the changes were made.
     notificationToken = NotificationCenter.default.addObserver(forName: .NSPersistentStoreRemoteChange, object: nil, queue: nil) { [weak self] note in
       guard let self else { return }
-      debugPrint("Received a persistent store remote change notification.")
+      
+      // Check if we're currently clearing data (during logout)
+      guard !self.isClearing else {
+        EkaMedicalRecordsCoreLogger.capture("Ignoring persistent store change notification during logout")
+        return
+      }
+      
+      EkaMedicalRecordsCoreLogger.capture("Received a persistent store remote change notification.")
       Task {
         await self.fetchPersistentHistory()
       }
@@ -96,7 +106,7 @@ extension RecordsDatabaseManager {
         do {
           if let existingRecord = try self.backgroundContext.fetch(fetchRequest).first {
             // Update existing record
-            print("Document id of document being updated is \(record.documentID ?? "")")
+            EkaMedicalRecordsCoreLogger.capture("Document id of document being updated is \(record.documentID ?? "")")
             existingRecord.update(from: record)
             updateRecordEvent(
               id: record.documentID ?? existingRecord.objectID.uriRepresentation().absoluteString,
@@ -112,7 +122,7 @@ extension RecordsDatabaseManager {
             )
           }
         } catch {
-          debugPrint("Error fetching record: \(error)")
+          EkaMedicalRecordsCoreLogger.capture("Error fetching record: \(error)")
         }
       }
       
@@ -123,14 +133,17 @@ extension RecordsDatabaseManager {
           completion()
         }
       } catch {
-        debugPrint("Error saving records: \(error)")
+        EkaMedicalRecordsCoreLogger.capture("Error saving records: \(error)")
+        DispatchQueue.main.async {
+          completion()
+        }
       }
     }
   }
 
   /// Used to add single record to the database, this will be faster than batch insert for single record
   func addSingleRecord(
-    from record: RecordModel
+    from record: RecordModel,
   ) -> Record {
     let newRecord = Record(context: container.viewContext)
     newRecord.update(from: record)
@@ -141,13 +154,13 @@ extension RecordsDatabaseManager {
         to: newRecord,
         documentURIs: record.documentURIs
       )
-      createRecordEvent(id: newRecord.id.debugDescription, status: .success,userOid: record.oid)
-      debugPrint("Record added successfully!")
+      createRecordEvent(id: newRecord.id.debugDescription, status: .success)
+      EkaMedicalRecordsCoreLogger.capture("Record added successfully!")
       return newRecord
     } catch {
       let nsError = error as NSError
-      createRecordEvent(id: newRecord.id.debugDescription, status: .failure, message: error.localizedDescription, userOid: record.oid)
-      debugPrint("Error saving record: \(nsError), \(nsError.userInfo)")
+      createRecordEvent(id: newRecord.id.debugDescription, status: .failure, message: error.localizedDescription)
+      EkaMedicalRecordsCoreLogger.capture("Error saving record: \(nsError), \(nsError.userInfo)")
       return newRecord
     }
   }
@@ -185,10 +198,10 @@ extension RecordsDatabaseManager {
     }
     do {
       try container.viewContext.save()
-      debugPrint("Record meta data added successfully!")
+      EkaMedicalRecordsCoreLogger.capture("Record meta data added successfully!")
     } catch {
       let nsError = error as NSError
-      debugPrint("Error saving record meta data: \(nsError), \(nsError.userInfo)")
+      EkaMedicalRecordsCoreLogger.capture("Error saving record meta data: \(nsError), \(nsError.userInfo)")
     }
   }
   
@@ -203,10 +216,10 @@ extension RecordsDatabaseManager {
     record.toSmartReport = smartReport
     do {
       try container.viewContext.save()
-      debugPrint("Smart report saved successfully")
+      EkaMedicalRecordsCoreLogger.capture("Smart report saved successfully")
     } catch {
       let nsError = error as NSError
-      debugPrint("Error saving smart report \(nsError)")
+      EkaMedicalRecordsCoreLogger.capture("Error saving smart report \(nsError)")
     }
   }
 }
@@ -222,9 +235,16 @@ extension RecordsDatabaseManager {
     completion: @escaping ([Record]) -> Void
   ) {
     backgroundContext.perform { [weak self] in
-      guard let self else { return }
+      guard let self else { 
+        DispatchQueue.main.async {
+          completion([])
+        }
+        return 
+      }
       let records = try? backgroundContext.fetch(fetchRequest)
-      completion(records ?? [])
+      DispatchQueue.main.async {
+        completion(records ?? [])
+      }
     }
   }
   
@@ -244,7 +264,7 @@ extension RecordsDatabaseManager {
       let record = try container.viewContext.existingObject(with: id) as? Record
       return record
     } catch {
-      debugPrint("Not able to fetch record with given id")
+      EkaMedicalRecordsCoreLogger.capture("Not able to fetch record with given id")
     }
     return nil
   }
@@ -259,14 +279,17 @@ extension RecordsDatabaseManager {
       let record = try container.viewContext.fetch(fetchRequest).first
       return record
     } catch {
-      debugPrint("Not able to fetch record with given id")
+      EkaMedicalRecordsCoreLogger.capture("Not able to fetch record with given id")
     }
     return nil
   }
   
   /// Get document type counts
-  func getDocumentTypeCounts(oid: [String]?) -> [RecordDocumentType: Int] {
-    let fetchRequest = QueryHelper.fetchRecordCountsByDocumentTypeFetchRequest(oid: oid)
+  func getDocumentTypeCounts(
+    oid: [String]?,
+    caseID: String?
+  ) -> [RecordDocumentType: Int] {
+    let fetchRequest = QueryHelper.fetchRecordCountsByDocumentTypeFetchRequest(oid: oid, caseID: caseID)
     var counts: [RecordDocumentType: Int] = [:]
     
     do {
@@ -287,7 +310,7 @@ extension RecordsDatabaseManager {
       counts[.typeAll] = totalDocumentsCount
       
     } catch {
-      print("Failed to fetch grouped document type counts: \(error)")
+      EkaMedicalRecordsCoreLogger.capture("Failed to fetch grouped document type counts: \(error)")
     }
     
     return counts
@@ -303,49 +326,73 @@ extension RecordsDatabaseManager {
   ///   - documentID: documentID of the record
   ///   - documentDate: documentDate of the record
   ///   - documentType: documentType of the record
+  ///   - documentOid: document oid of the record
+  ///   - syncStatus: document sync state of the record
+  ///   - caseModel: case to which document is attached to
+
   func updateRecord(
-    recordID: NSManagedObjectID,
-    documentID: String? = nil,
-    documentDate: Date? = nil,
-    documentType: Int? = nil,
-    documentOid: String? = nil,
-    syncStatus: RecordSyncState? = nil
-  ) {
-    do {
-      guard let record = try container.viewContext.existingObject(with: recordID) as? Record else {
-        debugPrint("Record not found")
+      documentID: String,
+      documentDate: Date? = nil,
+      documentType: Int? = nil,
+      documentOid: String? = nil,
+      syncStatus: RecordSyncState? = nil,
+      isEdited: Bool? = nil,
+      caseModel: CaseModel? = nil
+    ) {
+      do {
+        // Fetch the record by document ID
+        let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "documentID == %@", documentID)
+        fetchRequest.fetchLimit = 1
+        
+        let records = try container.viewContext.fetch(fetchRequest)
+        guard let record = records.first else {
+          EkaMedicalRecordsCoreLogger.capture("Record not found for document ID: \(documentID)")
+          updateRecordEvent(
+            id: documentID,
+            status: .failure,
+            message: "Record not found"
+          )
+          return
+        }
+        
+        // Update the record properties
+        record.documentID = documentID
+        if let documentDate = documentDate {
+          record.documentDate = documentDate
+        }
+       
+        if let documentType {
+          record.documentType = Int64(documentType)
+        }
+        if let documentOid {
+          record.oid = documentOid
+        }
+        if let syncStatus {
+          record.syncState = syncStatus.stringValue
+        }
+        if let caseModel {
+          record.addToToCaseModel(caseModel)
+        }
+        if let isEdited {
+          record.isEdited = isEdited
+        }
+        
+        // Save the changes to the database
+        try container.viewContext.save()
         updateRecordEvent(
-          id: documentID ?? recordID.uriRepresentation().absoluteString,
-          status: .failure,
-          message: "Record not found"
+          id: record.documentID,
+          status: .success
         )
-        return
+      } catch {
+        EkaMedicalRecordsCoreLogger.capture("Failed to update record: \(error)")
+        updateRecordEvent(
+          id: documentID,
+          status: .failure,
+          message: error.localizedDescription
+        )
       }
-      record.documentID = documentID
-      record.documentDate = documentDate
-      if let documentType {
-        record.documentType = Int64(documentType)
-      }
-      if let documentOid {
-        record.oid = documentOid
-      }
-      if let syncStatus {
-        record.syncState = syncStatus.stringValue
-      }
-      try container.viewContext.save()
-      updateRecordEvent(
-        id: record.documentID,
-        status: .success
-      )
-    } catch {
-      debugPrint("Failed to update record: \(error)")
-      updateRecordEvent(
-        id: documentID ?? recordID.uriRepresentation().absoluteString,
-        status: .failure,
-        message: error.localizedDescription
-      )
     }
-  }
 }
 
 // MARK: - Delete
@@ -361,13 +408,24 @@ extension RecordsDatabaseManager {
     completion: @escaping () -> Void
   ) {
     backgroundContext.perform { [weak self] in
-      guard let self else { return }
+      guard let self else { 
+        DispatchQueue.main.async {
+          completion()
+        }
+        return 
+      }
       let deleteRequest = NSBatchDeleteRequest(fetchRequest: request)
       do {
         try backgroundContext.execute(deleteRequest)
-        try container.viewContext.save()
+        try backgroundContext.save()
+        DispatchQueue.main.async {
+          completion()
+        }
       } catch {
-        debugPrint("There was an error deleting entity")
+        EkaMedicalRecordsCoreLogger.capture("There was an error deleting entity: \(error)")
+        DispatchQueue.main.async {
+          completion()
+        }
       }
     }
   }
@@ -383,13 +441,85 @@ extension RecordsDatabaseManager {
         status: .success
       )
     } catch {
-      debugPrint("Error deleting record: \(error)")
+      EkaMedicalRecordsCoreLogger.capture("Error deleting record: \(error)")
       deleteRecordEvent(
         id: record.documentID ?? record.objectID.uriRepresentation().absoluteString,
         status: .failure,
         message: error.localizedDescription
       )
     }
+  }
+  
+  /// Clears all data from the EkaMedicalRecordsCoreSdkV2 database on logout
+  /// This function uses batch deletion to remove all entities from the database
+  public func onLogoutClearData(completion: @escaping (Result<Void, Error>) -> Void) {
+      // Set clearing flag to prevent race conditions with persistent history
+      isClearing = true
+      
+      backgroundContext.perform { [weak self] in
+          guard let self else {
+              DispatchQueue.main.async {
+                  completion(.failure(NSError(
+                      domain: "RecordsDatabaseManager",
+                      code: -1,
+                      userInfo: [NSLocalizedDescriptionKey: "Database manager was deallocated"]
+                  )))
+              }
+              return
+          }
+          
+          do {
+              // Loop through all entities in the model
+              for entity in container.managedObjectModel.entities {
+                  guard let entityName = entity.name else { continue }
+                  
+                  let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
+                  let batchDeleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+                  batchDeleteRequest.resultType = .resultTypeObjectIDs
+                  
+                  let result = try self.backgroundContext.execute(batchDeleteRequest) as? NSBatchDeleteResult
+                  if let objectIDs = result?.result as? [NSManagedObjectID] {
+                      let changes = [NSDeletedObjectsKey: objectIDs]
+                      NSManagedObjectContext.mergeChanges(
+                          fromRemoteContextSave: changes,
+                          into: [container.viewContext]
+                      )
+                  }
+              }
+              
+              // Reset tokens & contexts in a thread-safe manner
+              tokenQueue.async(flags: .barrier) { [weak self] in
+                  guard let self else { return }
+                  self.lastToken = nil
+              }
+              backgroundContext = self.newTaskContext()
+              container.viewContext.reset()
+              
+              // Reset clearing flag
+              isClearing = false
+              
+              DispatchQueue.main.async {
+                  completion(.success(()))
+              }
+          } catch {
+              EkaMedicalRecordsCoreLogger.capture("❌ Failed to clear Core Data on logout: \(error)")
+              
+              // Still reset contexts so app won't be stuck
+              tokenQueue.async(flags: .barrier) { [weak self] in
+                  guard let self else { return }
+                  self.lastToken = nil
+              }
+              backgroundContext = self.newTaskContext()
+              container.viewContext.reset()
+              
+              // Reset clearing flag
+              isClearing = false
+              
+              DispatchQueue.main.async {
+                  completion(.failure(error))
+              }
+          }
+      }
   }
 }
 
@@ -400,7 +530,7 @@ extension RecordsDatabaseManager {
     do {
       try await fetchPersistentHistoryTransactionsAndChanges()
     } catch {
-      debugPrint("\(error.localizedDescription)")
+      EkaMedicalRecordsCoreLogger.capture("\(error.localizedDescription)")
     }
   }
   
@@ -418,13 +548,23 @@ extension RecordsDatabaseManager {
   
   func fetchPersistentHistoryTransactionsAndChanges() async throws {
     backgroundContext.name = "persistentHistoryContext"
-    debugPrint("Start fetching persistent history changes from the store...")
+    EkaMedicalRecordsCoreLogger.capture("Start fetching persistent history changes from the store...")
     
     try await backgroundContext.perform { [weak self] in
       guard let self else { return }
+      
+      // Check if we're currently clearing data (during logout)
+      guard !self.isClearing else {
+        EkaMedicalRecordsCoreLogger.capture("Skipping persistent history fetch during logout")
+        return
+      }
+      
+      // Get lastToken in a thread-safe manner
+      let currentToken = self.tokenQueue.sync { self.lastToken }
+      
       // Execute the persistent history change since the last transaction.
       /// - Tag: fetchHistory
-      let changeRequest = NSPersistentHistoryChangeRequest.fetchHistory(after: self.lastToken)
+      let changeRequest = NSPersistentHistoryChangeRequest.fetchHistory(after: currentToken)
       let historyResult = try backgroundContext.execute(changeRequest) as? NSPersistentHistoryResult
       if let history = historyResult?.result as? [NSPersistentHistoryTransaction],
          !history.isEmpty {
@@ -433,18 +573,28 @@ extension RecordsDatabaseManager {
       }
     }
     
-    debugPrint("Finished merging history changes.")
+    EkaMedicalRecordsCoreLogger.capture("Finished merging history changes.")
   }
   
   private func mergePersistentHistoryChanges(from history: [NSPersistentHistoryTransaction]) {
-    debugPrint("Received \(history.count) persistent history transactions.")
+    EkaMedicalRecordsCoreLogger.capture("Received \(history.count) persistent history transactions.")
     // Update view context with objectIDs from history change request.
     /// - Tag: mergeChanges
     let viewContext = container.viewContext
     viewContext.perform {
+      guard !self.isClearing else {
+        EkaMedicalRecordsCoreLogger.capture("Skipping history merge during logout")
+        return
+      }
+      
       for transaction in history {
         viewContext.mergeChanges(fromContextDidSave: transaction.objectIDNotification())
-        self.lastToken = transaction.token
+        
+        // Update lastToken in a thread-safe manner
+        self.tokenQueue.async(flags: .barrier) { [weak self] in
+          guard let self else { return }
+          self.lastToken = transaction.token
+        }
       }
     }
   }

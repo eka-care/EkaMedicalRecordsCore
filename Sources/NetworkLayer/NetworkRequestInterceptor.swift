@@ -53,7 +53,7 @@ public final class NetworkRequestInterceptor: Alamofire.RequestInterceptor {
       completion(.doNotRetryWithError(error))
       return
     }
-    debugPrint("401, attempting token refresh")
+    EkaMedicalRecordsCoreLogger.capture("401, attempting token refresh")
     /// Call refresh token api call
     refreshTokens(
       refreshToken: AuthTokenHolder.shared.refreshToken,
@@ -62,6 +62,9 @@ public final class NetworkRequestInterceptor: Alamofire.RequestInterceptor {
       /// If we have new token then retry immediately
       if succeeded {
         completion(.retry)
+      } else {
+        /// Token refresh failed, don't retry and return original error
+        completion(.doNotRetryWithError(error))
       }
     }
   }
@@ -88,12 +91,12 @@ extension NetworkRequestInterceptor {
           AuthTokenHolder.shared.authToken = newToken
           AuthTokenHolder.shared.refreshToken = newRefreshToken
           completion(true, newToken)
-          debugPrint("✅ Refreshed access token - \(newToken)")
+          EkaMedicalRecordsCoreLogger.capture("✅ Refreshed access token - \(newToken)")
         }
         // Failure
       case .failure(let error):
         completion(false, nil)
-        debugPrint("Error refreshing token \(error)")
+        EkaMedicalRecordsCoreLogger.capture("Error refreshing token \(error)")
       }
     }
   }

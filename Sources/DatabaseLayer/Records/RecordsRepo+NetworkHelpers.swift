@@ -16,21 +16,23 @@ extension RecordsRepo {
     token: String?,
     updatedAt: String?,
     oid: String?,
-    completion: @escaping (_ nextPageToken: String?, _ items: [RecordItemElement], _ error: Error?) -> Void
+    completion: @escaping (_ nextPageToken: String?,_ lastSourceRefreshedAt: Int? ,_ items: [RecordItemElement], _ error: Error?) -> Void
   ) {
     service.fetchRecords(
       token: token,
       updatedAt: updatedAt,
       oid: oid
-    ) { result, metaData in
+    ) { [weak self] result, metaData in
+      guard let self = self else { return }
       switch result {
       case .success(let response):
         let recordsItems = response.items
         let nextPageToken = response.nextToken
-        completion(nextPageToken, recordsItems, nil)
+        let lastSourceRefreshedAt = response.sourceRefreshedAt
+        completion(nextPageToken, lastSourceRefreshedAt ,recordsItems, nil)
       case .failure(let error):
-        debugPrint("Error in fetching records -> \(error.localizedDescription)")
-        completion(nil, [], error)
+        EkaMedicalRecordsCoreLogger.capture("Error in fetching records -> \(error.localizedDescription)")
+        completion(nil,nil ,[], error)
       }
     }
   }
@@ -47,6 +49,7 @@ extension RecordsRepo {
   ///   - contentType: Extension type of file Eg: .jpeg, .pdf
   ///   - completion: Returns docUploadResponse and Record Upload Error
   func uploadRecordsV3(
+    documentID: String,
     tags: [String]? = nil,
     recordType: String? = nil,
     recordURLs: [String]?,
@@ -60,6 +63,7 @@ extension RecordsRepo {
           let documentsMetaData = RecordUploadManager.formDocumentsMetaData(recordsPath: recordURLs, contentType: contentType) else { return }
     
     uploadManager.uploadRecordsToVault(
+      documentID: documentID,
       nestedFiles: documentsMetaData,
       tags: tags,
       recordType: recordType,
@@ -111,14 +115,14 @@ extension RecordsRepo {
           id: documentID,
           status: .success
         )
-        debugPrint("Record deleted successfully from v3")
+        EkaMedicalRecordsCoreLogger.capture("Record deleted successfully from v3")
       case .failure(let error):
         deleteRecordEvent(
           id: documentID,
           status: .failure,
           message: error.localizedDescription
         )
-        debugPrint("Failed to delete record \(error.localizedDescription)")
+        EkaMedicalRecordsCoreLogger.capture("Failed to delete record \(error.localizedDescription)")
       }
     }
   }
@@ -142,7 +146,7 @@ extension RecordsRepo {
       case .success(let response):
         completion(response)
       case .failure(let error):
-        debugPrint("Error in fetching file details \(error.localizedDescription)")
+        EkaMedicalRecordsCoreLogger.capture("Error in fetching file details \(error.localizedDescription)")
       }
     }
   }
@@ -199,11 +203,12 @@ extension RecordsRepo {
     documentID: String?,
     documentDate: Date? = nil,
     documentType: Int? = nil,
-    documentFilterId: String? = nil
+    documentFilterId: String? = nil,
+    completion: @escaping (Bool) -> Void
   ) {
     guard let documentID,
           let documentFilterId else {
-      debugPrint("Document ID not found while editing record")
+      EkaMedicalRecordsCoreLogger.capture("Document ID not found while editing record")
       return
     }
     /// Set document type
@@ -222,11 +227,13 @@ extension RecordsRepo {
       guard let self else { return }
       switch result {
       case .success:
-        debugPrint("Updated document")
+        EkaMedicalRecordsCoreLogger.capture("Updated document")
         updateRecordEvent(id: documentID, status: .success)
+        completion(true)
       case .failure(let error):
-        debugPrint("Failure in document update network call \(error.localizedDescription)")
+        EkaMedicalRecordsCoreLogger.capture("Failure in document update network call \(error.localizedDescription)")
         updateRecordEvent(id: documentID, status: .failure, message: error.localizedDescription)
+        completion(false)
       }
     }
   }

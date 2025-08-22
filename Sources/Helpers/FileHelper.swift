@@ -62,7 +62,7 @@ public final class FileHelper {
         return nil
       }
     } catch {
-      print("Error: \(error)")
+      EkaMedicalRecordsCoreLogger.capture("Error: \(error)")
       return nil
     }
   }
@@ -93,12 +93,12 @@ public final class FileHelper {
   ) -> String? {
     let fileName = UUID().uuidString + fileExtension
     let fileURL = FileHelper.getDocumentDirectoryURL().appendingPathComponent(fileName)
-    print("File Url is -> \(fileURL)")
+    EkaMedicalRecordsCoreLogger.capture("File Url is -> \(fileURL)")
     do {
       try data.write(to: fileURL, options: .atomic)
       return fileName
     } catch {
-      print("Couldn't write data to document directory \(error)")
+      EkaMedicalRecordsCoreLogger.capture("Couldn't write data to document directory \(error)")
       return nil
     }
   }
@@ -114,11 +114,11 @@ public final class FileHelper {
         try datum.write(to: urlRecordItem, options: .atomic)
         recordsURL.append(fileName)
       } catch {
-        debugPrint("Couldn't write data files to document directory \(error.localizedDescription)")
+        EkaMedicalRecordsCoreLogger.capture("Couldn't write data files to document directory \(error.localizedDescription)")
         return nil
       }
     }
-    debugPrint("Record file names are \(recordsURL)")
+    EkaMedicalRecordsCoreLogger.capture("Record file names are \(recordsURL)")
     return recordsURL
   }
   

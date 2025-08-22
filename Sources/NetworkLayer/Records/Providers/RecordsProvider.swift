@@ -56,6 +56,11 @@ protocol RecordsProvider {
     request: DocUpdateRequest,
     _ completion: @escaping (Result<Bool, Error>, Int?) -> Void
   )
+  
+  func sendSourceRefreshRequest(
+    oid: String,
+    _ completion: @escaping (Result<Bool, Error>, Int?) -> Void
+  )
 }
 
 extension RecordsProvider {
@@ -125,6 +130,16 @@ extension RecordsProvider {
   ) {
     networkService.execute(
       RecordsEndpoint.editDocDetails(documentID: id, filterOID: filterOID, request: request),
+      completion: completion
+    )
+  }
+  
+  func sendSourceRefreshRequest(
+    oid: String,
+    _ completion: @escaping (Result<Bool, Error>, Int?) -> Void
+  ) {
+    networkService.execute(
+      RecordsEndpoint.refreshSourceRequest(oid: oid),
       completion: completion
     )
   }
