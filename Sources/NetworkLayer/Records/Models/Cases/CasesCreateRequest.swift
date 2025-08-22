@@ -26,7 +26,7 @@ struct CasesCreateRequest: Codable {
 
 // MARK: - PartnerMeta
 struct PartnerMeta: Codable {
-    let facilityID, uhid: String
+    let facilityID, uhid: String?
 
     enum CodingKeys: String, CodingKey {
         case facilityID = "facility_id"
