@@ -11,10 +11,11 @@ import Foundation
 struct DocsListFetchResponse: Codable {
   let items: [RecordItemElement]
   let nextToken: String?
-  
+  let sourceRefreshedAt: Int?
   enum CodingKeys: String, CodingKey {
     case items
     case nextToken = "next_token"
+    case sourceRefreshedAt = "source_refreshed_at"
   }
 }
 

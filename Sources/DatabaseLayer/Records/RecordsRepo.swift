@@ -20,6 +20,7 @@ public final class RecordsRepo {
   let service: RecordsProvider = RecordsApiService()
   let casesService: CasesProvider = CasesApiService()
   /// The epoch timestamp of the last update that will come from backend
+  var lastSourceRefreshedAt: Double?
   var recordsUpdateEpoch: String?
   var casesUpdateEpoch: String?
   // MARK: - Init
@@ -29,15 +30,15 @@ public final class RecordsRepo {
   // MARK: - Sync Records
   
   /// Used to get update token and start fetching records
-  public func getUpdatedAtAndStartFetchRecords(completion: @escaping (Bool) -> Void) {
-    guard let oids = CoreInitConfigurations.shared.filterID, !oids.isEmpty else { 
-      completion(false)
-      return 
+  public func getUpdatedAtAndStartFetchRecords(completion: @escaping (Bool, Int?) -> Void) {
+    guard let oids = CoreInitConfigurations.shared.filterID, !oids.isEmpty else {
+      completion(false,nil)
+      return
     }
     
     let dispatchGroup = DispatchGroup()
     var hasError = false
-    
+    var lastourceRefreshedAtServer: Int? = nil
     for oid in oids {
       dispatchGroup.enter()
       fetchLatestRecordUpdatedAtString(oid: oid) { [weak self] updatedAt in
@@ -47,9 +48,10 @@ public final class RecordsRepo {
           return
         }
         recordsUpdateEpoch = updatedAt
-        fetchRecordsFromServer(oid: oid) { [weak self] success in
+        fetchRecordsFromServer(oid: oid) { [weak self] success , lastSourceRefreshedAt in
           guard self != nil else {
             hasError = true
+            lastourceRefreshedAtServer = lastSourceRefreshedAt
             dispatchGroup.leave()
             return
           }
@@ -62,7 +64,7 @@ public final class RecordsRepo {
     }
     
     dispatchGroup.notify(queue: .main) {
-      completion(!hasError)
+      completion(!hasError, lastourceRefreshedAtServer)
     }
   }
   
@@ -71,32 +73,32 @@ public final class RecordsRepo {
   ///   - oid: Organization ID
   ///   - pageOffsetToken: Token for pagination, pass nil for first page
   ///   - completion: completion block to be executed after fetching
-  public func fetchRecordsFromServer(oid: String, pageOffsetToken: String? = nil, completion: @escaping (Bool) -> Void) {
+  public func fetchRecordsFromServer(oid: String, pageOffsetToken: String? = nil, completion: @escaping (Bool, Int?) -> Void) {
     syncRecordsForPage(
       token: pageOffsetToken,
       updatedAt: recordsUpdateEpoch,
       oid: oid
-    ) { [weak self] nextPageToken, recordItems, error in
-      guard let self else { 
-        completion(false)
-        return 
+    ) { [weak self] nextPageToken, lastSourceRefreshedAt,recordItems, error in
+      guard let self else {
+        completion(false, nil)
+        return
       }
       if error != nil {
-        completion(false)
+        completion(false, nil)
         return
       }
       /// Add records to the database in batches
       databaseAdapter.convertNetworkToDatabaseModels(from: recordItems) { [weak self] databaseInsertModels in
         guard let self else { 
-          completion(false)
-          return 
+          completion(false, nil)
+          return
         }
         
         databaseManager.upsertRecords(from: databaseInsertModels) {
           debugPrint("Batch added to database, count -> \(databaseInsertModels.count)")
           /// If it was last page means all batches are added to database, hence send completion
           if nextPageToken == nil {
-            completion(true)
+            completion(true, lastSourceRefreshedAt)
           }
         }
       }
@@ -389,7 +391,7 @@ public final class RecordsRepo {
 extension RecordsRepo {
   
   /// Used to fetch updated at for the latest
-  private func fetchLatestRecordUpdatedAtString(oid: String, completion: @escaping (String?) -> Void) {
+  func fetchLatestRecordUpdatedAtString(oid: String, completion: @escaping (String?) -> Void) {
     fetchLatestRecord(oid: oid) { [weak self] record in
       guard let self else { return }
       let updatedAt = fetchUpdatedAtFromRecord(record: record)

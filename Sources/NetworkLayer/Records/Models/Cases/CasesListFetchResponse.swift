@@ -18,12 +18,9 @@ public enum CaseStatus: String, Codable {
 struct CasesListFetchResponse: Codable {
     let cases: [CaseElement]
     let nextToken: String?
-    let sourceRefreshedAt: Int?
-    
     enum CodingKeys: String, CodingKey {
         case cases
         case nextToken = "next_token"
-        case sourceRefreshedAt = "source_refreshed_at"
     }
 }
 

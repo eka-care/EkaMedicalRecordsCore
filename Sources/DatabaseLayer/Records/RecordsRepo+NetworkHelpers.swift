@@ -16,7 +16,7 @@ extension RecordsRepo {
     token: String?,
     updatedAt: String?,
     oid: String?,
-    completion: @escaping (_ nextPageToken: String?, _ items: [RecordItemElement], _ error: Error?) -> Void
+    completion: @escaping (_ nextPageToken: String?,_ lastSourceRefreshedAt: Int? ,_ items: [RecordItemElement], _ error: Error?) -> Void
   ) {
     service.fetchRecords(
       token: token,
@@ -28,10 +28,11 @@ extension RecordsRepo {
       case .success(let response):
         let recordsItems = response.items
         let nextPageToken = response.nextToken
-        completion(nextPageToken, recordsItems, nil)
+        let lastSourceRefreshedAt = response.sourceRefreshedAt
+        completion(nextPageToken, lastSourceRefreshedAt ,recordsItems, nil)
       case .failure(let error):
         debugPrint("Error in fetching records -> \(error.localizedDescription)")
-        completion(nil, [], error)
+        completion(nil,nil ,[], error)
       }
     }
   }
