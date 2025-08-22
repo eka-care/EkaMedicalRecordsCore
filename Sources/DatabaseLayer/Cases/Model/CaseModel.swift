@@ -34,8 +34,8 @@ extension CaseModel {
       self.oid = oid
     }
     
-    if let userDate = caseArguementModel.userDate {
-      self.userAddedDate = userDate
+    if let occuredAt = caseArguementModel.occuredAt {
+      self.occuredAt = occuredAt
     }
     
     if let isRemoteCreated = caseArguementModel.isRemoteCreated {

@@ -7,10 +7,10 @@
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="isEdited" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="isRemoteCreated" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="occuredAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="oid" optional="YES" attributeType="String"/>
         <attribute name="status" optional="YES" attributeType="String"/>
         <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
-        <attribute name="userAddedDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <relationship name="toCaseType" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="CaseType" inverseName="toCaseModel" inverseEntity="CaseType"/>
         <relationship name="toRecord" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Record" inverseName="toCaseModel" inverseEntity="Record"/>
     </entity>
