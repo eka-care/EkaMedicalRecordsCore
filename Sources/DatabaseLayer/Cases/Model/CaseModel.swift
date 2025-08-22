@@ -80,13 +80,13 @@ extension CaseModel {
         // Save the new CaseType to the database
         do {
           try managedContext.save()
-          debugPrint("Created and saved new CaseType with name: \(caseTypeName)")
+          EkaMedicalRecordsCoreLogger.capture("Created and saved new CaseType with name: \(caseTypeName)")
         } catch {
-          debugPrint("Error saving new CaseType: \(error.localizedDescription)")
+          EkaMedicalRecordsCoreLogger.capture("Error saving new CaseType: \(error.localizedDescription)")
         }
       }
     } catch {
-      debugPrint("Error fetching CaseType with name \(caseTypeName): \(error.localizedDescription)")
+      EkaMedicalRecordsCoreLogger.capture("Error fetching CaseType with name \(caseTypeName): \(error.localizedDescription)")
       
       // Fallback: create new CaseType if fetch fails and save to database
       let newCaseType = CaseType(context: managedContext)
@@ -96,9 +96,9 @@ extension CaseModel {
       // Save the new CaseType to the database
       do {
         try managedContext.save()
-        debugPrint("Created and saved new CaseType (fallback) with name: \(caseTypeName)")
+        EkaMedicalRecordsCoreLogger.capture("Created and saved new CaseType (fallback) with name: \(caseTypeName)")
       } catch {
-        debugPrint("Error saving new CaseType (fallback): \(error.localizedDescription)")
+        EkaMedicalRecordsCoreLogger.capture("Error saving new CaseType (fallback): \(error.localizedDescription)")
       }
     }
   }

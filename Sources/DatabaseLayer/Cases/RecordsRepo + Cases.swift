@@ -37,7 +37,7 @@ extension RecordsRepo {
         
       case .failure(let error):
         // API failure - mark case as not synced
-        debugPrint("Failed to create case on server: \(error.localizedDescription)")
+        EkaMedicalRecordsCoreLogger.capture("Failed to create case on server: \(error.localizedDescription)")
         let failedSync = CaseArguementModel(
           caseId: createCase.caseID,
           isRemoteCreated: false
@@ -56,20 +56,20 @@ extension RecordsRepo {
     _ caseModel: CaseModel,
   ) {
     guard let caseId = caseModel.caseID else {
-      debugPrint("Case ID is missing, skipping server deletion.")
+      EkaMedicalRecordsCoreLogger.capture("Case ID is missing, skipping server deletion.")
       return
     }
     guard let oid = caseModel.oid else {
-      debugPrint("Case OID is missing, skipping server deletion.")
+      EkaMedicalRecordsCoreLogger.capture("Case OID is missing, skipping server deletion.")
       return
     }
     
     deleteCaseOnServer(caseId: caseId, oid: oid) { result in
       switch result {
       case .success:
-        debugPrint("Case \(caseId) deleted successfully from server.")
+        EkaMedicalRecordsCoreLogger.capture("Case \(caseId) deleted successfully from server.")
       case .failure(let error):
-        debugPrint("Failed to delete case \(caseId) from server: \(error.localizedDescription)")
+        EkaMedicalRecordsCoreLogger.capture("Failed to delete case \(caseId) from server: \(error.localizedDescription)")
       }
     }
     // Delete locally
@@ -92,13 +92,13 @@ extension RecordsRepo {
     completion: @escaping (Result<CasesCreateResponse, Error>) -> Void
   ) {
     guard let caseId = createCase.caseID, let oid = createCase.oid else {
-      debugPrint("Case ID is missing. Cannot create case on server.")
+      EkaMedicalRecordsCoreLogger.capture("Case ID is missing. Cannot create case on server.")
       completion(.failure(NSError(domain: "CaseError", code: 1001, userInfo: [NSLocalizedDescriptionKey: "Case ID or OID is missing"])))
       return
     }
     
     guard let caseName = createCase.caseName, !caseName.isEmpty  else {
-      debugPrint("Case name is missing. Cannot create case on server.")
+      EkaMedicalRecordsCoreLogger.capture("Case name is missing. Cannot create case on server.")
       completion(.failure(NSError(domain: "CaseError", code: 1002, userInfo: [NSLocalizedDescriptionKey: "Case name is missing"])))
       return
     }
@@ -117,11 +117,11 @@ extension RecordsRepo {
       
       switch result {
       case .success(let caseDetails):
-        debugPrint("Case successfully created on the server.")
+        EkaMedicalRecordsCoreLogger.capture("Case successfully created on the server.")
         completion(.success(caseDetails))
         
       case .failure(let error):
-        debugPrint("Failed to create case on server: \(error.localizedDescription)")
+        EkaMedicalRecordsCoreLogger.capture("Failed to create case on server: \(error.localizedDescription)")
         completion(.failure(error))
       }
     }
@@ -141,10 +141,10 @@ extension RecordsRepo {
       guard self != nil else { return }
       switch result {
       case .success:
-        debugPrint("Case deleted successfully")
+        EkaMedicalRecordsCoreLogger.capture("Case deleted successfully")
         completion(.success(true))
       case .failure(let error):
-        debugPrint("Failed to delete Case: \(error.localizedDescription)")
+        EkaMedicalRecordsCoreLogger.capture("Failed to delete Case: \(error.localizedDescription)")
         completion(.failure(error))
       }
     }
@@ -172,10 +172,10 @@ extension RecordsRepo {
       guard self != nil else { return }
       switch result {
       case .success:
-        debugPrint("Case updated successfully")
+        EkaMedicalRecordsCoreLogger.capture("Case updated successfully")
         completion(.success(true))
       case .failure(let error):
-        debugPrint("Failed to update Case: \(error.localizedDescription)")
+        EkaMedicalRecordsCoreLogger.capture("Failed to update Case: \(error.localizedDescription)")
         completion(.failure(error))
       }
     }
@@ -284,7 +284,7 @@ extension RecordsRepo {
         }
         
         databaseManager.upsertCases(from: databaseInsertModels) {
-          debugPrint("Batch added to database, count -> \(databaseInsertModels.count)")
+          EkaMedicalRecordsCoreLogger.capture("Batch added to database, count -> \(databaseInsertModels.count)")
           /// If it was last page means all batches are added to database, hence send completion
           if nextPageToken == nil {
             completion(true)
@@ -323,7 +323,7 @@ extension RecordsRepo {
         let nextPageToken = response.nextToken
         completion(nextPageToken, casesItems, nil)
       case .failure(let error):
-        debugPrint("Error in fetching Cases -> \(error.localizedDescription)")
+        EkaMedicalRecordsCoreLogger.capture("Error in fetching Cases -> \(error.localizedDescription)")
         completion(nil, [], error)
       }
     }

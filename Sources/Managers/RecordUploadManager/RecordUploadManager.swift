@@ -47,14 +47,14 @@ final class RecordUploadManager {
     let recordDataReceivedCount: Int? = filesData.count
     guard recordDataReceivedCount == nestedFiles.count else {
       recordUploadError = .recordCountMetaDataMismatch
-      debugPrint("Count of file data does not match with count of files to be uploaded")
+      EkaMedicalRecordsCoreLogger.capture("Count of file data does not match with count of files to be uploaded")
       recordUploadCompletion(nil, recordUploadError)
       return
     }
     
     /// Create Upload Request
     let request = DocUploadRequest(batchRequest: batchRequests)
-    debugPrint("DocUploadRequestV3 - \(request)")
+    EkaMedicalRecordsCoreLogger.capture("DocUploadRequestV3 - \(request)")
     
     /// Network Call
     service.uploadRecords(uploadRequest: request, oid: request.batchRequest.first?.patientOID) { [weak self] result, statusCode in
@@ -63,11 +63,11 @@ final class RecordUploadManager {
       
       switch result {
       case .success(let response):
-        debugPrint("Received DocUploadFormsResponse - \(response)")
+        EkaMedicalRecordsCoreLogger.capture("Received DocUploadFormsResponse - \(response)")
         
         guard let batchResponses = response.batchResponses, !batchResponses.isEmpty else {
           recordUploadError = .emptyFormResponse
-          debugPrint("Received empty or nil BatchResponse")
+          EkaMedicalRecordsCoreLogger.capture("Received empty or nil BatchResponse")
           recordUploadCompletion(nil, recordUploadError)
           return
         }
@@ -81,7 +81,7 @@ final class RecordUploadManager {
           
           guard let forms = response.forms else {
             recordUploadError = .emptyFormResponse
-            debugPrint("Didn't receive form data in the BatchResponse \(response)")
+            EkaMedicalRecordsCoreLogger.capture("Didn't receive form data in the BatchResponse \(response)")
             continue
           }
           
@@ -99,10 +99,10 @@ final class RecordUploadManager {
               group.leave()
               
               if !success {
-                debugPrint("❌ 📁 Failed to submit file - \(nestedFiles[batchResponseIndex].name) \(error?.localizedDescription ?? "")")
+                EkaMedicalRecordsCoreLogger.capture("❌ 📁 Failed to submit file - \(nestedFiles[batchResponseIndex].name) \(error?.localizedDescription ?? "")")
                 recordUploadError = .failedToUploadFiles
               } else {
-                debugPrint("Submitted file - \(nestedFiles[batchResponseIndex].name)")
+                EkaMedicalRecordsCoreLogger.capture("Submitted file - \(nestedFiles[batchResponseIndex].name)")
                 if let documentID = response.documentID {
                   if !documentIDs.contains(documentID) {
                     documentIDs.append(documentID)
@@ -118,7 +118,7 @@ final class RecordUploadManager {
         }
         
       case .failure(let error):
-        debugPrint("❌ 📁 Failed to upload files - \(error.localizedDescription)")
+        EkaMedicalRecordsCoreLogger.capture("❌ 📁 Failed to upload files - \(error.localizedDescription)")
         recordUploadCompletion(nil, recordUploadError)
       }
     }
@@ -178,7 +178,7 @@ final class RecordUploadManager {
         let data = try Data(contentsOf: encryptedFile.url)
         recordsData.append(data)
       } catch {
-        debugPrint("Failed to retrieve raw file data for file \(encryptedFile) \(error)")
+        EkaMedicalRecordsCoreLogger.capture("Failed to retrieve raw file data for file \(encryptedFile) \(error)")
       }
     }
     
@@ -206,7 +206,7 @@ final class RecordUploadManager {
         )
       )
     }
-
+    
     let batchRequest = DocUploadRequest.BatchRequest(
       documentID: documentID,
       documentType: recordType,

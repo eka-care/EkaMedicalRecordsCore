@@ -17,10 +17,10 @@ extension RecordsDatabaseManager {
     newCasetype.update(from: model)
     do {
       try container.viewContext.save()
-      debugPrint("CaseType added successfully!")
+      EkaMedicalRecordsCoreLogger.capture("CaseType added successfully!")
       return newCasetype
     } catch {
-      debugPrint("Error saving record: \(error.localizedDescription)")
+      EkaMedicalRecordsCoreLogger.capture("Error saving record: \(error.localizedDescription)")
       return newCasetype
     }
   }
@@ -41,7 +41,7 @@ extension RecordsDatabaseManager {
         if let existingCaseType = existingCaseTypes.first {
           // Update existing CaseType
           existingCaseType.update(from: model)
-          debugPrint("CaseType '\(model.name)' updated successfully in background!")
+          EkaMedicalRecordsCoreLogger.capture("CaseType '\(model.name)' updated successfully in background!")
           try self.backgroundContext.save()
           
           DispatchQueue.main.async {
@@ -51,7 +51,7 @@ extension RecordsDatabaseManager {
           // Create new CaseType
           let newCaseType = CaseType(context: self.backgroundContext)
           newCaseType.update(from: model)
-          debugPrint("CaseType '\(model.name)' created successfully in background!")
+          EkaMedicalRecordsCoreLogger.capture("CaseType '\(model.name)' created successfully in background!")
           try self.backgroundContext.save()
           
           DispatchQueue.main.async {
@@ -59,7 +59,7 @@ extension RecordsDatabaseManager {
           }
         }
       } catch {
-        debugPrint("Error upserting CaseType in background: \(error.localizedDescription)")
+        EkaMedicalRecordsCoreLogger.capture("Error upserting CaseType in background: \(error.localizedDescription)")
         // Fallback to creating new one
         let newCaseType = CaseType(context: self.backgroundContext)
         newCaseType.update(from: model)
@@ -96,10 +96,10 @@ extension RecordsDatabaseManager {
       // Save all at once
       do {
           try container.viewContext.save()
-          debugPrint("All \(createdCaseTypes.count) CaseTypes added successfully!")
+          EkaMedicalRecordsCoreLogger.capture("All \(createdCaseTypes.count) CaseTypes added successfully!")
           return createdCaseTypes
       } catch {
-          debugPrint("Error saving CaseTypes: \(error.localizedDescription)")
+          EkaMedicalRecordsCoreLogger.capture("Error saving CaseTypes: \(error.localizedDescription)")
           container.viewContext.rollback()
           return [] // Return empty array on failure
       }

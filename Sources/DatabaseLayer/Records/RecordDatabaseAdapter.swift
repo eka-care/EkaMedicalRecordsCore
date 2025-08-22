@@ -160,7 +160,7 @@ extension RecordDatabaseAdapter {
             fileExtension: contentType.fileExtension
           ) else {
       
-      debugPrint("Database entry denied as record thumbnail is not present")
+      EkaMedicalRecordsCoreLogger.capture("Database entry denied as record thumbnail is not present")
       return RecordModel()
     }
     

@@ -78,10 +78,10 @@ extension Record {
       let foundCaseIDs = caseModels.compactMap { $0.caseID }
       let missingCaseIDs = Set(caseIDs).subtracting(Set(foundCaseIDs))
       if !missingCaseIDs.isEmpty {
-        debugPrint("Cases with IDs \(Array(missingCaseIDs)) not found in database")
+        EkaMedicalRecordsCoreLogger.capture("Cases with IDs \(Array(missingCaseIDs)) not found in database")
       }
     } catch {
-      debugPrint("Error fetching cases with IDs \(caseIDs): \(error.localizedDescription)")
+      EkaMedicalRecordsCoreLogger.capture("Error fetching cases with IDs \(caseIDs): \(error.localizedDescription)")
     }
   }
 }

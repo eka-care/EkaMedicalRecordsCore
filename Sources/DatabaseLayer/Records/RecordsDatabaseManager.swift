@@ -67,11 +67,11 @@ public final class RecordsDatabaseManager {
       
       // Check if we're currently clearing data (during logout)
       guard !self.isClearing else {
-        debugPrint("Ignoring persistent store change notification during logout")
+        EkaMedicalRecordsCoreLogger.capture("Ignoring persistent store change notification during logout")
         return
       }
       
-      debugPrint("Received a persistent store remote change notification.")
+      EkaMedicalRecordsCoreLogger.capture("Received a persistent store remote change notification.")
       Task {
         await self.fetchPersistentHistory()
       }
@@ -106,7 +106,7 @@ extension RecordsDatabaseManager {
         do {
           if let existingRecord = try self.backgroundContext.fetch(fetchRequest).first {
             // Update existing record
-            print("Document id of document being updated is \(record.documentID ?? "")")
+            EkaMedicalRecordsCoreLogger.capture("Document id of document being updated is \(record.documentID ?? "")")
             existingRecord.update(from: record)
             updateRecordEvent(
               id: record.documentID ?? existingRecord.objectID.uriRepresentation().absoluteString,
@@ -122,7 +122,7 @@ extension RecordsDatabaseManager {
             )
           }
         } catch {
-          debugPrint("Error fetching record: \(error)")
+          EkaMedicalRecordsCoreLogger.capture("Error fetching record: \(error)")
         }
       }
       
@@ -133,7 +133,7 @@ extension RecordsDatabaseManager {
           completion()
         }
       } catch {
-        debugPrint("Error saving records: \(error)")
+        EkaMedicalRecordsCoreLogger.capture("Error saving records: \(error)")
         DispatchQueue.main.async {
           completion()
         }
@@ -155,12 +155,12 @@ extension RecordsDatabaseManager {
         documentURIs: record.documentURIs
       )
       createRecordEvent(id: newRecord.id.debugDescription, status: .success)
-      debugPrint("Record added successfully!")
+      EkaMedicalRecordsCoreLogger.capture("Record added successfully!")
       return newRecord
     } catch {
       let nsError = error as NSError
       createRecordEvent(id: newRecord.id.debugDescription, status: .failure, message: error.localizedDescription)
-      debugPrint("Error saving record: \(nsError), \(nsError.userInfo)")
+      EkaMedicalRecordsCoreLogger.capture("Error saving record: \(nsError), \(nsError.userInfo)")
       return newRecord
     }
   }
@@ -198,10 +198,10 @@ extension RecordsDatabaseManager {
     }
     do {
       try container.viewContext.save()
-      debugPrint("Record meta data added successfully!")
+      EkaMedicalRecordsCoreLogger.capture("Record meta data added successfully!")
     } catch {
       let nsError = error as NSError
-      debugPrint("Error saving record meta data: \(nsError), \(nsError.userInfo)")
+      EkaMedicalRecordsCoreLogger.capture("Error saving record meta data: \(nsError), \(nsError.userInfo)")
     }
   }
   
@@ -216,10 +216,10 @@ extension RecordsDatabaseManager {
     record.toSmartReport = smartReport
     do {
       try container.viewContext.save()
-      debugPrint("Smart report saved successfully")
+      EkaMedicalRecordsCoreLogger.capture("Smart report saved successfully")
     } catch {
       let nsError = error as NSError
-      debugPrint("Error saving smart report \(nsError)")
+      EkaMedicalRecordsCoreLogger.capture("Error saving smart report \(nsError)")
     }
   }
 }
@@ -264,7 +264,7 @@ extension RecordsDatabaseManager {
       let record = try container.viewContext.existingObject(with: id) as? Record
       return record
     } catch {
-      debugPrint("Not able to fetch record with given id")
+      EkaMedicalRecordsCoreLogger.capture("Not able to fetch record with given id")
     }
     return nil
   }
@@ -279,7 +279,7 @@ extension RecordsDatabaseManager {
       let record = try container.viewContext.fetch(fetchRequest).first
       return record
     } catch {
-      debugPrint("Not able to fetch record with given id")
+      EkaMedicalRecordsCoreLogger.capture("Not able to fetch record with given id")
     }
     return nil
   }
@@ -310,7 +310,7 @@ extension RecordsDatabaseManager {
       counts[.typeAll] = totalDocumentsCount
       
     } catch {
-      print("Failed to fetch grouped document type counts: \(error)")
+      EkaMedicalRecordsCoreLogger.capture("Failed to fetch grouped document type counts: \(error)")
     }
     
     return counts
@@ -347,7 +347,7 @@ extension RecordsDatabaseManager {
         
         let records = try container.viewContext.fetch(fetchRequest)
         guard let record = records.first else {
-          debugPrint("Record not found for document ID: \(documentID)")
+          EkaMedicalRecordsCoreLogger.capture("Record not found for document ID: \(documentID)")
           updateRecordEvent(
             id: documentID,
             status: .failure,
@@ -385,7 +385,7 @@ extension RecordsDatabaseManager {
           status: .success
         )
       } catch {
-        debugPrint("Failed to update record: \(error)")
+        EkaMedicalRecordsCoreLogger.capture("Failed to update record: \(error)")
         updateRecordEvent(
           id: documentID,
           status: .failure,
@@ -422,7 +422,7 @@ extension RecordsDatabaseManager {
           completion()
         }
       } catch {
-        debugPrint("There was an error deleting entity: \(error)")
+        EkaMedicalRecordsCoreLogger.capture("There was an error deleting entity: \(error)")
         DispatchQueue.main.async {
           completion()
         }
@@ -441,7 +441,7 @@ extension RecordsDatabaseManager {
         status: .success
       )
     } catch {
-      debugPrint("Error deleting record: \(error)")
+      EkaMedicalRecordsCoreLogger.capture("Error deleting record: \(error)")
       deleteRecordEvent(
         id: record.documentID ?? record.objectID.uriRepresentation().absoluteString,
         status: .failure,
@@ -501,7 +501,7 @@ extension RecordsDatabaseManager {
                   completion(.success(()))
               }
           } catch {
-              debugPrint("❌ Failed to clear Core Data on logout: \(error)")
+              EkaMedicalRecordsCoreLogger.capture("❌ Failed to clear Core Data on logout: \(error)")
               
               // Still reset contexts so app won't be stuck
               self.tokenQueue.async(flags: .barrier) {
@@ -528,7 +528,7 @@ extension RecordsDatabaseManager {
     do {
       try await fetchPersistentHistoryTransactionsAndChanges()
     } catch {
-      debugPrint("\(error.localizedDescription)")
+      EkaMedicalRecordsCoreLogger.capture("\(error.localizedDescription)")
     }
   }
   
@@ -546,14 +546,14 @@ extension RecordsDatabaseManager {
   
   func fetchPersistentHistoryTransactionsAndChanges() async throws {
     backgroundContext.name = "persistentHistoryContext"
-    debugPrint("Start fetching persistent history changes from the store...")
+    EkaMedicalRecordsCoreLogger.capture("Start fetching persistent history changes from the store...")
     
     try await backgroundContext.perform { [weak self] in
       guard let self else { return }
       
       // Check if we're currently clearing data (during logout)
       guard !self.isClearing else {
-        debugPrint("Skipping persistent history fetch during logout")
+        EkaMedicalRecordsCoreLogger.capture("Skipping persistent history fetch during logout")
         return
       }
       
@@ -571,17 +571,17 @@ extension RecordsDatabaseManager {
       }
     }
     
-    debugPrint("Finished merging history changes.")
+    EkaMedicalRecordsCoreLogger.capture("Finished merging history changes.")
   }
   
   private func mergePersistentHistoryChanges(from history: [NSPersistentHistoryTransaction]) {
-    debugPrint("Received \(history.count) persistent history transactions.")
+    EkaMedicalRecordsCoreLogger.capture("Received \(history.count) persistent history transactions.")
     // Update view context with objectIDs from history change request.
     /// - Tag: mergeChanges
     let viewContext = container.viewContext
     viewContext.perform {
       guard !self.isClearing else {
-        debugPrint("Skipping history merge during logout")
+        EkaMedicalRecordsCoreLogger.capture("Skipping history merge during logout")
         return
       }
       

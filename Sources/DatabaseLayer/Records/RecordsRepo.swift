@@ -95,7 +95,7 @@ public final class RecordsRepo {
         }
         
         databaseManager.upsertRecords(from: databaseInsertModels) {
-          debugPrint("Batch added to database, count -> \(databaseInsertModels.count)")
+          EkaMedicalRecordsCoreLogger.capture("Batch added to database, count -> \(databaseInsertModels.count)")
           /// If it was last page means all batches are added to database, hence send completion
           if nextPageToken == nil {
             completion(true, lastSourceRefreshedAt)
@@ -122,7 +122,7 @@ public final class RecordsRepo {
   ) {
     databaseManager.upsertRecords(from: records) {
       completion()
-      debugPrint("Record added to database")
+      EkaMedicalRecordsCoreLogger.capture("Record added to database")
     }
   }
   
@@ -540,7 +540,7 @@ extension RecordsRepo {
               let caseName = uploadcase.caseName, !caseName.isEmpty,
               let caseType = uploadcase.caseType, !caseType.isEmpty,
               let oid = uploadcase.oid, !oid.isEmpty else {
-          debugPrint("Skipping case creation - missing required data: caseID=\(uploadcase.caseID ?? "nil"), caseName=\(uploadcase.caseName ?? "nil"), caseType=\(uploadcase.caseType ?? "nil"), oid=\(uploadcase.oid ?? "nil")")
+          EkaMedicalRecordsCoreLogger.capture("Skipping case creation - missing required data: caseID=\(uploadcase.caseID ?? "nil"), caseName=\(uploadcase.caseName ?? "nil"), caseType=\(uploadcase.caseType ?? "nil"), oid=\(uploadcase.oid ?? "nil")")
           uploadGroup.leave()
           continue
         }
@@ -553,7 +553,7 @@ extension RecordsRepo {
           
           switch result {
           case .success(_):
-            debugPrint("Case successfully created on the server.")
+            EkaMedicalRecordsCoreLogger.capture("Case successfully created on the server.")
             // Update the case to mark it as remotely created
             let updateModel = CaseArguementModel(
               caseId: uploadcase.caseID,
@@ -565,7 +565,7 @@ extension RecordsRepo {
             )
             
           case .failure(let error):
-            debugPrint("Failed to create case on server: \(error.localizedDescription)")
+            EkaMedicalRecordsCoreLogger.capture("Failed to create case on server: \(error.localizedDescription)")
           }
           uploadGroup.leave()
         }
@@ -598,7 +598,7 @@ extension RecordsRepo {
         // Validate that all required data is available before making the API call
         guard let caseID = caseItem.caseID, !caseID.isEmpty,
               let oid = caseItem.oid, !oid.isEmpty else {
-          debugPrint("Skipping case update - missing required data: caseID=\(caseItem.caseID ?? "nil"), oid=\(caseItem.oid ?? "nil")")
+          EkaMedicalRecordsCoreLogger.capture("Skipping case update - missing required data: caseID=\(caseItem.caseID ?? "nil"), oid=\(caseItem.oid ?? "nil")")
           editGroup.leave()
           continue
         }
@@ -611,7 +611,7 @@ extension RecordsRepo {
           
           switch result {
           case .success(_):
-            debugPrint("Case successfully updated on the server.")
+            EkaMedicalRecordsCoreLogger.capture("Case successfully updated on the server.")
             // Update the case to mark it as not edited (sync completed)
             let updateModel = CaseArguementModel(
               caseId: caseItem.caseID,
@@ -623,7 +623,7 @@ extension RecordsRepo {
             )
             
           case .failure(let error):
-            debugPrint("Failed to update case on server: \(error.localizedDescription)")
+            EkaMedicalRecordsCoreLogger.capture("Failed to update case on server: \(error.localizedDescription)")
           }
           editGroup.leave()
         }

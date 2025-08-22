@@ -31,7 +31,7 @@ extension RecordsRepo {
         let lastSourceRefreshedAt = response.sourceRefreshedAt
         completion(nextPageToken, lastSourceRefreshedAt ,recordsItems, nil)
       case .failure(let error):
-        debugPrint("Error in fetching records -> \(error.localizedDescription)")
+        EkaMedicalRecordsCoreLogger.capture("Error in fetching records -> \(error.localizedDescription)")
         completion(nil,nil ,[], error)
       }
     }
@@ -115,14 +115,14 @@ extension RecordsRepo {
           id: documentID,
           status: .success
         )
-        debugPrint("Record deleted successfully from v3")
+        EkaMedicalRecordsCoreLogger.capture("Record deleted successfully from v3")
       case .failure(let error):
         deleteRecordEvent(
           id: documentID,
           status: .failure,
           message: error.localizedDescription
         )
-        debugPrint("Failed to delete record \(error.localizedDescription)")
+        EkaMedicalRecordsCoreLogger.capture("Failed to delete record \(error.localizedDescription)")
       }
     }
   }
@@ -146,7 +146,7 @@ extension RecordsRepo {
       case .success(let response):
         completion(response)
       case .failure(let error):
-        debugPrint("Error in fetching file details \(error.localizedDescription)")
+        EkaMedicalRecordsCoreLogger.capture("Error in fetching file details \(error.localizedDescription)")
       }
     }
   }
@@ -208,7 +208,7 @@ extension RecordsRepo {
   ) {
     guard let documentID,
           let documentFilterId else {
-      debugPrint("Document ID not found while editing record")
+      EkaMedicalRecordsCoreLogger.capture("Document ID not found while editing record")
       return
     }
     /// Set document type
@@ -227,11 +227,11 @@ extension RecordsRepo {
       guard let self else { return }
       switch result {
       case .success:
-        debugPrint("Updated document")
+        EkaMedicalRecordsCoreLogger.capture("Updated document")
         updateRecordEvent(id: documentID, status: .success)
         completion(true)
       case .failure(let error):
-        debugPrint("Failure in document update network call \(error.localizedDescription)")
+        EkaMedicalRecordsCoreLogger.capture("Failure in document update network call \(error.localizedDescription)")
         updateRecordEvent(id: documentID, status: .failure, message: error.localizedDescription)
         completion(false)
       }

@@ -18,10 +18,10 @@ extension RecordsDatabaseManager {
     newCase.update(from: model)
     do {
       try container.viewContext.save()
-      debugPrint("Case added successfully!")
+      EkaMedicalRecordsCoreLogger.capture("Case added successfully!")
       return newCase
     } catch {
-      debugPrint("Error saving record: \(error.localizedDescription)")
+      EkaMedicalRecordsCoreLogger.capture("Error saving record: \(error.localizedDescription)")
       return newCase
     }
   }
@@ -59,7 +59,7 @@ extension RecordsDatabaseManager {
       let caseModel = try container.viewContext.existingObject(with: id) as? CaseModel
       return caseModel
     } catch {
-      debugPrint("Not able to fetch case with given id \(error.localizedDescription)")
+      EkaMedicalRecordsCoreLogger.capture("Not able to fetch case with given id \(error.localizedDescription)")
     }
     return nil
   }
@@ -80,7 +80,7 @@ extension RecordsDatabaseManager {
     do {
       try container.viewContext.save()
     } catch {
-      debugPrint("No able to update case \(error.localizedDescription)")
+      EkaMedicalRecordsCoreLogger.capture("No able to update case \(error.localizedDescription)")
     }
   }
 }
@@ -97,7 +97,7 @@ extension RecordsDatabaseManager {
     do {
       try container.viewContext.save()
     } catch {
-      debugPrint("Error in deleting case \(error.localizedDescription)")
+      EkaMedicalRecordsCoreLogger.capture("Error in deleting case \(error.localizedDescription)")
     }
   }
 }
@@ -124,7 +124,7 @@ extension RecordsDatabaseManager {
         do {
           if let existingCase = try self.backgroundContext.fetch(fetchRequest).first {
             // Update existing record
-            print("cased updated for \(caseEntry.caseId ?? "")")
+            EkaMedicalRecordsCoreLogger.capture("cased updated for \(caseEntry.caseId ?? "")")
             existingCase.update(from: caseEntry)
 //            updateRecordEvent(
 //              id: record.documentID ?? existingRecord.objectID.uriRepresentation().absoluteString,
@@ -140,7 +140,7 @@ extension RecordsDatabaseManager {
 //            )
           }
         } catch {
-          debugPrint("Error fetching record: \(error)")
+          EkaMedicalRecordsCoreLogger.capture("Error fetching record: \(error)")
         }
       }
       
@@ -151,7 +151,7 @@ extension RecordsDatabaseManager {
           completion()
         }
       } catch {
-        debugPrint("Error saving cases: \(error)")
+        EkaMedicalRecordsCoreLogger.capture("Error saving cases: \(error)")
         DispatchQueue.main.async {
           completion()
         }
