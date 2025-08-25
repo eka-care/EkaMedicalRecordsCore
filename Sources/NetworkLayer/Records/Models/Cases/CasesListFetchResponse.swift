@@ -43,6 +43,7 @@ struct Item: Codable {
   let displayName, type, hiType: String?
   let partnerMeta: PartnerMeta?
   let createdAt: Int?
+  let occuredAt: Int?
 
   enum CodingKeys: String, CodingKey {
       case displayName = "display_name"
@@ -50,5 +51,6 @@ struct Item: Codable {
       case hiType = "hi_type"
       case partnerMeta = "partner_meta"
       case createdAt = "created_at"
+      case occuredAt = "occurred_at"
   }
 }
