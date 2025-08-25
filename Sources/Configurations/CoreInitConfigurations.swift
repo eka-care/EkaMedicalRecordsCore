@@ -7,15 +7,15 @@
 
 import Alamofire
 
-enum FeatureRestriction: String {
-  case uploadRecords
+public enum MedicaRecordsFeatureRestriction: String {
+  case uploadRecords = "UPLOAD_MEDICAL_RECORDS"
 }
 
 public class CoreInitConfigurations {
   
   public var blockedFeatures: [String] = []
-  var blockedFeatureTypes: [FeatureRestriction] {
-    blockedFeatures.compactMap({ FeatureRestriction(rawValue: $0) })
+  var blockedFeatureTypes: [MedicaRecordsFeatureRestriction] {
+    blockedFeatures.compactMap({ MedicaRecordsFeatureRestriction(rawValue: $0) })
   }
   
   // MARK: - Properties
