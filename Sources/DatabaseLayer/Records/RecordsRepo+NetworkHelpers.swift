@@ -28,7 +28,7 @@ extension RecordsRepo {
       case .success(let response):
         let recordsItems = response.items
         let nextPageToken = response.nextToken
-        let lastSourceRefreshedAt = response.sourceRefreshedAt
+        let sourceRefreshedAt = response.sourceRefreshedAt
         completion(nextPageToken, lastSourceRefreshedAt ,recordsItems, nil)
       case .failure(let error):
         EkaMedicalRecordsCoreLogger.capture("Error in fetching records -> \(error.localizedDescription)")
