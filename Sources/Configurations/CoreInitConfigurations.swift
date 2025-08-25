@@ -14,7 +14,7 @@ public enum MedicaRecordsFeatureRestriction: String {
 public class CoreInitConfigurations {
   
   public var blockedFeatures: [String] = []
-  var blockedFeatureTypes: [MedicaRecordsFeatureRestriction] {
+  public var blockedFeatureTypes: [MedicaRecordsFeatureRestriction] {
     blockedFeatures.compactMap({ MedicaRecordsFeatureRestriction(rawValue: $0) })
   }
   
