@@ -38,7 +38,7 @@ public final class RecordsRepo {
     
     let dispatchGroup = DispatchGroup()
     var hasError = false
-    var sourceRefreshedAtServer: Int? = nil
+    var sourceRefreshedAtServer: Int?
     for oid in oids {
       dispatchGroup.enter()
       fetchLatestRecordUpdatedAtString(oid: oid) { [weak self] updatedAt in
