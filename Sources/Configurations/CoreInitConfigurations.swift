@@ -7,7 +7,16 @@
 
 import Alamofire
 
+enum FeatureRestriction: String {
+  case uploadRecords
+}
+
 public class CoreInitConfigurations {
+  
+  public var blockedFeatures: [String] = []
+  var blockedFeatureTypes: [FeatureRestriction] {
+    blockedFeatures.compactMap({ FeatureRestriction(rawValue: $0) })
+  }
   
   // MARK: - Properties
   
