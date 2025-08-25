@@ -309,6 +309,10 @@ extension RecordDatabaseAdapter {
         insertModel.createdAt = createdDate.toDate()
       }
       
+      if let occuredAt = insertModel.occuredAt {
+        insertModel.occuredAt = occuredAt
+      }
+      
       if let updatedAt = networkModel.updatedAt {
         insertModel.updatedAt = updatedAt.toDate()
       }
