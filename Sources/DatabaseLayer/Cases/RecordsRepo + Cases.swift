@@ -100,7 +100,7 @@ extension RecordsRepo {
       id: caseId,
       displayName: caseName,
       hiType: nil,
-      occurredAt: createCase.createdAt?.toEpochInt() ?? Date().toEpochInt(),
+      occurredAt: createCase.occuredAt?.toEpochInt() ?? Date().toEpochInt(),
       type: createCase.caseType ?? "",
       partnerMeta: nil,
     )
