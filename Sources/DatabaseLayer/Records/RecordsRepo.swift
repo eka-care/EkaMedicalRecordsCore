@@ -38,7 +38,7 @@ public final class RecordsRepo {
     
     let dispatchGroup = DispatchGroup()
     var hasError = false
-    var lastourceRefreshedAtServer: Int? = nil
+    var sourceRefreshedAtServer: Int?
     for oid in oids {
       dispatchGroup.enter()
       fetchLatestRecordUpdatedAtString(oid: oid) { [weak self] updatedAt in
@@ -52,13 +52,14 @@ public final class RecordsRepo {
           if !success {
             hasError = true
           }
+          sourceRefreshedAtServer = lastSourceRefreshedAt
           dispatchGroup.leave()
         }
       }
     }
     
     dispatchGroup.notify(queue: .main) {
-      completion(!hasError, lastourceRefreshedAtServer)
+      completion(!hasError, sourceRefreshedAtServer)
     }
   }
   
