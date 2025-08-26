@@ -57,16 +57,17 @@ extension RecordsRepo {
       return
     }
     
-    deleteCaseOnServer(caseId: caseId, oid: oid) { result in
+    deleteCaseOnServer(caseId: caseId, oid: oid) {[weak self] result in
+      guard let self else { return }
       switch result {
       case .success:
+        // Delete locally
+        databaseManager.deleteCase(caseModel: caseModel)
         EkaMedicalRecordsCoreLogger.capture("Case \(caseId) deleted successfully from server.")
       case .failure(let error):
         EkaMedicalRecordsCoreLogger.capture("Failed to delete case \(caseId) from server: \(error.localizedDescription)")
       }
     }
-    // Delete locally
-    databaseManager.deleteCase(caseModel: caseModel)
   }
 }
 
