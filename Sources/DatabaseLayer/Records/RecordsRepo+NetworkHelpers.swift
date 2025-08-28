@@ -204,6 +204,7 @@ extension RecordsRepo {
     documentDate: Date? = nil,
     documentType: Int? = nil,
     documentFilterId: String? = nil,
+    linkedCases: [String]? = nil,
     completion: @escaping (Bool) -> Void
   ) {
     guard let documentID,
@@ -217,7 +218,8 @@ extension RecordsRepo {
     let request = DocUpdateRequest(
       oid: documentFilterId,
       documentType: recordDocumentType?.rawValue,
-      documentDate: documentDate?.toUSEnglishString(withFormat: "dd-MM-yyyy") ?? ""
+      documentDate: documentDate?.toUSEnglishString(withFormat: "dd-MM-yyyy") ?? "",
+      cases: linkedCases
     )
     service.editDocumentDetails(
       documentId: documentID,
