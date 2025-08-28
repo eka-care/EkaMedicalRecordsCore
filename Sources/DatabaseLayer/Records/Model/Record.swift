@@ -35,11 +35,6 @@ extension Record {
     if let isEdited = record.isEdited {
       self.isEdited = isEdited
     }
-    /// Add Case Models
-    // Handle single case model (backward compatibility)
-    if let caseModel = record.caseModel {
-      addToToCaseModel(caseModel)
-    }
     
     // Handle array of case models directly
     if let caseModels = record.caseModels {

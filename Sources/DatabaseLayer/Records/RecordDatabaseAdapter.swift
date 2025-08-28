@@ -28,7 +28,6 @@ public struct RecordModel {
   public var documentURIs: [String]?
   public var contentType: String?
   public var isEdited: Bool?
-  public var caseModel: CaseModel? // For backward compatibility
   public var caseModels: [CaseModel]? // Array of case models for many-to-many relationship
   public var caseIDs: [String]? // Array of case IDs for lazy loading
   
@@ -46,7 +45,6 @@ public struct RecordModel {
     documentURIs: [String]? = nil,
     contentType: String? = nil,
     isEdited: Bool? = nil,
-    caseModel: CaseModel? = nil,
     caseModels: [CaseModel]? = nil,
     caseIDs: [String]? = nil
   ) {
@@ -64,7 +62,6 @@ public struct RecordModel {
     self.documentURIs = documentURIs
     self.isEdited = isEdited
     self.contentType = contentType
-    self.caseModel = caseModel
     self.caseModels = caseModels
     self.caseIDs = caseIDs
   }
@@ -135,12 +132,12 @@ extension RecordDatabaseAdapter {
   /// - Parameters:
   ///   - data: Array of items within the record
   ///   - contentType: Type of content like for pdf it will be .pdf
-  ///   - caseID: caseID of the case to which the record will be attached to
+  ///   - caseModels: Array of CaseModels to which the record will be attached
   /// - Returns: RecordModel which will be used to insert in the database
   public func formRecordModelFromAddedData(
     data: [Data],
     contentType: FileType,
-    caseModel: CaseModel? = nil
+    caseModels: [CaseModel]? = nil
   ) -> RecordModel {
     let contentTypeString: String = contentType.fileExtension
     /// Form record local path
@@ -175,9 +172,28 @@ extension RecordDatabaseAdapter {
       uploadDate: Date(), // Current date
       documentURIs: recordsPath,
       contentType: contentType.fileExtension,
-      caseModel: caseModel
+      caseModels: caseModels
     )
   }
+  
+//  /// Backward compatibility function for single case model
+//  /// - Parameters:
+//  ///   - data: Array of items within the record
+//  ///   - contentType: Type of content like for pdf it will be .pdf
+//  ///   - caseModel: Single CaseModel to which the record will be attached
+//  /// - Returns: RecordModel which will be used to insert in the database
+//  public func formRecordModelFromAddedData(
+//    data: [Data],
+//    contentType: FileType,
+//    caseModel: CaseModel?
+//  ) -> RecordModel {
+//    let caseModels = caseModel != nil ? [caseModel!] : nil
+//    return formRecordModelFromAddedData(
+//      data: data,
+//      contentType: contentType,
+//      caseModels: caseModels
+//    )
+//  }
 }
 
 // MARK: - Helpers
