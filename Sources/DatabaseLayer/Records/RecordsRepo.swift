@@ -150,7 +150,7 @@ public final class RecordsRepo {
       documentDate: record.documentDate?.toEpochInt(),
       contentType: FileType.getFileTypeFromFilePath(filePath: documentURIs.first ?? "")?.fileExtension ?? "",
       userOid: record.oid,
-      cases: casesLinkedToRecord
+      linkedCases: casesLinkedToRecord
     ) {
       [weak self] uploadFormsResponse,
       error in

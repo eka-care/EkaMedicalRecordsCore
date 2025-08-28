@@ -24,6 +24,7 @@ final class RecordUploadManager {
     tags: [String]?,
     recordType: String?,
     documentDate: Int?,
+    linkedCases: [String]? = nil,
     isLinkedWithAbha: Bool? = nil,
     userOid: String? = nil,
     recordUploadCompletion: @escaping RecordUploadCompletion
