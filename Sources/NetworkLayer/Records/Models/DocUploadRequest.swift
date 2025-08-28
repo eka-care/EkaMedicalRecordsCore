@@ -22,12 +22,14 @@ struct DocUploadRequest: Codable {
     let documentDate: Int?
     let patientOID: String?
     let documentID: String
+    let cases: [String]?
     let tags: [String]?
     let files: [FileMetaData]?
     
     enum CodingKeys: String, CodingKey {
       case documentType = "dt"
       case documentDate = "dd_e"
+      case cases
       case tags = "tg"
       case patientOID = "patient_oid"
       case files
@@ -39,6 +41,7 @@ struct DocUploadRequest: Codable {
       documentType: String? = nil,
       documentDate: Int? = nil,
       patientOID: String? = nil,
+      cases: [String]? = nil,
       tags: [String]? = nil,
       files: [DocUploadRequest.FileMetaData]? = nil
     ) {
@@ -46,6 +49,7 @@ struct DocUploadRequest: Codable {
       self.documentType = documentType
       self.documentDate = documentDate
       self.patientOID = patientOID
+      self.cases = cases
       self.tags = tags
       self.files = files
     }

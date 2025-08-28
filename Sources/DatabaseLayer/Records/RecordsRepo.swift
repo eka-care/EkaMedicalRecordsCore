@@ -141,13 +141,16 @@ public final class RecordsRepo {
   ) {
     /// Update the upload sync status
     record.syncState = RecordSyncState.uploading.stringValue
+    let casesLinkedToRecord: [String]? = record.toCaseModel?.allObjects.compactMap { ($0 as? CaseModel)?.caseID }
+    
     let documentURIs: [String] = record.toRecordMeta?.allObjects.compactMap { ($0 as? RecordMeta)?.documentURI } ?? []
     uploadRecordsV3(
       documentID: record.documentID ?? "",
       recordURLs: documentURIs,
       documentDate: record.documentDate?.toEpochInt(),
       contentType: FileType.getFileTypeFromFilePath(filePath: documentURIs.first ?? "")?.fileExtension ?? "",
-      userOid: record.oid
+      userOid: record.oid,
+      cases: casesLinkedToRecord
     ) {
       [weak self] uploadFormsResponse,
       error in

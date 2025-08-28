@@ -57,6 +57,7 @@ extension RecordsRepo {
     contentType: String,
     isLinkedWithAbha: Bool? = false,
     userOid: String? = nil,
+    cases: [String]? = nil,
     completion: @escaping (DocUploadFormsResponse?, RecordUploadErrorType?) -> Void
   ) {
     guard let recordURLs,
