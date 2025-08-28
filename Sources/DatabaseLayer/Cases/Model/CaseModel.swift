@@ -103,3 +103,65 @@ extension CaseModel {
     }
   }
 }
+
+// MARK: - Record Relationship Management
+
+extension CaseModel {
+  /// Get all associated records as an array
+  /// - Returns: Array of Record objects associated with this case
+  public func getRecords() -> [Record] {
+    return toRecord?.allObjects as? [Record] ?? []
+  }
+  
+  /// Get all associated record IDs as an array
+  /// - Returns: Array of record document ID strings associated with this case
+  public func getRecordIDs() -> [String] {
+    let records = getRecords()
+    return records.compactMap { $0.documentID }
+  }
+  
+  /// Add a single record to this case
+  /// - Parameter record: The Record to associate with this case
+  public func addRecord(_ record: Record) {
+    addToToRecord(record)
+  }
+  
+  /// Remove a single record from this case
+  /// - Parameter record: The Record to disassociate from this case
+  public func removeRecord(_ record: Record) {
+    removeFromToRecord(record)
+  }
+  
+  /// Add multiple records to this case
+  /// - Parameter records: Array of Record objects to associate with this case
+  public func addRecords(_ records: [Record]) {
+    records.forEach { addToToRecord($0) }
+  }
+  
+  /// Remove multiple records from this case
+  /// - Parameter records: Array of Record objects to disassociate from this case
+  public func removeRecords(_ records: [Record]) {
+    records.forEach { removeFromToRecord($0) }
+  }
+  
+  /// Check if this case is associated with a specific record
+  /// - Parameter record: The Record to check for association
+  /// - Returns: True if the case is associated with the record, false otherwise
+  public func isAssociatedWith(record: Record) -> Bool {
+    return toRecord?.contains(record) ?? false
+  }
+  
+  /// Check if this case is associated with a record by document ID
+  /// - Parameter documentID: The record document ID to check for association
+  /// - Returns: True if the case is associated with the record, false otherwise
+  public func isAssociatedWith(documentID: String) -> Bool {
+    let recordIDs = getRecordIDs()
+    return recordIDs.contains(documentID)
+  }
+  
+  /// Remove all record associations from this case
+  public func removeAllRecordAssociations() {
+    let records = getRecords()
+    removeRecords(records)
+  }
+}

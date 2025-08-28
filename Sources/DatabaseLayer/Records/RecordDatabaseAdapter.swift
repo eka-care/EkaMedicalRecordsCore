@@ -28,8 +28,9 @@ public struct RecordModel {
   public var documentURIs: [String]?
   public var contentType: String?
   public var isEdited: Bool?
-  public var caseModel: CaseModel?
-  public var caseIDs: [String]?
+  public var caseModel: CaseModel? // For backward compatibility
+  public var caseModels: [CaseModel]? // Array of case models for many-to-many relationship
+  public var caseIDs: [String]? // Array of case IDs for lazy loading
   
   public init(
     documentDate: Date? = nil,
@@ -46,6 +47,7 @@ public struct RecordModel {
     contentType: String? = nil,
     isEdited: Bool? = nil,
     caseModel: CaseModel? = nil,
+    caseModels: [CaseModel]? = nil,
     caseIDs: [String]? = nil
   ) {
     self.documentID = UUID().uuidString
@@ -63,6 +65,7 @@ public struct RecordModel {
     self.isEdited = isEdited
     self.contentType = contentType
     self.caseModel = caseModel
+    self.caseModels = caseModels
     self.caseIDs = caseIDs
   }
 }
