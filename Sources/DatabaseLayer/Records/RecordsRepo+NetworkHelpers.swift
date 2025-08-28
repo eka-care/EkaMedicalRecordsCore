@@ -218,7 +218,7 @@ extension RecordsRepo {
     let request = DocUpdateRequest(
       oid: documentFilterId,
       documentType: recordDocumentType?.rawValue,
-      documentDate: documentDate?.toUSEnglishString(withFormat: "dd-MM-yyyy") ?? "",
+      documentDate: documentDate?.toEpochInt(),
       cases: linkedCases
     )
     service.editDocumentDetails(
