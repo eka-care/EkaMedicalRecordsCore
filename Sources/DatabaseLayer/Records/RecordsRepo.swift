@@ -312,7 +312,7 @@ public final class RecordsRepo {
     documentType: Int? = nil,
     documentOid: String? = CoreInitConfigurations.shared.primaryFilterID,
     isEdited: Bool?,
-    caseModel: CaseModel? = nil
+    caseModels: [CaseModel]? = nil
   ) {
     /// Update in database
     databaseManager.updateRecord(
@@ -322,14 +322,17 @@ public final class RecordsRepo {
       documentType: documentType,
       documentOid: documentOid,
       isEdited: isEdited,
-      caseModel: caseModel
+      caseModels: caseModels
     )
+    
+    let caseListIds = caseModels?.compactMap(\.caseID) ?? []
     /// Update call
     editDocument(
       documentID: documentID,
       documentDate: documentDate,
       documentType: documentType,
-      documentFilterId: documentOid
+      documentFilterId: documentOid,
+      linkedCases: caseListIds
     ) { [weak self] isSuccess in
       guard let self = self else { return }
       self.databaseManager.updateRecord(
@@ -339,7 +342,7 @@ public final class RecordsRepo {
         documentType: documentType,
         documentOid: documentOid,
         isEdited: !isSuccess,
-        caseModel: caseModel
+        caseModels: caseModels
       )
     }
   }
