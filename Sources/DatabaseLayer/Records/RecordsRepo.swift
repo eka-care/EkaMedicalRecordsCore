@@ -32,6 +32,7 @@ public final class RecordsRepo {
   /// Used to get update token and start fetching records
   public func getUpdatedAtAndStartFetchRecords(completion: @escaping (Bool, Int?) -> Void) {
     guard let oids = CoreInitConfigurations.shared.filterID, !oids.isEmpty else {
+      EkaMedicalRecordsCoreLogger.capture("Missing or empty filterID configuration")
       completion(false,nil)
       return
     }
@@ -141,13 +142,16 @@ public final class RecordsRepo {
   ) {
     /// Update the upload sync status
     record.syncState = RecordSyncState.uploading.stringValue
+    let casesLinkedToRecord: [String]? = record.toCaseModel?.allObjects.compactMap { ($0 as? CaseModel)?.caseID }
+    
     let documentURIs: [String] = record.toRecordMeta?.allObjects.compactMap { ($0 as? RecordMeta)?.documentURI } ?? []
     uploadRecordsV3(
       documentID: record.documentID ?? "",
       recordURLs: documentURIs,
       documentDate: record.documentDate?.toEpochInt(),
       contentType: FileType.getFileTypeFromFilePath(filePath: documentURIs.first ?? "")?.fileExtension ?? "",
-      userOid: record.oid
+      userOid: record.oid,
+      linkedCases: casesLinkedToRecord
     ) {
       [weak self] uploadFormsResponse,
       error in
@@ -309,7 +313,7 @@ public final class RecordsRepo {
     documentType: Int? = nil,
     documentOid: String? = CoreInitConfigurations.shared.primaryFilterID,
     isEdited: Bool?,
-    caseModel: CaseModel? = nil
+    caseModels: [CaseModel]? = nil
   ) {
     /// Update in database
     databaseManager.updateRecord(
@@ -319,14 +323,17 @@ public final class RecordsRepo {
       documentType: documentType,
       documentOid: documentOid,
       isEdited: isEdited,
-      caseModel: caseModel
+      caseModels: caseModels
     )
+    
+    let caseListIds = caseModels?.compactMap(\.caseID) ?? []
     /// Update call
     editDocument(
       documentID: documentID,
       documentDate: documentDate,
       documentType: documentType,
-      documentFilterId: documentOid
+      documentFilterId: documentOid,
+      linkedCases: caseListIds
     ) { [weak self] isSuccess in
       guard let self = self else { return }
       self.databaseManager.updateRecord(
@@ -336,7 +343,7 @@ public final class RecordsRepo {
         documentType: documentType,
         documentOid: documentOid,
         isEdited: !isSuccess,
-        caseModel: caseModel
+        caseModels: caseModels
       )
     }
   }
@@ -355,6 +362,89 @@ public final class RecordsRepo {
       request: request,
       completion: completion
     )
+  }
+  
+  // MARK: - Case Management
+  
+  /// Used to delink a case from a record
+  /// - Parameters:
+  ///   - record: The record from which to remove the case association
+  ///   - caseId: The ID of the case to delink from the record
+  ///   - completion: Completion handler with success status
+  public func delinkCaseFromRecord(
+    record: Record,
+    caseId: String,
+    completion: @escaping (Bool) -> Void
+  ) {
+    // Validate parameters
+    guard !caseId.isEmpty else {
+      EkaMedicalRecordsCoreLogger.capture("Cannot delink case: caseId is empty")
+      completion(false)
+      return
+    }
+    
+    guard let documentID = record.documentID else {
+      EkaMedicalRecordsCoreLogger.capture("Cannot delink case: record documentID is nil")
+      completion(false)
+      return
+    }
+    
+    // Check if the record is actually associated with this case
+    guard record.isAssociatedWith(caseID: caseId) else {
+      EkaMedicalRecordsCoreLogger.capture("Record is not associated with case ID: \(caseId)")
+      completion(false)
+      return
+    }
+    
+    // Find the specific case model to remove
+    let caseModels = record.getCaseModels()
+    guard let caseModelToRemove = caseModels.first(where: { $0.caseID == caseId }) else {
+      EkaMedicalRecordsCoreLogger.capture("Case model not found for case ID: \(caseId)")
+      completion(false)
+      return
+    }
+    
+    // Remove the case association from the database
+    record.removeCaseModel(caseModelToRemove)
+    
+    // Get the updated list of linked cases after removal
+    let updatedLinkedCases = record.getCaseIDs()
+    
+    // Sync the change with the server
+    editDocument(
+      documentID: documentID,
+      documentDate: record.documentDate,
+      documentType: Int(record.documentType),
+      documentFilterId: record.oid,
+      linkedCases: updatedLinkedCases
+    ) { [weak self] isSuccess in
+      guard let self = self else {
+        completion(false)
+        return
+      }
+      
+      if isSuccess {
+        EkaMedicalRecordsCoreLogger.capture("Successfully delinked case \(caseId) from record \(documentID)")
+        // Update the record's edit status to reflect successful sync
+        self.databaseManager.updateRecord(
+          documentID: documentID,
+          documentOid: record.oid,
+          isEdited: false
+        )
+        completion(true)
+      } else {
+        // If network sync failed, re-add the case association to maintain consistency
+        record.addCaseModel(caseModelToRemove)
+        EkaMedicalRecordsCoreLogger.capture("Failed to sync delink operation for case \(caseId) from record \(documentID)")
+        // Mark record as edited since local and server state are now out of sync
+        self.databaseManager.updateRecord(
+          documentID: documentID,
+          documentOid: record.oid,
+          isEdited: true
+        )
+        completion(false)
+      }
+    }
   }
   
   /// Used to delete a specific record from the database
@@ -405,69 +495,117 @@ extension RecordsRepo {
   }
   
   /// Used to sync the unuploaded records
-  public func syncUnuploadedRecords(completion: @escaping () -> Void = {}) {
-      syncNewRecords { [weak self] in
+  public func syncUnuploadedRecords(completion: @escaping (Result<Void, Error>) -> Void) {
+      syncNewRecords { [weak self] newRecordsResult in
           guard let self = self else { 
-            completion()
+            completion(.failure(ErrorHelper.selfDeallocatedError()))
             return 
           }
-        self.syncEditedRecords { 
-          completion()
-        }
+          
+          switch newRecordsResult {
+          case .success:
+            self.syncEditedRecords { editedRecordsResult in
+              completion(editedRecordsResult)
+            }
+          case .failure(let error):
+            completion(.failure(error))
+          }
       }
   }
 
-  private func syncNewRecords(completion: @escaping () -> Void) {
+  private func syncNewRecords(completion: @escaping (Result<Void, Error>) -> Void) {
       fetchRecords(fetchRequest: QueryHelper.fetchRecordsWithUploadingOrFailedState()) { [weak self] records in
           guard let self = self else {
-              completion()
+              completion(.failure(ErrorHelper.selfDeallocatedError()))
               return
           }
           
           // Handle case where there are no records to upload
           guard !records.isEmpty else {
-              completion()
+              completion(.success(()))
               return
           }
           
           let uploadGroup = DispatchGroup()
+          var errors: [Error] = []
+          let errorsQueue = DispatchQueue(label: "syncNewRecords.errors", attributes: .concurrent)
           
           for record in records {
               uploadGroup.enter()
-              self.uploadRecord(record: record) { _ in
+              self.uploadRecord(record: record) { uploadedRecord in
+                  if uploadedRecord == nil {
+                      let uploadError = ErrorHelper.createError(
+                          domain: .sync,
+                          code: .networkRequestFailed,
+                          message: "Failed to upload record: \(record.documentID ?? "unknown")"
+                      )
+                      errorsQueue.async(flags: .barrier) {
+                          errors.append(uploadError)
+                      }
+                  }
                   uploadGroup.leave()
               }
           }
           
           uploadGroup.notify(queue: .global(qos: .utility)) {
-              completion()
+              if errors.isEmpty {
+                  completion(.success(()))
+              } else {
+                  let combinedError = ErrorHelper.syncOperationError(
+                      operation: "sync new records",
+                      failureCount: errors.count,
+                      errors: errors
+                  )
+                  completion(.failure(combinedError))
+              }
           }
       }
   }
 
-  private func syncEditedRecords(completion: @escaping () -> Void) {
+  private func syncEditedRecords(completion: @escaping (Result<Void, Error>) -> Void) {
       fetchRecords(fetchRequest: QueryHelper.fetchRecordsForEditedRecordSync()) { [weak self] records in
           guard let self = self else {
-              completion()
+              completion(.failure(ErrorHelper.selfDeallocatedError()))
               return
           }
           // Handle case where there are no records to edit
           guard !records.isEmpty else {
-              completion()
+              completion(.success(()))
               return
           }
+          
           let editGroup = DispatchGroup()
+          var errors: [Error] = []
+          let errorsQueue = DispatchQueue(label: "syncEditedRecords.errors", attributes: .concurrent)
+          
           for record in records {
               // Skip if documentID is missing
               guard let documentID = record.documentID else {
+                  let validationError = ErrorHelper.validationError(missingFields: ["documentID"])
+                  errorsQueue.async(flags: .barrier) {
+                      errors.append(validationError)
+                  }
                   continue
               }
               editGroup.enter()
-              self.editDocument(documentID: documentID, documentFilterId: record.oid) { [weak self] isSuccess in
+            let linkedCaseIds: [String] = record.getCaseIDs()
+            self.editDocument(documentID: documentID,documentType: Int(record.documentType) ,documentFilterId: record.oid, linkedCases: linkedCaseIds) { [weak self] isSuccess in
                   guard let self = self else {
                       editGroup.leave()
                       return
                   }
+                  
+                  if !isSuccess {
+                      let editError = ErrorHelper.createError(
+                          domain: .sync,
+                          code: .networkRequestFailed,
+                          message: "Failed to edit record: \(documentID)"
+                      )
+                      errorsQueue.async(flags: .barrier) {
+                          errors.append(editError)
+                      }
+                  }
+                  
                   self.databaseManager.updateRecord(
                       documentID: documentID,
                       documentOid: record.oid,
@@ -478,7 +616,16 @@ extension RecordsRepo {
               }
           }
           editGroup.notify(queue: .global(qos: .utility)) {
-              completion()
+              if errors.isEmpty {
+                  completion(.success(()))
+              } else {
+                  let combinedError = ErrorHelper.syncOperationError(
+                      operation: "sync edited records",
+                      failureCount: errors.count,
+                      errors: errors
+                  )
+                  completion(.failure(combinedError))
+              }
           }
       }
   }
@@ -487,32 +634,40 @@ extension RecordsRepo {
 extension RecordsRepo {
   
   /// Used to sync the unuploaded records
-  public func syncUnsyncedCases(completion: @escaping () -> Void) {
-    syncNewCases { [weak self] in
+  public func syncUnsyncedCases(completion: @escaping (Result<Void, Error>) -> Void) {
+    syncNewCases { [weak self] newCasesResult in
       guard let self  else {
-        completion()
+        completion(.failure(ErrorHelper.selfDeallocatedError()))
         return 
       }
-      syncEditedCases {
-        completion()
+      
+      switch newCasesResult {
+      case .success:
+        syncEditedCases { editedCasesResult in
+          completion(editedCasesResult)
+        }
+      case .failure(let error):
+        completion(.failure(error))
       }
     }
   }
   
-  private func syncNewCases(completion: @escaping () -> Void) {
+  private func syncNewCases(completion: @escaping (Result<Void, Error>) -> Void) {
     databaseManager.fetchCase(fetchRequest: QueryHelper.fetchCasesForUncreatedOnServerSync()) { [weak self] cases in
       guard let self else {
-        completion()
+        completion(.failure(ErrorHelper.selfDeallocatedError()))
         return
       }
       
       // Handle case where there are no cases to upload
       guard !cases.isEmpty else {
-        completion()
+        completion(.success(()))
         return
       }
       
       let uploadGroup = DispatchGroup()
+      var errors: [Error] = []
+      let errorsQueue = DispatchQueue(label: "syncNewCases.errors", attributes: .concurrent)
       
       for uploadcase in cases {
         uploadGroup.enter()
@@ -522,7 +677,17 @@ extension RecordsRepo {
               let caseName = uploadcase.caseName, !caseName.isEmpty,
               let caseType = uploadcase.caseType, !caseType.isEmpty,
               let oid = uploadcase.oid, !oid.isEmpty else {
-          EkaMedicalRecordsCoreLogger.capture("Skipping case creation - missing required data: caseID=\(uploadcase.caseID ?? "nil"), caseName=\(uploadcase.caseName ?? "nil"), caseType=\(uploadcase.caseType ?? "nil"), oid=\(uploadcase.oid ?? "nil")")
+          let missingFields = [
+            uploadcase.caseID?.isEmpty != false ? "caseID" : nil,
+            uploadcase.caseName?.isEmpty != false ? "caseName" : nil,
+            uploadcase.caseType?.isEmpty != false ? "caseType" : nil,
+            uploadcase.oid?.isEmpty != false ? "oid" : nil
+          ].compactMap { $0 }
+          let validationError = ErrorHelper.validationError(missingFields: missingFields)
+          EkaMedicalRecordsCoreLogger.capture("Skipping case creation - missing required data: \(missingFields.joined(separator: ", "))")
+          errorsQueue.async(flags: .barrier) {
+            errors.append(validationError)
+          }
           uploadGroup.leave()
           continue
         }
@@ -548,31 +713,45 @@ extension RecordsRepo {
             
           case .failure(let error):
             EkaMedicalRecordsCoreLogger.capture("Failed to create case on server: \(error.localizedDescription)")
+            errorsQueue.async(flags: .barrier) {
+              errors.append(error)
+            }
           }
           uploadGroup.leave()
         }
       }
       
       uploadGroup.notify(queue: .global(qos: .utility)) {
-        completion()
+        if errors.isEmpty {
+          completion(.success(()))
+        } else {
+          let combinedError = ErrorHelper.syncOperationError(
+            operation: "sync new cases",
+            failureCount: errors.count,
+            errors: errors
+          )
+          completion(.failure(combinedError))
+        }
       }
     }
   }
   
-  private func syncEditedCases(completion: @escaping () -> Void) {
+  private func syncEditedCases(completion: @escaping (Result<Void, Error>) -> Void) {
     databaseManager.fetchCase(fetchRequest: QueryHelper.fetchCasesForEditedSync()) { [weak self] cases in
       guard let self  else {
-        completion()
+        completion(.failure(ErrorHelper.selfDeallocatedError()))
         return
       }
       
       // Handle case where there are no cases to edit
       guard !cases.isEmpty else {
-        completion()
+        completion(.success(()))
         return
       }
       
       let editGroup = DispatchGroup()
+      var errors: [Error] = []
+      let errorsQueue = DispatchQueue(label: "syncEditedCases.errors", attributes: .concurrent)
       
       for caseItem in cases {
         editGroup.enter()
@@ -580,7 +759,15 @@ extension RecordsRepo {
         // Validate that all required data is available before making the API call
         guard let caseID = caseItem.caseID, !caseID.isEmpty,
               let oid = caseItem.oid, !oid.isEmpty else {
-          EkaMedicalRecordsCoreLogger.capture("Skipping case update - missing required data: caseID=\(caseItem.caseID ?? "nil"), oid=\(caseItem.oid ?? "nil")")
+          let missingFields = [
+            caseItem.caseID?.isEmpty != false ? "caseID" : nil,
+            caseItem.oid?.isEmpty != false ? "oid" : nil
+          ].compactMap { $0 }
+          let validationError = ErrorHelper.validationError(missingFields: missingFields)
+          EkaMedicalRecordsCoreLogger.capture("Skipping case update - missing required data: \(missingFields.joined(separator: ", "))")
+          errorsQueue.async(flags: .barrier) {
+            errors.append(validationError)
+          }
           editGroup.leave()
           continue
         }
@@ -606,13 +793,25 @@ extension RecordsRepo {
             
           case .failure(let error):
             EkaMedicalRecordsCoreLogger.capture("Failed to update case on server: \(error.localizedDescription)")
+            errorsQueue.async(flags: .barrier) {
+              errors.append(error)
+            }
           }
           editGroup.leave()
         }
       }
       
       editGroup.notify(queue: .global(qos: .utility)) {
-        completion()
+        if errors.isEmpty {
+          completion(.success(()))
+        } else {
+          let combinedError = ErrorHelper.syncOperationError(
+            operation: "sync edited cases",
+            failureCount: errors.count,
+            errors: errors
+          )
+          completion(.failure(combinedError))
+        }
       }
     }
   }
@@ -621,11 +820,11 @@ extension RecordsRepo {
 extension RecordsRepo {
   public func requestForceRefresh(completion: @escaping (Result<Bool, Error>, Int?) -> Void) {
     guard let oid = CoreInitConfigurations.shared.primaryFilterID else {
-      completion(.failure(NSError(domain: "RecordsRepo", code: 400, userInfo: [NSLocalizedDescriptionKey: "No primary filter ID available"])), nil)
+      completion(.failure(ErrorHelper.configurationMissingError(configName: "primaryFilterID")), nil)
       return
     }
     
-    self.service.sendSourceRefreshRequest(oid: oid) { [weak self] result, statusCode in
+    self.service.sendSourceRefreshRequest(oid: oid) { result, statusCode in
       switch result {
       case .success(_):
         completion(.success(true), statusCode)

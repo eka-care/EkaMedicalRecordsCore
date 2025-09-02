@@ -35,13 +35,13 @@ extension Record {
     if let isEdited = record.isEdited {
       self.isEdited = isEdited
     }
-    /// Add Case Models
-    // Handle single case model (backward compatibility)
-    if let caseModel = record.caseModel {
-      addToToCaseModel(caseModel)
+    
+    // Handle array of case models directly
+    if let caseModels = record.caseModels {
+      associateCaseModels(caseModels)
     }
     
-    // Handle array of case IDs
+    // Handle array of case IDs (for lazy loading)
     if let caseIDs = record.caseIDs {
       associateCaseModels(with: caseIDs)
     }
@@ -57,6 +57,16 @@ extension Record {
   /// Used to get meta data items from a given record object
   public func getMetaDataItems() -> [RecordMeta] {
     return toRecordMeta?.allObjects as? [RecordMeta] ?? []
+  }
+  
+  /// Used to associate multiple case models with this record directly
+  /// - Parameter caseModels: Array of CaseModel objects to associate with this record
+  private func associateCaseModels(_ caseModels: [CaseModel]) {
+    guard !caseModels.isEmpty else { return }
+    
+    for caseModel in caseModels {
+      addToToCaseModel(caseModel)
+    }
   }
   
   /// Used to associate multiple case models with this record using case IDs
@@ -83,5 +93,67 @@ extension Record {
     } catch {
       EkaMedicalRecordsCoreLogger.capture("Error fetching cases with IDs \(caseIDs): \(error.localizedDescription)")
     }
+  }
+}
+
+// MARK: - Case Relationship Management
+
+extension Record {
+  /// Get all associated case models as an array
+  /// - Returns: Array of CaseModel objects associated with this record
+  public func getCaseModels() -> [CaseModel] {
+    return toCaseModel?.allObjects as? [CaseModel] ?? []
+  }
+  
+  /// Get all associated case IDs as an array
+  /// - Returns: Array of case ID strings associated with this record
+  public func getCaseIDs() -> [String] {
+    let caseModels = getCaseModels()
+    return caseModels.compactMap { $0.caseID }
+  }
+  
+  /// Add a single case model to this record
+  /// - Parameter caseModel: The CaseModel to associate with this record
+  public func addCaseModel(_ caseModel: CaseModel) {
+    addToToCaseModel(caseModel)
+  }
+  
+  /// Remove a single case model from this record
+  /// - Parameter caseModel: The CaseModel to disassociate from this record
+  public func removeCaseModel(_ caseModel: CaseModel) {
+    removeFromToCaseModel(caseModel)
+  }
+  
+  /// Add multiple case models to this record
+  /// - Parameter caseModels: Array of CaseModel objects to associate with this record
+  public func addCaseModels(_ caseModels: [CaseModel]) {
+    caseModels.forEach { addToToCaseModel($0) }
+  }
+  
+  /// Remove multiple case models from this record
+  /// - Parameter caseModels: Array of CaseModel objects to disassociate from this record
+  public func removeCaseModels(_ caseModels: [CaseModel]) {
+    caseModels.forEach { removeFromToCaseModel($0) }
+  }
+  
+  /// Check if this record is associated with a specific case
+  /// - Parameter caseModel: The CaseModel to check for association
+  /// - Returns: True if the record is associated with the case, false otherwise
+  public func isAssociatedWith(caseModel: CaseModel) -> Bool {
+    return toCaseModel?.contains(caseModel) ?? false
+  }
+  
+  /// Check if this record is associated with a case by ID
+  /// - Parameter caseID: The case ID to check for association
+  /// - Returns: True if the record is associated with the case, false otherwise
+  public func isAssociatedWith(caseID: String) -> Bool {
+    let caseIDs = getCaseIDs()
+    return caseIDs.contains(caseID)
+  }
+  
+  /// Remove all case associations from this record
+  public func removeAllCaseAssociations() {
+    let caseModels = getCaseModels()
+    removeCaseModels(caseModels)
   }
 }

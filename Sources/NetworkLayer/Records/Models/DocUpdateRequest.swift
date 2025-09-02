@@ -6,11 +6,14 @@
 //
 
 struct DocUpdateRequest: Codable {
-  let oid, documentType, documentDate: String?
+  let oid, documentType: String?
+  let documentDate: Int?
+  let cases: [String]?
   
   enum CodingKeys: String, CodingKey {
     case oid
     case documentType = "dt"
-    case documentDate = "dd"
+    case documentDate = "dd_e"
+    case cases
   }
 }

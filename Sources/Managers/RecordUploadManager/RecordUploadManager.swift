@@ -24,6 +24,7 @@ final class RecordUploadManager {
     tags: [String]?,
     recordType: String?,
     documentDate: Int?,
+    linkedCases: [String]? = nil,
     isLinkedWithAbha: Bool? = nil,
     userOid: String? = nil,
     recordUploadCompletion: @escaping RecordUploadCompletion
@@ -38,6 +39,7 @@ final class RecordUploadManager {
       tags: tags,
       recordType: recordType,
       documentDate: documentDate,
+      linkedCases: linkedCases,
       isLinkedWithAbha: isLinkedWithAbha,
       userOid: userOid
     )
@@ -192,6 +194,7 @@ final class RecordUploadManager {
     tags: [String]?,
     recordType: String?,
     documentDate: Int?,
+    linkedCases: [String]?,
     isLinkedWithAbha: Bool?,
     userOid: String? = nil
   ) -> [DocUploadRequest.BatchRequest] {
@@ -212,6 +215,7 @@ final class RecordUploadManager {
       documentType: recordType,
       documentDate: documentDate,
       patientOID: userOid ?? CoreInitConfigurations.shared.primaryFilterID,
+      cases: linkedCases,
       tags: tags,
       files: filesMetaData
     )

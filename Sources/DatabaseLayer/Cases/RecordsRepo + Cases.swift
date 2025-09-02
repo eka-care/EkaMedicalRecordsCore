@@ -57,16 +57,17 @@ extension RecordsRepo {
       return
     }
     
-    deleteCaseOnServer(caseId: caseId, oid: oid) { result in
+    deleteCaseOnServer(caseId: caseId, oid: oid) {[weak self] result in
+      guard let self else { return }
       switch result {
       case .success:
+        // Delete locally
+        databaseManager.deleteCase(caseModel: caseModel)
         EkaMedicalRecordsCoreLogger.capture("Case \(caseId) deleted successfully from server.")
       case .failure(let error):
         EkaMedicalRecordsCoreLogger.capture("Failed to delete case \(caseId) from server: \(error.localizedDescription)")
       }
     }
-    // Delete locally
-    databaseManager.deleteCase(caseModel: caseModel)
   }
 }
 
@@ -86,13 +87,17 @@ extension RecordsRepo {
   ) {
     guard let caseId = createCase.caseID, let oid = createCase.oid else {
       EkaMedicalRecordsCoreLogger.capture("Case ID is missing. Cannot create case on server.")
-      completion(.failure(NSError(domain: "CaseError", code: 1001, userInfo: [NSLocalizedDescriptionKey: "Case ID or OID is missing"])))
+      let missingFields = [
+        createCase.caseID == nil ? "caseID" : nil,
+        createCase.oid == nil ? "oid" : nil
+      ].compactMap { $0 }
+      completion(.failure(ErrorHelper.validationError(missingFields: missingFields)))
       return
     }
     
     guard let caseName = createCase.caseName, !caseName.isEmpty  else {
       EkaMedicalRecordsCoreLogger.capture("Case name is missing. Cannot create case on server.")
-      completion(.failure(NSError(domain: "CaseError", code: 1002, userInfo: [NSLocalizedDescriptionKey: "Case name is missing"])))
+      completion(.failure(ErrorHelper.validationError(missingFields: ["caseName"])))
       return
     }
     

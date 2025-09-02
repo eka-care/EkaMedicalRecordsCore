@@ -337,7 +337,7 @@ extension RecordsDatabaseManager {
       documentOid: String? = nil,
       syncStatus: RecordSyncState? = nil,
       isEdited: Bool? = nil,
-      caseModel: CaseModel? = nil
+      caseModels: [CaseModel]? = nil
     ) {
       do {
         // Fetch the record by document ID
@@ -371,8 +371,9 @@ extension RecordsDatabaseManager {
         if let syncStatus {
           record.syncState = syncStatus.stringValue
         }
-        if let caseModel {
-          record.addToToCaseModel(caseModel)
+        if let caseModels {
+          record.removeAllCaseAssociations()
+          record.addCaseModels(caseModels)
         }
         if let isEdited {
           record.isEdited = isEdited
@@ -459,11 +460,7 @@ extension RecordsDatabaseManager {
       backgroundContext.perform { [weak self] in
           guard let self else {
               DispatchQueue.main.async {
-                  completion(.failure(NSError(
-                      domain: "RecordsDatabaseManager",
-                      code: -1,
-                      userInfo: [NSLocalizedDescriptionKey: "Database manager was deallocated"]
-                  )))
+                  completion(.failure(ErrorHelper.selfDeallocatedError(domain: .databaseManager)))
               }
               return
           }
