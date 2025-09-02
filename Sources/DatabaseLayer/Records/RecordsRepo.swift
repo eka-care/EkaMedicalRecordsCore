@@ -493,32 +493,40 @@ extension RecordsRepo {
 extension RecordsRepo {
   
   /// Used to sync the unuploaded records
-  public func syncUnsyncedCases(completion: @escaping () -> Void) {
-    syncNewCases { [weak self] in
+  public func syncUnsyncedCases(completion: @escaping (Result<Void, Error>) -> Void) {
+    syncNewCases { [weak self] newCasesResult in
       guard let self  else {
-        completion()
+        completion(.failure(NSError(domain: "RecordsRepo", code: -1, userInfo: [NSLocalizedDescriptionKey: "Self was deallocated"])))
         return 
       }
-      syncEditedCases {
-        completion()
+      
+      switch newCasesResult {
+      case .success:
+        syncEditedCases { editedCasesResult in
+          completion(editedCasesResult)
+        }
+      case .failure(let error):
+        completion(.failure(error))
       }
     }
   }
   
-  private func syncNewCases(completion: @escaping () -> Void) {
+  private func syncNewCases(completion: @escaping (Result<Void, Error>) -> Void) {
     databaseManager.fetchCase(fetchRequest: QueryHelper.fetchCasesForUncreatedOnServerSync()) { [weak self] cases in
       guard let self else {
-        completion()
+        completion(.failure(NSError(domain: "RecordsRepo", code: -1, userInfo: [NSLocalizedDescriptionKey: "Self was deallocated"])))
         return
       }
       
       // Handle case where there are no cases to upload
       guard !cases.isEmpty else {
-        completion()
+        completion(.success(()))
         return
       }
       
       let uploadGroup = DispatchGroup()
+      var errors: [Error] = []
+      let errorsQueue = DispatchQueue(label: "com.eka.syncNewCases.errors", attributes: .concurrent)
       
       for uploadcase in cases {
         uploadGroup.enter()
@@ -528,7 +536,11 @@ extension RecordsRepo {
               let caseName = uploadcase.caseName, !caseName.isEmpty,
               let caseType = uploadcase.caseType, !caseType.isEmpty,
               let oid = uploadcase.oid, !oid.isEmpty else {
+          let validationError = NSError(domain: "RecordsRepo", code: -2, userInfo: [NSLocalizedDescriptionKey: "Missing required case data: caseID=\(uploadcase.caseID ?? "nil"), caseName=\(uploadcase.caseName ?? "nil"), caseType=\(uploadcase.caseType ?? "nil"), oid=\(uploadcase.oid ?? "nil")"])
           EkaMedicalRecordsCoreLogger.capture("Skipping case creation - missing required data: caseID=\(uploadcase.caseID ?? "nil"), caseName=\(uploadcase.caseName ?? "nil"), caseType=\(uploadcase.caseType ?? "nil"), oid=\(uploadcase.oid ?? "nil")")
+          errorsQueue.async(flags: .barrier) {
+            errors.append(validationError)
+          }
           uploadGroup.leave()
           continue
         }
@@ -554,31 +566,44 @@ extension RecordsRepo {
             
           case .failure(let error):
             EkaMedicalRecordsCoreLogger.capture("Failed to create case on server: \(error.localizedDescription)")
+            errorsQueue.async(flags: .barrier) {
+              errors.append(error)
+            }
           }
           uploadGroup.leave()
         }
       }
       
       uploadGroup.notify(queue: .global(qos: .utility)) {
-        completion()
+        if errors.isEmpty {
+          completion(.success(()))
+        } else {
+          let combinedError = NSError(domain: "RecordsRepo", code: -3, userInfo: [
+            NSLocalizedDescriptionKey: "Failed to sync \(errors.count) new cases",
+            "underlyingErrors": errors
+          ])
+          completion(.failure(combinedError))
+        }
       }
     }
   }
   
-  private func syncEditedCases(completion: @escaping () -> Void) {
+  private func syncEditedCases(completion: @escaping (Result<Void, Error>) -> Void) {
     databaseManager.fetchCase(fetchRequest: QueryHelper.fetchCasesForEditedSync()) { [weak self] cases in
       guard let self  else {
-        completion()
+        completion(.failure(NSError(domain: "RecordsRepo", code: -1, userInfo: [NSLocalizedDescriptionKey: "Self was deallocated"])))
         return
       }
       
       // Handle case where there are no cases to edit
       guard !cases.isEmpty else {
-        completion()
+        completion(.success(()))
         return
       }
       
       let editGroup = DispatchGroup()
+      var errors: [Error] = []
+      let errorsQueue = DispatchQueue(label: "com.eka.syncEditedCases.errors", attributes: .concurrent)
       
       for caseItem in cases {
         editGroup.enter()
@@ -586,7 +611,11 @@ extension RecordsRepo {
         // Validate that all required data is available before making the API call
         guard let caseID = caseItem.caseID, !caseID.isEmpty,
               let oid = caseItem.oid, !oid.isEmpty else {
+          let validationError = NSError(domain: "RecordsRepo", code: -4, userInfo: [NSLocalizedDescriptionKey: "Missing required case data: caseID=\(caseItem.caseID ?? "nil"), oid=\(caseItem.oid ?? "nil")"])
           EkaMedicalRecordsCoreLogger.capture("Skipping case update - missing required data: caseID=\(caseItem.caseID ?? "nil"), oid=\(caseItem.oid ?? "nil")")
+          errorsQueue.async(flags: .barrier) {
+            errors.append(validationError)
+          }
           editGroup.leave()
           continue
         }
@@ -612,13 +641,24 @@ extension RecordsRepo {
             
           case .failure(let error):
             EkaMedicalRecordsCoreLogger.capture("Failed to update case on server: \(error.localizedDescription)")
+            errorsQueue.async(flags: .barrier) {
+              errors.append(error)
+            }
           }
           editGroup.leave()
         }
       }
       
       editGroup.notify(queue: .global(qos: .utility)) {
-        completion()
+        if errors.isEmpty {
+          completion(.success(()))
+        } else {
+          let combinedError = NSError(domain: "RecordsRepo", code: -5, userInfo: [
+            NSLocalizedDescriptionKey: "Failed to sync \(errors.count) edited cases",
+            "underlyingErrors": errors
+          ])
+          completion(.failure(combinedError))
+        }
       }
     }
   }
@@ -631,7 +671,7 @@ extension RecordsRepo {
       return
     }
     
-    self.service.sendSourceRefreshRequest(oid: oid) { [weak self] result, statusCode in
+    self.service.sendSourceRefreshRequest(oid: oid) { result, statusCode in
       switch result {
       case .success(_):
         completion(.success(true), statusCode)
