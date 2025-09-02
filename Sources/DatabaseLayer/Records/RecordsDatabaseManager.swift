@@ -460,11 +460,7 @@ extension RecordsDatabaseManager {
       backgroundContext.perform { [weak self] in
           guard let self else {
               DispatchQueue.main.async {
-                  completion(.failure(NSError(
-                      domain: "RecordsDatabaseManager",
-                      code: -1,
-                      userInfo: [NSLocalizedDescriptionKey: "Database manager was deallocated"]
-                  )))
+                  completion(.failure(ErrorHelper.selfDeallocatedError(domain: .databaseManager)))
               }
               return
           }

@@ -32,6 +32,7 @@ public final class RecordsRepo {
   /// Used to get update token and start fetching records
   public func getUpdatedAtAndStartFetchRecords(completion: @escaping (Bool, Int?) -> Void) {
     guard let oids = CoreInitConfigurations.shared.filterID, !oids.isEmpty else {
+      EkaMedicalRecordsCoreLogger.capture("Missing or empty filterID configuration")
       completion(false,nil)
       return
     }
@@ -496,7 +497,7 @@ extension RecordsRepo {
   public func syncUnsyncedCases(completion: @escaping (Result<Void, Error>) -> Void) {
     syncNewCases { [weak self] newCasesResult in
       guard let self  else {
-        completion(.failure(NSError(domain: "RecordsRepo", code: -1, userInfo: [NSLocalizedDescriptionKey: "Self was deallocated"])))
+        completion(.failure(ErrorHelper.selfDeallocatedError()))
         return 
       }
       
@@ -514,7 +515,7 @@ extension RecordsRepo {
   private func syncNewCases(completion: @escaping (Result<Void, Error>) -> Void) {
     databaseManager.fetchCase(fetchRequest: QueryHelper.fetchCasesForUncreatedOnServerSync()) { [weak self] cases in
       guard let self else {
-        completion(.failure(NSError(domain: "RecordsRepo", code: -1, userInfo: [NSLocalizedDescriptionKey: "Self was deallocated"])))
+        completion(.failure(ErrorHelper.selfDeallocatedError()))
         return
       }
       
@@ -536,8 +537,14 @@ extension RecordsRepo {
               let caseName = uploadcase.caseName, !caseName.isEmpty,
               let caseType = uploadcase.caseType, !caseType.isEmpty,
               let oid = uploadcase.oid, !oid.isEmpty else {
-          let validationError = NSError(domain: "RecordsRepo", code: -2, userInfo: [NSLocalizedDescriptionKey: "Missing required case data: caseID=\(uploadcase.caseID ?? "nil"), caseName=\(uploadcase.caseName ?? "nil"), caseType=\(uploadcase.caseType ?? "nil"), oid=\(uploadcase.oid ?? "nil")"])
-          EkaMedicalRecordsCoreLogger.capture("Skipping case creation - missing required data: caseID=\(uploadcase.caseID ?? "nil"), caseName=\(uploadcase.caseName ?? "nil"), caseType=\(uploadcase.caseType ?? "nil"), oid=\(uploadcase.oid ?? "nil")")
+          let missingFields = [
+            uploadcase.caseID?.isEmpty != false ? "caseID" : nil,
+            uploadcase.caseName?.isEmpty != false ? "caseName" : nil,
+            uploadcase.caseType?.isEmpty != false ? "caseType" : nil,
+            uploadcase.oid?.isEmpty != false ? "oid" : nil
+          ].compactMap { $0 }
+          let validationError = ErrorHelper.validationError(missingFields: missingFields)
+          EkaMedicalRecordsCoreLogger.capture("Skipping case creation - missing required data: \(missingFields.joined(separator: ", "))")
           errorsQueue.async(flags: .barrier) {
             errors.append(validationError)
           }
@@ -578,10 +585,11 @@ extension RecordsRepo {
         if errors.isEmpty {
           completion(.success(()))
         } else {
-          let combinedError = NSError(domain: "RecordsRepo", code: -3, userInfo: [
-            NSLocalizedDescriptionKey: "Failed to sync \(errors.count) new cases",
-            "underlyingErrors": errors
-          ])
+          let combinedError = ErrorHelper.syncOperationError(
+            operation: "sync new cases",
+            failureCount: errors.count,
+            errors: errors
+          )
           completion(.failure(combinedError))
         }
       }
@@ -591,7 +599,7 @@ extension RecordsRepo {
   private func syncEditedCases(completion: @escaping (Result<Void, Error>) -> Void) {
     databaseManager.fetchCase(fetchRequest: QueryHelper.fetchCasesForEditedSync()) { [weak self] cases in
       guard let self  else {
-        completion(.failure(NSError(domain: "RecordsRepo", code: -1, userInfo: [NSLocalizedDescriptionKey: "Self was deallocated"])))
+        completion(.failure(ErrorHelper.selfDeallocatedError()))
         return
       }
       
@@ -611,8 +619,12 @@ extension RecordsRepo {
         // Validate that all required data is available before making the API call
         guard let caseID = caseItem.caseID, !caseID.isEmpty,
               let oid = caseItem.oid, !oid.isEmpty else {
-          let validationError = NSError(domain: "RecordsRepo", code: -4, userInfo: [NSLocalizedDescriptionKey: "Missing required case data: caseID=\(caseItem.caseID ?? "nil"), oid=\(caseItem.oid ?? "nil")"])
-          EkaMedicalRecordsCoreLogger.capture("Skipping case update - missing required data: caseID=\(caseItem.caseID ?? "nil"), oid=\(caseItem.oid ?? "nil")")
+          let missingFields = [
+            caseItem.caseID?.isEmpty != false ? "caseID" : nil,
+            caseItem.oid?.isEmpty != false ? "oid" : nil
+          ].compactMap { $0 }
+          let validationError = ErrorHelper.validationError(missingFields: missingFields)
+          EkaMedicalRecordsCoreLogger.capture("Skipping case update - missing required data: \(missingFields.joined(separator: ", "))")
           errorsQueue.async(flags: .barrier) {
             errors.append(validationError)
           }
@@ -653,10 +665,11 @@ extension RecordsRepo {
         if errors.isEmpty {
           completion(.success(()))
         } else {
-          let combinedError = NSError(domain: "RecordsRepo", code: -5, userInfo: [
-            NSLocalizedDescriptionKey: "Failed to sync \(errors.count) edited cases",
-            "underlyingErrors": errors
-          ])
+          let combinedError = ErrorHelper.syncOperationError(
+            operation: "sync edited cases",
+            failureCount: errors.count,
+            errors: errors
+          )
           completion(.failure(combinedError))
         }
       }
@@ -667,7 +680,7 @@ extension RecordsRepo {
 extension RecordsRepo {
   public func requestForceRefresh(completion: @escaping (Result<Bool, Error>, Int?) -> Void) {
     guard let oid = CoreInitConfigurations.shared.primaryFilterID else {
-      completion(.failure(NSError(domain: "RecordsRepo", code: 400, userInfo: [NSLocalizedDescriptionKey: "No primary filter ID available"])), nil)
+      completion(.failure(ErrorHelper.configurationMissingError(configName: "primaryFilterID")), nil)
       return
     }
     

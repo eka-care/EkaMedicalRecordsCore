@@ -87,13 +87,17 @@ extension RecordsRepo {
   ) {
     guard let caseId = createCase.caseID, let oid = createCase.oid else {
       EkaMedicalRecordsCoreLogger.capture("Case ID is missing. Cannot create case on server.")
-      completion(.failure(NSError(domain: "CaseError", code: 1001, userInfo: [NSLocalizedDescriptionKey: "Case ID or OID is missing"])))
+      let missingFields = [
+        createCase.caseID == nil ? "caseID" : nil,
+        createCase.oid == nil ? "oid" : nil
+      ].compactMap { $0 }
+      completion(.failure(ErrorHelper.validationError(missingFields: missingFields)))
       return
     }
     
     guard let caseName = createCase.caseName, !caseName.isEmpty  else {
       EkaMedicalRecordsCoreLogger.capture("Case name is missing. Cannot create case on server.")
-      completion(.failure(NSError(domain: "CaseError", code: 1002, userInfo: [NSLocalizedDescriptionKey: "Case name is missing"])))
+      completion(.failure(ErrorHelper.validationError(missingFields: ["caseName"])))
       return
     }
     
