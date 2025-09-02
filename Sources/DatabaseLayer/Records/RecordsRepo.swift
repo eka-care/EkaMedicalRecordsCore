@@ -416,7 +416,7 @@ public final class RecordsRepo {
       documentDate: record.documentDate,
       documentType: Int(record.documentType),
       documentFilterId: record.oid,
-      linkedCases: updatedLinkedCases.isEmpty ? nil : updatedLinkedCases
+      linkedCases: updatedLinkedCases
     ) { [weak self] isSuccess in
       guard let self = self else {
         completion(false)
