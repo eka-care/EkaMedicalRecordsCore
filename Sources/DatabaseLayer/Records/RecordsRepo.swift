@@ -412,61 +412,96 @@ extension RecordsRepo {
   }
   
   /// Used to sync the unuploaded records
-  public func syncUnuploadedRecords(completion: @escaping () -> Void = {}) {
-      syncNewRecords { [weak self] in
+  public func syncUnuploadedRecords(completion: @escaping (Result<Void, Error>) -> Void) {
+      syncNewRecords { [weak self] newRecordsResult in
           guard let self = self else { 
-            completion()
+            completion(.failure(ErrorHelper.selfDeallocatedError()))
             return 
           }
-        self.syncEditedRecords { 
-          completion()
-        }
+          
+          switch newRecordsResult {
+          case .success:
+            self.syncEditedRecords { editedRecordsResult in
+              completion(editedRecordsResult)
+            }
+          case .failure(let error):
+            completion(.failure(error))
+          }
       }
   }
 
-  private func syncNewRecords(completion: @escaping () -> Void) {
+  private func syncNewRecords(completion: @escaping (Result<Void, Error>) -> Void) {
       fetchRecords(fetchRequest: QueryHelper.fetchRecordsWithUploadingOrFailedState()) { [weak self] records in
           guard let self = self else {
-              completion()
+              completion(.failure(ErrorHelper.selfDeallocatedError()))
               return
           }
           
           // Handle case where there are no records to upload
           guard !records.isEmpty else {
-              completion()
+              completion(.success(()))
               return
           }
           
           let uploadGroup = DispatchGroup()
+          var errors: [Error] = []
+          let errorsQueue = DispatchQueue(label: "syncNewRecords.errors", attributes: .concurrent)
           
           for record in records {
               uploadGroup.enter()
-              self.uploadRecord(record: record) { _ in
+              self.uploadRecord(record: record) { uploadedRecord in
+                  if uploadedRecord == nil {
+                      let uploadError = ErrorHelper.createError(
+                          domain: .sync,
+                          code: .networkRequestFailed,
+                          message: "Failed to upload record: \(record.documentID ?? "unknown")"
+                      )
+                      errorsQueue.async(flags: .barrier) {
+                          errors.append(uploadError)
+                      }
+                  }
                   uploadGroup.leave()
               }
           }
           
           uploadGroup.notify(queue: .global(qos: .utility)) {
-              completion()
+              if errors.isEmpty {
+                  completion(.success(()))
+              } else {
+                  let combinedError = ErrorHelper.syncOperationError(
+                      operation: "sync new records",
+                      failureCount: errors.count,
+                      errors: errors
+                  )
+                  completion(.failure(combinedError))
+              }
           }
       }
   }
 
-  private func syncEditedRecords(completion: @escaping () -> Void) {
+  private func syncEditedRecords(completion: @escaping (Result<Void, Error>) -> Void) {
       fetchRecords(fetchRequest: QueryHelper.fetchRecordsForEditedRecordSync()) { [weak self] records in
           guard let self = self else {
-              completion()
+              completion(.failure(ErrorHelper.selfDeallocatedError()))
               return
           }
           // Handle case where there are no records to edit
           guard !records.isEmpty else {
-              completion()
+              completion(.success(()))
               return
           }
+          
           let editGroup = DispatchGroup()
+          var errors: [Error] = []
+          let errorsQueue = DispatchQueue(label: "syncEditedRecords.errors", attributes: .concurrent)
+          
           for record in records {
               // Skip if documentID is missing
               guard let documentID = record.documentID else {
+                  let validationError = ErrorHelper.validationError(missingFields: ["documentID"])
+                  errorsQueue.async(flags: .barrier) {
+                      errors.append(validationError)
+                  }
                   continue
               }
               editGroup.enter()
@@ -475,6 +510,18 @@ extension RecordsRepo {
                       editGroup.leave()
                       return
                   }
+                  
+                  if !isSuccess {
+                      let editError = ErrorHelper.createError(
+                          domain: .sync,
+                          code: .networkRequestFailed,
+                          message: "Failed to edit record: \(documentID)"
+                      )
+                      errorsQueue.async(flags: .barrier) {
+                          errors.append(editError)
+                      }
+                  }
+                  
                   self.databaseManager.updateRecord(
                       documentID: documentID,
                       documentOid: record.oid,
@@ -485,7 +532,16 @@ extension RecordsRepo {
               }
           }
           editGroup.notify(queue: .global(qos: .utility)) {
-              completion()
+              if errors.isEmpty {
+                  completion(.success(()))
+              } else {
+                  let combinedError = ErrorHelper.syncOperationError(
+                      operation: "sync edited records",
+                      failureCount: errors.count,
+                      errors: errors
+                  )
+                  completion(.failure(combinedError))
+              }
           }
       }
   }
@@ -527,7 +583,7 @@ extension RecordsRepo {
       
       let uploadGroup = DispatchGroup()
       var errors: [Error] = []
-      let errorsQueue = DispatchQueue(label: "com.eka.syncNewCases.errors", attributes: .concurrent)
+      let errorsQueue = DispatchQueue(label: "syncNewCases.errors", attributes: .concurrent)
       
       for uploadcase in cases {
         uploadGroup.enter()
@@ -611,7 +667,7 @@ extension RecordsRepo {
       
       let editGroup = DispatchGroup()
       var errors: [Error] = []
-      let errorsQueue = DispatchQueue(label: "com.eka.syncEditedCases.errors", attributes: .concurrent)
+      let errorsQueue = DispatchQueue(label: "syncEditedCases.errors", attributes: .concurrent)
       
       for caseItem in cases {
         editGroup.enter()

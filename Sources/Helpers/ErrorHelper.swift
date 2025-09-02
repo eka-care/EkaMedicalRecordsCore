@@ -12,11 +12,11 @@ public final class ErrorHelper {
     
     // MARK: - Error Domains
     public enum Domain: String {
-        case recordsRepo = "com.eka.RecordsRepo"
-        case databaseManager = "com.eka.DatabaseManager"
-        case networkService = "com.eka.NetworkService"
-        case validation = "com.eka.Validation"
-        case sync = "com.eka.Sync"
+        case recordsRepo = "RecordsRepo"
+        case databaseManager = "DatabaseManager"
+        case networkService = "NetworkService"
+        case validation = "Validation"
+        case sync = "Sync"
     }
     
     // MARK: - Error Codes
@@ -270,11 +270,6 @@ public final class ErrorHelper {
 
 // MARK: - Error Extensions
 extension NSError {
-    
-    /// Checks if this error is from EkaMedicalRecordsCore
-    public var isEkaError: Bool {
-        return domain.hasPrefix("com.eka.")
-    }
     
     /// Gets the underlying errors array if available
     public var underlyingErrors: [Error]? {
