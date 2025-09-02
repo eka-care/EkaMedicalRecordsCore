@@ -364,6 +364,89 @@ public final class RecordsRepo {
     )
   }
   
+  // MARK: - Case Management
+  
+  /// Used to delink a case from a record
+  /// - Parameters:
+  ///   - record: The record from which to remove the case association
+  ///   - caseId: The ID of the case to delink from the record
+  ///   - completion: Completion handler with success status
+  public func delinkCaseFromRecord(
+    record: Record,
+    caseId: String,
+    completion: @escaping (Bool) -> Void
+  ) {
+    // Validate parameters
+    guard !caseId.isEmpty else {
+      EkaMedicalRecordsCoreLogger.capture("Cannot delink case: caseId is empty")
+      completion(false)
+      return
+    }
+    
+    guard let documentID = record.documentID else {
+      EkaMedicalRecordsCoreLogger.capture("Cannot delink case: record documentID is nil")
+      completion(false)
+      return
+    }
+    
+    // Check if the record is actually associated with this case
+    guard record.isAssociatedWith(caseID: caseId) else {
+      EkaMedicalRecordsCoreLogger.capture("Record is not associated with case ID: \(caseId)")
+      completion(false)
+      return
+    }
+    
+    // Find the specific case model to remove
+    let caseModels = record.getCaseModels()
+    guard let caseModelToRemove = caseModels.first(where: { $0.caseID == caseId }) else {
+      EkaMedicalRecordsCoreLogger.capture("Case model not found for case ID: \(caseId)")
+      completion(false)
+      return
+    }
+    
+    // Remove the case association from the database
+    record.removeCaseModel(caseModelToRemove)
+    
+    // Get the updated list of linked cases after removal
+    let updatedLinkedCases = record.getCaseIDs()
+    
+    // Sync the change with the server
+    editDocument(
+      documentID: documentID,
+      documentDate: record.documentDate,
+      documentType: Int(record.documentType),
+      documentFilterId: record.oid,
+      linkedCases: updatedLinkedCases.isEmpty ? nil : updatedLinkedCases
+    ) { [weak self] isSuccess in
+      guard let self = self else {
+        completion(false)
+        return
+      }
+      
+      if isSuccess {
+        EkaMedicalRecordsCoreLogger.capture("Successfully delinked case \(caseId) from record \(documentID)")
+        // Update the record's edit status to reflect successful sync
+        self.databaseManager.updateRecord(
+          documentID: documentID,
+          documentOid: record.oid,
+          isEdited: false
+        )
+        completion(true)
+      } else {
+        // If network sync failed, re-add the case association to maintain consistency
+        record.addCaseModel(caseModelToRemove)
+        EkaMedicalRecordsCoreLogger.capture("Failed to sync delink operation for case \(caseId) from record \(documentID)")
+        // Mark record as edited since local and server state are now out of sync
+        self.databaseManager.updateRecord(
+          documentID: documentID,
+          documentOid: record.oid,
+          isEdited: true
+        )
+        completion(false)
+      }
+    }
+  }
+  
   /// Used to delete a specific record from the database
   /// - Parameter record: record to be deleted
   public func deleteRecord(
@@ -505,7 +588,8 @@ extension RecordsRepo {
                   continue
               }
               editGroup.enter()
-              self.editDocument(documentID: documentID, documentFilterId: record.oid) { [weak self] isSuccess in
+            let linkedCaseIds: [String] = record.getCaseIDs()
+            self.editDocument(documentID: documentID,documentType: Int(record.documentType) ,documentFilterId: record.oid, linkedCases: linkedCaseIds) { [weak self] isSuccess in
                   guard let self = self else {
                       editGroup.leave()
                       return
