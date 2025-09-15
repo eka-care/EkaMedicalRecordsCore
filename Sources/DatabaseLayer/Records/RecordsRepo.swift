@@ -833,4 +833,13 @@ extension RecordsRepo {
       }
     }
   }
+  
+  // MARK: - Migration
+  
+  /// Used to migrate existing SmartReport data to include newly added properties
+  /// Call this method after updating the Verified struct with new properties
+  /// - Parameter completion: completion block with success status and optional message
+  public func migrateSmartReportData(completion: @escaping (Bool, String?) -> Void) {
+    databaseManager.migrateSmartReportData(completion: completion)
+  }
 }

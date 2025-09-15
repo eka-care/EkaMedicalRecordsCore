@@ -222,6 +222,118 @@ extension RecordsDatabaseManager {
       EkaMedicalRecordsCoreLogger.capture("Error saving smart report \(nsError)")
     }
   }
+  
+  /// Used to migrate existing SmartReport data to include newly added properties
+  /// This method fetches fresh data from API to ensure latest fields like unitEkaId are included
+  /// Call this method after adding new properties to Verified struct
+  public func migrateSmartReportData(completion: @escaping (Bool, String?) -> Void) {
+    backgroundContext.perform { [weak self] in
+      guard let self else {
+        DispatchQueue.main.async {
+          completion(false, "Database manager not available")
+        }
+        return
+      }
+      
+      // Fetch all records that have SmartReport data and valid documentID
+      let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
+      fetchRequest.predicate = NSPredicate(format: "toSmartReport != nil AND documentID != nil")
+      
+      do {
+        let recordsWithSmartReports = try backgroundContext.fetch(fetchRequest)
+        
+        guard !recordsWithSmartReports.isEmpty else {
+          DispatchQueue.main.async {
+            completion(true, "No SmartReport records found to migrate")
+          }
+          return
+        }
+        
+        EkaMedicalRecordsCoreLogger.capture("Starting SmartReport API migration for \(recordsWithSmartReports.count) records")
+        
+        // Use dispatch group to handle multiple async API calls
+        let dispatchGroup = DispatchGroup()
+        var migratedCount = 0
+        var errorCount = 0
+        var apiErrorCount = 0
+        
+        for record in recordsWithSmartReports {
+          guard let documentID = record.documentID,
+                let oid = record.oid else {
+            errorCount += 1
+            continue
+          }
+          
+          dispatchGroup.enter()
+          
+          // Fetch fresh data from API
+          self.fetchSmartReportFromAPI(documentID: documentID, oid: oid) { [weak self] freshSmartReport in
+            guard let self else {
+              dispatchGroup.leave()
+              return
+            }
+            
+            if let freshSmartReport = freshSmartReport {
+              // Serialize the fresh SmartReport data
+              if let freshData = self.databaseAdapter.serializeSmartReportInfo(smartReport: freshSmartReport) {
+                // Update the record with fresh data
+                record.toSmartReport?.data = freshData
+                migratedCount += 1
+                EkaMedicalRecordsCoreLogger.capture("Successfully migrated SmartReport for record: \(documentID)")
+              } else {
+                errorCount += 1
+                EkaMedicalRecordsCoreLogger.capture("Failed to serialize fresh SmartReport for record: \(documentID)")
+              }
+            } else {
+              apiErrorCount += 1
+              EkaMedicalRecordsCoreLogger.capture("Failed to fetch fresh SmartReport from API for record: \(documentID)")
+            }
+            
+            dispatchGroup.leave()
+          }
+        }
+        
+        // Wait for all API calls to complete
+        dispatchGroup.notify(queue: DispatchQueue.global(qos: .background)) {
+          do {
+            // Save all changes
+            try self.backgroundContext.save()
+            
+            DispatchQueue.main.async {
+              let message = "Migration completed: \(migratedCount) records migrated, \(errorCount) serialization errors, \(apiErrorCount) API errors"
+              EkaMedicalRecordsCoreLogger.capture(message)
+              completion(true, message)
+            }
+          } catch {
+            DispatchQueue.main.async {
+              let errorMessage = "Migration failed to save: \(error.localizedDescription)"
+              EkaMedicalRecordsCoreLogger.capture(errorMessage)
+              completion(false, errorMessage)
+            }
+          }
+        }
+        
+      } catch {
+        DispatchQueue.main.async {
+          let errorMessage = "Migration failed to fetch records: \(error.localizedDescription)"
+          EkaMedicalRecordsCoreLogger.capture(errorMessage)
+          completion(false, errorMessage)
+        }
+      }
+    }
+  }
+  
+  /// Helper method to fetch SmartReport data from API
+  private func fetchSmartReportFromAPI(documentID: String, oid: String, completion: @escaping (SmartReportInfo?) -> Void) {
+    // We need to call this on main thread since networking typically requires main thread
+    DispatchQueue.main.async {
+      // Create a temporary RecordsRepo instance for API call
+      let recordsRepo = RecordsRepo.shared
+      recordsRepo.fetchFileDetails(oid: oid, documentID: documentID) { docResponse in
+        completion(docResponse.smartReport)
+      }
+    }
+  }
 }
 
 // MARK: - Read

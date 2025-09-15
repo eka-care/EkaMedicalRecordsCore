@@ -38,4 +38,18 @@ final class UserDefaultsHelper {
     return nil
   }
   
+  /// Save a simple boolean value to UserDefaults
+  /// - Parameters:
+  ///   - value: Boolean value to save
+  ///   - key: The key to store the value
+  static func saveBool(_ value: Bool, forKey key: String) {
+    UserDefaults.standard.set(value, forKey: key)
+  }
+  
+  /// Fetch a boolean value from UserDefaults
+  /// - Parameter key: The key to fetch the value
+  /// - Returns: Boolean value, defaults to false if not found
+  static func fetchBool(forKey key: String) -> Bool {
+    return UserDefaults.standard.bool(forKey: key)
+  }
 }

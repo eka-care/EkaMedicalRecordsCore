@@ -54,4 +54,22 @@ public class CoreInitConfigurations {
   // MARK: - Init
   
   private init() {}
+  
+  // MARK: - Migration
+  
+  /// Performs any necessary data migrations
+  /// Call this method after setting up your configuration (tokens, filterID, etc.)
+  /// - Parameter completion: Completion block with success status and message
+  public func performMigrationsIfNeeded(completion: @escaping (Bool, String?) -> Void) {
+    // Ensure basic configuration is set up
+    guard ownerID != nil else {
+      completion(false, "Migration requires ownerID to be set")
+      return
+    }
+    
+    // Perform SmartReport migration for unitEkaId
+    MigrationHelper.performSmartReportMigrationIfNeeded { success, message in
+      completion(success, message)
+    }
+  }
 }
