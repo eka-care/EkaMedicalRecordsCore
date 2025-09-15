@@ -183,7 +183,7 @@ public struct Verified: Codable, Hashable, Identifiable {
   public let resultID: String?
   public let displayResult: String?
   public let date: Int?
-  
+  public let unitEkaId: String?
   public enum CodingKeys: String, CodingKey {
     case name, value, unit, date
     case vitalID = "vital_id"
@@ -194,6 +194,7 @@ public struct Verified: Codable, Hashable, Identifiable {
     case coordinates, range, result
     case resultID = "result_id"
     case displayResult = "display_result"
+    case unitEkaId = "unit_eka_id"
   }
   
   public static func == (lhs: Verified, rhs: Verified) -> Bool {
@@ -218,7 +219,8 @@ public struct Verified: Codable, Hashable, Identifiable {
     result: String? = nil,
     resultID: String? = nil,
     displayResult: String? = nil,
-    date: Int? = nil
+    date: Int? = nil,
+    unitEkaId: String? = nil
   ) {
     self.name = name
     self.value = value
@@ -234,6 +236,7 @@ public struct Verified: Codable, Hashable, Identifiable {
     self.resultID = resultID
     self.displayResult = displayResult
     self.date = date
+    self.unitEkaId = unitEkaId
   }
 }
 
