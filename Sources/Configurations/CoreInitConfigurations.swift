@@ -62,7 +62,7 @@ public class CoreInitConfigurations {
   /// - Parameter completion: Completion block with success status and message
   public func performMigrationsIfNeeded(completion: @escaping (Bool, String?) -> Void) {
     // Ensure basic configuration is set up
-    guard ownerID != nil else {
+    guard filterID != nil else {
       completion(false, "Migration requires ownerID to be set")
       return
     }
