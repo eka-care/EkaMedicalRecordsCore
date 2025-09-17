@@ -315,6 +315,9 @@ extension RecordsDatabaseManager {
     
     return counts
   }
+}
+
+extension RecordsDatabaseManager {
   
   /// Get all unique tag names from the database
   /// - Returns: Array of unique tag names
