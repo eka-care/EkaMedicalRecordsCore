@@ -16,6 +16,6 @@ struct DocUpdateRequest: Codable {
     case documentType = "dt"
     case documentDate = "dd_e"
     case cases
-    case tags
+    case tags = "tg"
   }
 }
