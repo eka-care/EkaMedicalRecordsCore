@@ -207,6 +207,7 @@ extension RecordsRepo {
     documentType: Int? = nil,
     documentFilterId: String? = nil,
     linkedCases: [String]? = nil,
+    tags: [String]? = nil,
     completion: @escaping (Bool) -> Void
   ) {
     guard let documentID,
@@ -221,7 +222,8 @@ extension RecordsRepo {
       oid: documentFilterId,
       documentType: recordDocumentType?.rawValue,
       documentDate: documentDate?.toEpochInt(),
-      cases: linkedCases
+      cases: linkedCases,
+      tags: tags
     )
     service.editDocumentDetails(
       documentId: documentID,

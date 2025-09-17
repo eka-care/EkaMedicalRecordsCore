@@ -315,6 +315,134 @@ extension RecordsDatabaseManager {
     
     return counts
   }
+  
+  /// Get all unique tag names from the database
+  /// - Returns: Array of unique tag names
+  func getAllUniqueTagNames() -> [String] {
+    let fetchRequest = QueryHelper.fetchAllUniqueTagNames()
+    
+    do {
+      let results = try container.viewContext.fetch(fetchRequest)
+      var tagNames: [String] = []
+      
+      for result in results {
+        if let resultDict = result as? [String: Any],
+           let tagName = resultDict["name"] as? String {
+          tagNames.append(tagName)
+        }
+      }
+      
+      return tagNames.sorted()
+      
+    } catch {
+      EkaMedicalRecordsCoreLogger.capture("Failed to fetch unique tag names: \(error)")
+      return []
+    }
+  }
+  
+  /// Get records with specific tags
+  /// - Parameter tagNames: Array of tag names to filter by
+  /// - Returns: Array of records that have any of the specified tags
+  func getRecordsWithTags(_ tagNames: [String]) -> [Record] {
+    let fetchRequest = QueryHelper.fetchRecordsWithTags(tagNames: tagNames)
+    
+    do {
+      return try container.viewContext.fetch(fetchRequest)
+    } catch {
+      EkaMedicalRecordsCoreLogger.capture("Failed to fetch records with tags \(tagNames): \(error)")
+      return []
+    }
+  }
+  
+  /// Get records without any tags
+  /// - Returns: Array of records that have no tags
+  func getRecordsWithoutTags() -> [Record] {
+    let fetchRequest = QueryHelper.fetchRecordsWithoutTags()
+    
+    do {
+      return try container.viewContext.fetch(fetchRequest)
+    } catch {
+      EkaMedicalRecordsCoreLogger.capture("Failed to fetch records without tags: \(error)")
+      return []
+    }
+  }
+  
+  /// Get records that have ALL of the specified tags
+  /// - Parameter tagNames: Array of tag names to filter by
+  /// - Returns: Array of records that have all of the specified tags
+  func getRecordsWithAllTags(_ tagNames: [String]) -> [Record] {
+    let fetchRequest = QueryHelper.fetchRecordsWithAllTags(tagNames: tagNames)
+    
+    do {
+      return try container.viewContext.fetch(fetchRequest)
+    } catch {
+      EkaMedicalRecordsCoreLogger.capture("Failed to fetch records with all tags \(tagNames): \(error)")
+      return []
+    }
+  }
+  
+  /// Get all tag entities from the database
+  /// - Returns: Array of all tag entities
+  func getAllTags() -> [Tags] {
+    let fetchRequest = QueryHelper.fetchAllTags()
+    
+    do {
+      return try container.viewContext.fetch(fetchRequest)
+    } catch {
+      EkaMedicalRecordsCoreLogger.capture("Failed to fetch all tags: \(error)")
+      return []
+    }
+  }
+  
+  /// Get a specific tag by name
+  /// - Parameter tagName: The name of the tag to find
+  /// - Returns: The tag entity if found, nil otherwise
+  func getTag(withName tagName: String) -> Tags? {
+    let fetchRequest = QueryHelper.fetchTag(withName: tagName)
+    
+    do {
+      return try container.viewContext.fetch(fetchRequest).first
+    } catch {
+      EkaMedicalRecordsCoreLogger.capture("Failed to fetch tag '\(tagName)': \(error)")
+      return nil
+    }
+  }
+  
+  /// Clean up orphaned tags (tags not associated with any records)
+  /// - Parameter completion: Completion handler called when cleanup is finished
+  func cleanupOrphanedTags(completion: @escaping (Int) -> Void) {
+    backgroundContext.perform { [weak self] in
+      guard let self = self else {
+        DispatchQueue.main.async {
+          completion(0)
+        }
+        return
+      }
+      
+      let fetchRequest = QueryHelper.fetchOrphanedTags()
+      
+      do {
+        let orphanedTags = try self.backgroundContext.fetch(fetchRequest)
+        let count = orphanedTags.count
+        
+        for tag in orphanedTags {
+          self.backgroundContext.delete(tag)
+        }
+        
+        try self.backgroundContext.save()
+        
+        DispatchQueue.main.async {
+          EkaMedicalRecordsCoreLogger.capture("Cleaned up \(count) orphaned tags")
+          completion(count)
+        }
+      } catch {
+        EkaMedicalRecordsCoreLogger.capture("Failed to cleanup orphaned tags: \(error)")
+        DispatchQueue.main.async {
+          completion(0)
+        }
+      }
+    }
+  }
 }
 
 // MARK: - Update
@@ -337,7 +465,8 @@ extension RecordsDatabaseManager {
       documentOid: String? = nil,
       syncStatus: RecordSyncState? = nil,
       isEdited: Bool? = nil,
-      caseModels: [CaseModel]? = nil
+      caseModels: [CaseModel]? = nil,
+      tags: [String]? = nil
     ) {
       do {
         // Fetch the record by document ID
@@ -377,6 +506,9 @@ extension RecordsDatabaseManager {
         }
         if let isEdited {
           record.isEdited = isEdited
+        }
+        if let tags {
+          record.setTags(tags)
         }
         
         // Save the changes to the database
