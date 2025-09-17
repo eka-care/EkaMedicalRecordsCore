@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23788.4" systemVersion="24G84" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23788.4" systemVersion="24G90" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="CaseModel" representedClassName="CaseModel" syncable="YES" codeGenerationType="class">
         <attribute name="caseID" optional="YES" attributeType="String"/>
         <attribute name="caseName" optional="YES" attributeType="String"/>
@@ -36,6 +36,7 @@
         <relationship name="toCaseModel" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="CaseModel" inverseName="toRecord" inverseEntity="CaseModel"/>
         <relationship name="toRecordMeta" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RecordMeta" inverseName="toRecord" inverseEntity="RecordMeta"/>
         <relationship name="toSmartReport" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="SmartReport" inverseName="toRecord" inverseEntity="SmartReport"/>
+        <relationship name="toTags" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Tags" inverseName="toRecords" inverseEntity="Tags"/>
     </entity>
     <entity name="RecordMeta" representedClassName="RecordMeta" syncable="YES" codeGenerationType="class">
         <attribute name="documentURI" optional="YES" attributeType="String" customClassName="[String]"/>
@@ -45,5 +46,9 @@
     <entity name="SmartReport" representedClassName="SmartReport" syncable="YES" codeGenerationType="class">
         <attribute name="data" optional="YES" attributeType="Binary"/>
         <relationship name="toRecord" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Record" inverseName="toSmartReport" inverseEntity="Record"/>
+    </entity>
+    <entity name="Tags" representedClassName="Tags" syncable="YES" codeGenerationType="class">
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="toRecords" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Record" inverseName="toTags" inverseEntity="Record"/>
     </entity>
 </model>

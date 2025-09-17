@@ -30,6 +30,7 @@ public struct RecordModel {
   public var isEdited: Bool?
   public var caseModels: [CaseModel]? // Array of case models for many-to-many relationship
   public var caseIDs: [String]? // Array of case IDs for lazy loading
+  public var tags: [String]?
   
   public init(
     documentDate: Date? = nil,
@@ -46,7 +47,8 @@ public struct RecordModel {
     contentType: String? = nil,
     isEdited: Bool? = nil,
     caseModels: [CaseModel]? = nil,
-    caseIDs: [String]? = nil
+    caseIDs: [String]? = nil,
+    tags: [String]? = nil
   ) {
     self.documentID = UUID().uuidString
     self.documentDate = documentDate
@@ -64,6 +66,7 @@ public struct RecordModel {
     self.contentType = contentType
     self.caseModels = caseModels
     self.caseIDs = caseIDs
+    self.tags = tags
   }
 }
 
@@ -218,10 +221,16 @@ extension RecordDatabaseAdapter {
       insertModel.documentType = RecordDocumentType(rawValue: documentType)
     }
     /// Form smart of the document
-    insertModel.isSmart = networkModel.recordDocument.item.metadata?.tags?.contains(where: { $0 == RecordDocumentTagType.smartTag.networkName }) ?? false
+    insertModel.isSmart = networkModel.recordDocument.item.metadata?.autoTags?.contains(where: { $0 == RecordDocumentTagType.smartTag.networkName }) ?? false
     if let oid = networkModel.recordDocument.item.patientID {
       insertModel.oid = oid
     }
+    
+    // Extract tags from metadata
+    if let tags = networkModel.recordDocument.item.metadata?.tags {
+      insertModel.tags = tags
+    }
+    
     if let updatedAt = networkModel.recordDocument.item.updatedAt {
       insertModel.updatedAt = updatedAt.toDate()
     }
