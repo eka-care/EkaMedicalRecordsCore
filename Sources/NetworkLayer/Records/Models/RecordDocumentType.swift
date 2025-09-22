@@ -74,7 +74,7 @@ public enum RecordDocumentType: String, CaseIterable {
 
 
 // MARK: - MRDocumentType
-struct MRDocumentType: Codable {
+public struct MRDocumentType: Codable {
   let hex: String?
   let bgHex: String?
   let archive: Bool?
