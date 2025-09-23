@@ -288,9 +288,9 @@ extension RecordsDatabaseManager {
   func getDocumentTypeCounts(
     oid: [String]?,
     caseID: String?
-  ) -> [RecordDocumentType: Int] {
+  ) -> [String: Int] {
     let fetchRequest = QueryHelper.fetchRecordCountsByDocumentTypeFetchRequest(oid: oid, caseID: caseID)
-    var counts: [RecordDocumentType: Int] = [:]
+    var counts: [String: Int] = [:]
     
     do {
       let results = try container.viewContext.fetch(fetchRequest)
@@ -299,15 +299,14 @@ extension RecordsDatabaseManager {
       for result in results {
         if let resultDict = result as? [String: Any],
            let documentType = resultDict["documentType"] as? String,
-           let recordDocumentType = RecordDocumentType(rawValue: documentType),
            let count = resultDict["count"] as? Int {
           totalDocumentsCount += count
-          counts[recordDocumentType] = count
+          counts[documentType] = count
         }
       }
       
       /// Add totalDocumentsCount in all
-      counts[.typeAll] = totalDocumentsCount
+      counts["All"] = totalDocumentsCount
       
     } catch {
       EkaMedicalRecordsCoreLogger.capture("Failed to fetch grouped document type counts: \(error)")

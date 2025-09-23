@@ -215,12 +215,11 @@ extension RecordsRepo {
       EkaMedicalRecordsCoreLogger.capture("Document ID not found while editing record")
       return
     }
-    /// Set document type
-    let recordDocumentType = documentType != nil ? RecordDocumentType(rawValue: documentType!) : nil
+    /// Set document type - use the documentType string directly
     /// Form request
     let request = DocUpdateRequest(
       oid: documentFilterId,
-      documentType: recordDocumentType?.rawValue,
+      documentType: documentType,
       documentDate: documentDate?.toEpochInt(),
       cases: linkedCases,
       tags: tags
