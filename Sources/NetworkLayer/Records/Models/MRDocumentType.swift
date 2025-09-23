@@ -35,8 +35,8 @@ extension MRDocumentType: Hashable {
 }
 
 extension MRDocumentType: Identifiable {
-  public var intValue: Int {
-    return Int(id ?? "0") ?? 0
+  public var intValue: String {
+    return id ?? ""
   }
   
   public var filterName: String {
