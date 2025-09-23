@@ -77,7 +77,7 @@ public struct PredicateHelper {
     case .typeAll:
       return oidPredicate
     default:
-      let typePredicate = PredicateHelper.equals("documentType", value: Int64(filter.intValue))
+      let typePredicate = PredicateHelper.equals("documentType", value: filter.rawValue)
       return NSCompoundPredicate(andPredicateWithSubpredicates: [oidPredicate, typePredicate])
     }
   }

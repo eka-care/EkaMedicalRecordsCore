@@ -311,7 +311,7 @@ public final class RecordsRepo {
     recordID: NSManagedObjectID,
     documentID: String,
     documentDate: Date? = nil,
-    documentType: Int? = nil,
+    documentType: String? = nil,
     documentOid: String? = CoreInitConfigurations.shared.primaryFilterID,
     isEdited: Bool?,
     caseModels: [CaseModel]? = nil,
@@ -419,7 +419,7 @@ public final class RecordsRepo {
     editDocument(
       documentID: documentID,
       documentDate: record.documentDate,
-      documentType: Int(record.documentType),
+      documentType: record.documentType,
       documentFilterId: record.oid,
       linkedCases: updatedLinkedCases
     ) { [weak self] isSuccess in
@@ -594,7 +594,7 @@ extension RecordsRepo {
               }
               editGroup.enter()
             let linkedCaseIds: [String] = record.getCaseIDs()
-            self.editDocument(documentID: documentID,documentType: Int(record.documentType) ,documentFilterId: record.oid, linkedCases: linkedCaseIds) { [weak self] isSuccess in
+            self.editDocument(documentID: documentID, documentType: record.documentType, documentFilterId: record.oid, linkedCases: linkedCaseIds) { [weak self] isSuccess in
                   guard let self = self else {
                       editGroup.leave()
                       return

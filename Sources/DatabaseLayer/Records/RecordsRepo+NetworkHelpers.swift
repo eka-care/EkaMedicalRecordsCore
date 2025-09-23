@@ -204,7 +204,7 @@ extension RecordsRepo {
   func editDocument(
     documentID: String?,
     documentDate: Date? = nil,
-    documentType: Int? = nil,
+    documentType: String? = nil,
     documentFilterId: String? = nil,
     linkedCases: [String]? = nil,
     tags: [String]? = nil,
@@ -216,7 +216,7 @@ extension RecordsRepo {
       return
     }
     /// Set document type
-    let recordDocumentType = RecordDocumentType.from(intValue: documentType)
+    let recordDocumentType = documentType != nil ? RecordDocumentType(rawValue: documentType!) : nil
     /// Form request
     let request = DocUpdateRequest(
       oid: documentFilterId,

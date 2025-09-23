@@ -298,8 +298,8 @@ extension RecordsDatabaseManager {
       
       for result in results {
         if let resultDict = result as? [String: Any],
-           let documentTypeInt = resultDict["documentType"] as? Int,
-           let recordDocumentType = RecordDocumentType.from(intValue: documentTypeInt),
+           let documentType = resultDict["documentType"] as? String,
+           let recordDocumentType = RecordDocumentType(rawValue: documentType),
            let count = resultDict["count"] as? Int {
           totalDocumentsCount += count
           counts[recordDocumentType] = count
@@ -464,7 +464,7 @@ extension RecordsDatabaseManager {
   func updateRecord(
       documentID: String,
       documentDate: Date? = nil,
-      documentType: Int? = nil,
+      documentType: String? = nil,
       documentOid: String? = nil,
       syncStatus: RecordSyncState? = nil,
       isEdited: Bool? = nil,
@@ -495,7 +495,7 @@ extension RecordsDatabaseManager {
         }
        
         if let documentType {
-          record.documentType = Int64(documentType)
+          record.documentType = documentType
         }
         if let documentOid {
           record.oid = documentOid
