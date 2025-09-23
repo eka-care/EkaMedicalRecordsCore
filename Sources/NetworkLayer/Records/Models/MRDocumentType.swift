@@ -43,8 +43,8 @@ extension MRDocumentType: Identifiable {
     return displayName ?? "Unknown"
   }
   
-  public static func from(intValue: Int) -> MRDocumentType? {
-    return allCases.first { $0.id == String(intValue) }
+  public static func from(intValue: String) -> MRDocumentType? {
+    return allCases.first { $0.id == intValue }
   }
   
   public static var allCases: [MRDocumentType] {
