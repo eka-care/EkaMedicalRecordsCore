@@ -21,14 +21,19 @@ public struct MRDocumentType: Codable, Hashable, Identifiable {
       case id
       case displayName = "display_name"
   }
-  // MARK: - Custom Decoder
-  public init(from decoder: Decoder) throws {
-    let container = try decoder.container(keyedBy: CodingKeys.self)
-    hex = try container.decodeIfPresent(String.self, forKey: .hex)
-    bgHex = try container.decodeIfPresent(String.self, forKey: .bgHex)
-    archive = try container.decodeIfPresent(Bool.self, forKey: .archive)
-    id = try container.decodeIfPresent(String.self, forKey: .id)
-    displayName = try container.decodeIfPresent(String.self, forKey: .displayName)
+  
+  init (
+    hex: String? = nil,
+    bgHex: String? = nil,
+    archive: Bool? = nil,
+    id: String? = nil,
+    displayName: String? = nil
+  ) {
+    self.hex = hex
+    self.bgHex = bgHex
+    self.archive = archive
+    self.id = id
+    self.displayName = displayName
   }
 
   // MARK: - Hashable
