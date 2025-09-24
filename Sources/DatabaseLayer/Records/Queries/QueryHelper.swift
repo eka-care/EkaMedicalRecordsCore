@@ -124,38 +124,38 @@ public final class QueryHelper {
   ///   - caseID: Case ID to filter by (optional)
   /// - Returns: NSFetchRequest configured to fetch tag counts
   public static func fetchRecordCountsByTagFetchRequest(oid: [String]?, caseID: String?) -> NSFetchRequest<NSFetchRequestResult> {
-    let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: Record.entity().name!)
+    let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "Tags")
     fetchRequest.resultType = .dictionaryResultType
     
-    // Create count expression
+    // Create count expression for records
     let countExpression = NSExpressionDescription()
     countExpression.name = "count"
-    let keyPathExpression = NSExpression(forKeyPath: "toTags.name")
+    let keyPathExpression = NSExpression(forKeyPath: "toRecord")
     countExpression.expression = NSExpression(forFunction: "count:", arguments: [keyPathExpression])
     countExpression.expressionResultType = .integer32AttributeType
     
     // Set group by and properties to fetch
-    fetchRequest.propertiesToFetch = ["toTags.name", countExpression]
-    fetchRequest.propertiesToGroupBy = ["toTags.name"]
+    fetchRequest.propertiesToFetch = ["name", countExpression]
+    fetchRequest.propertiesToGroupBy = ["name"]
     
     /// Predicates
     var predicates: [NSPredicate] = []
     
-    /// Oid Predicate
+    /// Only include tags that have associated records
+    let hasRecordsPredicate = NSPredicate(format: "toRecord.@count > 0")
+    predicates.append(hasRecordsPredicate)
+    
+    /// Oid Predicate - filter by records' oid
     if let oid {
-      let oidPredicate = NSPredicate(format: "oid IN %@", oid)
+      let oidPredicate = NSPredicate(format: "ANY toRecord.oid IN %@", oid)
       predicates.append(oidPredicate)
     }
     
-    /// CaseID predicate
+    /// CaseID predicate - filter by records' case associations
     if let caseID {
-      let casePredicate = NSPredicate(format: "ANY toCaseModel.caseID == %@", caseID)
+      let casePredicate = NSPredicate(format: "ANY toRecord.toCaseModel.caseID == %@", caseID)
       predicates.append(casePredicate)
     }
-    
-    /// Only include records that have tags
-    let hasTagsPredicate = NSPredicate(format: "toTags.@count > 0")
-    predicates.append(hasTagsPredicate)
     
     if !predicates.isEmpty {
       fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)

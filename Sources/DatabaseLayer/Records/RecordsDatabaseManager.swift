@@ -329,12 +329,15 @@ extension RecordsDatabaseManager {
       
       for result in results {
         if let resultDict = result as? [String: Any],
-           let tagName = resultDict["toTags.name"] as? String,
+           let tagName = resultDict["name"] as? String,
            let count = resultDict["count"] as? Int {
           totalRecordsWithTagsCount += count
           counts[tagName] = count
         }
       }
+      
+      /// Add totalRecordsWithTagsCount in all
+      counts["All"] = totalRecordsWithTagsCount
      
     } catch {
       EkaMedicalRecordsCoreLogger.capture("Failed to fetch grouped tag counts: \(error)")
