@@ -6,64 +6,49 @@
 //
 
 
-// MARK: - MRDocumentType
-public struct MRDocumentType: Codable {
+public struct MRDocumentType: Codable, Hashable, Identifiable {
   public let hex: String?
   public let bgHex: String?
   public let archive: Bool?
   public let id: String?
   public let displayName: String?
 
+  // MARK: - Coding Keys
   enum CodingKeys: String, CodingKey {
-    case hex = "hex"
-    case bgHex = "bg_hex"
-    case archive = "archive"
-    case id = "id"
-    case displayName = "display_name"
+      case hex
+      case bgHex = "bg_hex"
+      case archive
+      case id
+      case displayName = "display_name"
   }
-}
 
-
-extension MRDocumentType: Hashable {
+  // MARK: - Hashable
   public static func == (lhs: MRDocumentType, rhs: MRDocumentType) -> Bool {
-    return lhs.id == rhs.id
+      lhs.id == rhs.id
   }
-  
-  public func hash(into hasher: inout Hasher) {
-    hasher.combine(id)
-  }
-}
 
-extension MRDocumentType: Identifiable {
+  public func hash(into hasher: inout Hasher) {
+      hasher.combine(id)
+  }
+
+  // MARK: - Identifiable
   public var intValue: String {
-    return id ?? ""
+      id ?? ""
   }
-  
+
   public var filterName: String {
-    return displayName ?? "Unknown"
+      displayName ?? "Unknown"
   }
-  
-  public static func from(intValue: String) -> MRDocumentType? {
-    return allCases.first { $0.id == intValue }
-  }
-  
-  public static var allCases: [MRDocumentType] {
-    // TODO: This should be populated from your data source
-    // For now, providing basic document types
-    return [
-      typeAll,
-      MRDocumentType(hex: "#10B981", bgHex: "#ECFDF5", archive: false, id: "1", displayName: "Lab Report"),
-      MRDocumentType(hex: "#EF4444", bgHex: "#FEF2F2", archive: false, id: "2", displayName: "Prescription"),
-      MRDocumentType(hex: "#10B981", bgHex: "#ECFDF5", archive: false, id: "3", displayName: "Discharge Summary"),
-      MRDocumentType(hex: "#3B82F6", bgHex: "#EFF6FF", archive: false, id: "4", displayName: "Vaccine Certificate"),
-      MRDocumentType(hex: "#3B82F6", bgHex: "#EFF6FF", archive: false, id: "5", displayName: "Insurance"),
-      MRDocumentType(hex: "#EF4444", bgHex: "#FEF2F2", archive: false, id: "6", displayName: "Invoice"),
-      MRDocumentType(hex: "#EF4444", bgHex: "#FEF2F2", archive: false, id: "7", displayName: "Scan"),
-      MRDocumentType(hex: "#10B981", bgHex: "#ECFDF5", archive: false, id: "8", displayName: "Other")
-    ]
-  }
-  
+
+  // MARK: - Helpers
+  /// Special "All" type for filters
   public static var typeAll: MRDocumentType {
-    return MRDocumentType(hex: nil, bgHex: nil, archive: false, id: "0", displayName: "All")
+      MRDocumentType(
+          hex: nil,
+          bgHex: nil,
+          archive: false,
+          id: "",
+          displayName: "All"
+      )
   }
 }
