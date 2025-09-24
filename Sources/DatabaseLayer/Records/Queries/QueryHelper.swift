@@ -117,6 +117,52 @@ public final class QueryHelper {
     
     return fetchRequest
   }
+  
+  /// Query to fetch record counts grouped by tag names
+  /// - Parameters:
+  ///   - oid: Array of oid strings to filter by (optional)
+  ///   - caseID: Case ID to filter by (optional)
+  /// - Returns: NSFetchRequest configured to fetch tag counts
+  public static func fetchRecordCountsByTagFetchRequest(oid: [String]?, caseID: String?) -> NSFetchRequest<NSFetchRequestResult> {
+    let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: Record.entity().name!)
+    fetchRequest.resultType = .dictionaryResultType
+    
+    // Create count expression
+    let countExpression = NSExpressionDescription()
+    countExpression.name = "count"
+    let keyPathExpression = NSExpression(forKeyPath: "toTags.name")
+    countExpression.expression = NSExpression(forFunction: "count:", arguments: [keyPathExpression])
+    countExpression.expressionResultType = .integer32AttributeType
+    
+    // Set group by and properties to fetch
+    fetchRequest.propertiesToFetch = ["toTags.name", countExpression]
+    fetchRequest.propertiesToGroupBy = ["toTags.name"]
+    
+    /// Predicates
+    var predicates: [NSPredicate] = []
+    
+    /// Oid Predicate
+    if let oid {
+      let oidPredicate = NSPredicate(format: "oid IN %@", oid)
+      predicates.append(oidPredicate)
+    }
+    
+    /// CaseID predicate
+    if let caseID {
+      let casePredicate = NSPredicate(format: "ANY toCaseModel.caseID == %@", caseID)
+      predicates.append(casePredicate)
+    }
+    
+    /// Only include records that have tags
+    let hasTagsPredicate = NSPredicate(format: "toTags.@count > 0")
+    predicates.append(hasTagsPredicate)
+    
+    if !predicates.isEmpty {
+      fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+    }
+    
+    return fetchRequest
+  }
 }
 
 // MARK: - Cases

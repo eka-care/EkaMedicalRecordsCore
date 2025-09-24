@@ -289,6 +289,14 @@ public final class RecordsRepo {
     return databaseManager.getDocumentTypeCounts(oid: oid, caseID: caseID)
   }
   
+  /// Used to get record tag count
+  /// - Returns: Dictionary with count of each tag
+  /// - Parameter caseID: caseID of the case if any
+  public func getRecordTagCount(caseID: String? = nil) -> [String: Int] {
+    let oid = CoreInitConfigurations.shared.filterID
+    return databaseManager.getTagCounts(oid: oid, caseID: caseID)
+  }
+  
   /// Used to get record in main thread from fetch request
   /// - Parameter fetchRequest: fetch request for filtering
   /// - Returns: Given record

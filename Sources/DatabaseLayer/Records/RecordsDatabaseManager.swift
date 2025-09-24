@@ -314,6 +314,34 @@ extension RecordsDatabaseManager {
     
     return counts
   }
+  
+  /// Get tag counts
+  func getTagCounts(
+    oid: [String]?,
+    caseID: String?
+  ) -> [String: Int] {
+    let fetchRequest = QueryHelper.fetchRecordCountsByTagFetchRequest(oid: oid, caseID: caseID)
+    var counts: [String: Int] = [:]
+    
+    do {
+      let results = try container.viewContext.fetch(fetchRequest)
+      var totalRecordsWithTagsCount = 0
+      
+      for result in results {
+        if let resultDict = result as? [String: Any],
+           let tagName = resultDict["toTags.name"] as? String,
+           let count = resultDict["count"] as? Int {
+          totalRecordsWithTagsCount += count
+          counts[tagName] = count
+        }
+      }
+     
+    } catch {
+      EkaMedicalRecordsCoreLogger.capture("Failed to fetch grouped tag counts: \(error)")
+    }
+    
+    return counts
+  }
 }
 
 extension RecordsDatabaseManager {
