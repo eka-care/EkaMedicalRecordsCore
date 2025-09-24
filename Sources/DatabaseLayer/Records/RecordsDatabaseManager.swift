@@ -320,27 +320,52 @@ extension RecordsDatabaseManager {
     oid: [String]?,
     caseID: String?
   ) -> [String: Int] {
-    let fetchRequest = QueryHelper.fetchRecordCountsByTagFetchRequest(oid: oid, caseID: caseID)
+    // Create a fetch request for records with the specified filters
+    let recordFetchRequest = QueryHelper.fetchRecords(oid: oid)
+    
+    // Build predicates for additional filtering
+    var predicates: [NSPredicate] = []
+    
+    // Add existing predicate if any
+    if let existingPredicate = recordFetchRequest.predicate {
+      predicates.append(existingPredicate)
+    }
+    
+    // Only include records that have tags
+    let hasTagsPredicate = NSPredicate(format: "toTags.@count > 0")
+    predicates.append(hasTagsPredicate)
+    
+    // CaseID predicate
+    if let caseID {
+      let casePredicate = NSPredicate(format: "ANY toCaseModel.caseID == %@", caseID)
+      predicates.append(casePredicate)
+    }
+    
+    // Apply combined predicate
+    recordFetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+    
     var counts: [String: Int] = [:]
+    var totalRecordsWithTagsCount = 0
     
     do {
-      let results = try container.viewContext.fetch(fetchRequest)
-      var totalRecordsWithTagsCount = 0
+      let records = try container.viewContext.fetch(recordFetchRequest)
       
-      for result in results {
-        if let resultDict = result as? [String: Any],
-           let tagName = resultDict["name"] as? String,
-           let count = resultDict["count"] as? Int {
-          totalRecordsWithTagsCount += count
-          counts[tagName] = count
+      // Process each record and count its tags
+      for record in records {
+        if let tags = record.toTags?.allObjects as? [Tags] {
+          for tag in tags {
+            if let tagName = tag.name, !tagName.isEmpty {
+              counts[tagName] = (counts[tagName] ?? 0) + 1
+            }
+          }
+          if !tags.isEmpty {
+            totalRecordsWithTagsCount += 1
+          }
         }
       }
       
-      /// Add totalRecordsWithTagsCount in all
-      counts["All"] = totalRecordsWithTagsCount
-     
     } catch {
-      EkaMedicalRecordsCoreLogger.capture("Failed to fetch grouped tag counts: \(error)")
+      EkaMedicalRecordsCoreLogger.capture("Failed to fetch records for tag counts: \(error)")
     }
     
     return counts

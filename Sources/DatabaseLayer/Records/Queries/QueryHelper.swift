@@ -117,52 +117,6 @@ public final class QueryHelper {
     
     return fetchRequest
   }
-  
-  /// Query to fetch record counts grouped by tag names
-  /// - Parameters:
-  ///   - oid: Array of oid strings to filter by (optional)
-  ///   - caseID: Case ID to filter by (optional)
-  /// - Returns: NSFetchRequest configured to fetch tag counts
-  public static func fetchRecordCountsByTagFetchRequest(oid: [String]?, caseID: String?) -> NSFetchRequest<NSFetchRequestResult> {
-    let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "Tags")
-    fetchRequest.resultType = .dictionaryResultType
-    
-    // Create count expression for records
-    let countExpression = NSExpressionDescription()
-    countExpression.name = "count"
-    let keyPathExpression = NSExpression(forKeyPath: "toRecord")
-    countExpression.expression = NSExpression(forFunction: "count:", arguments: [keyPathExpression])
-    countExpression.expressionResultType = .integer32AttributeType
-    
-    // Set group by and properties to fetch
-    fetchRequest.propertiesToFetch = ["name", countExpression]
-    fetchRequest.propertiesToGroupBy = ["name"]
-    
-    /// Predicates
-    var predicates: [NSPredicate] = []
-    
-    /// Only include tags that have associated records
-    let hasRecordsPredicate = NSPredicate(format: "toRecord.@count > 0")
-    predicates.append(hasRecordsPredicate)
-    
-    /// Oid Predicate - filter by records' oid
-    if let oid {
-      let oidPredicate = NSPredicate(format: "ANY toRecord.oid IN %@", oid)
-      predicates.append(oidPredicate)
-    }
-    
-    /// CaseID predicate - filter by records' case associations
-    if let caseID {
-      let casePredicate = NSPredicate(format: "ANY toRecord.toCaseModel.caseID == %@", caseID)
-      predicates.append(casePredicate)
-    }
-    
-    if !predicates.isEmpty {
-      fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
-    }
-    
-    return fetchRequest
-  }
 }
 
 // MARK: - Cases
