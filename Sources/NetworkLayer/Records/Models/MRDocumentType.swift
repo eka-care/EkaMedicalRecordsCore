@@ -21,6 +21,15 @@ public struct MRDocumentType: Codable, Hashable, Identifiable {
       case id
       case displayName = "display_name"
   }
+  // MARK: - Custom Decoder
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    hex = try container.decodeIfPresent(String.self, forKey: .hex)
+    bgHex = try container.decodeIfPresent(String.self, forKey: .bgHex)
+    archive = try container.decodeIfPresent(Bool.self, forKey: .archive)
+    id = try container.decodeIfPresent(String.self, forKey: .id)
+    displayName = try container.decodeIfPresent(String.self, forKey: .displayName)
+  }
 
   // MARK: - Hashable
   public static func == (lhs: MRDocumentType, rhs: MRDocumentType) -> Bool {
