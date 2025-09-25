@@ -401,6 +401,31 @@ extension RecordsDatabaseManager {
     }
   }
   
+  /// Get all unique document types from the database
+  /// - Parameter caseID: Optional case ID to filter document types by
+  /// - Returns: Array of unique document types
+  func getAllUniqueDocumentTypes(caseID: String? = nil) -> [String] {
+    let fetchRequest = QueryHelper.fetchAllUniqueDocumentTypes(caseID: caseID)
+    
+    do {
+      let results = try container.viewContext.fetch(fetchRequest)
+      var documentTypes: [String] = []
+      
+      for result in results {
+        if let resultDict = result as? [String: Any],
+           let documentType = resultDict["documentType"] as? String {
+          documentTypes.append(documentType)
+        }
+      }
+      
+      return documentTypes.sorted()
+      
+    } catch {
+      EkaMedicalRecordsCoreLogger.capture("Failed to fetch unique document types: \(error)")
+      return []
+    }
+  }
+  
   /// Get records with specific tags
   /// - Parameter tagNames: Array of tag names to filter by
   /// - Returns: Array of records that have any of the specified tags

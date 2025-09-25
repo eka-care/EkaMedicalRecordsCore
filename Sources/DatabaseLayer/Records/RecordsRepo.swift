@@ -289,6 +289,13 @@ public final class RecordsRepo {
     return databaseManager.getDocumentTypeCounts(oid: oid, caseID: caseID)
   }
   
+  /// Used to get all unique document types
+  /// - Parameter caseID: Optional case ID to filter document types by
+  /// - Returns: Array of unique document types
+  public func getDocumentTypesList(caseID: String? = nil) -> [String] {
+    return databaseManager.getAllUniqueDocumentTypes(caseID: caseID)
+  }
+  
   /// Used to get record tag count
   /// - Returns: Dictionary with count of each tag
   /// - Parameter caseID: caseID of the case if any
