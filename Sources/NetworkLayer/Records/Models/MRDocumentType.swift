@@ -22,7 +22,7 @@ public struct MRDocumentType: Codable, Hashable, Identifiable {
       case displayName = "display_name"
   }
   
-  init (
+  public init (
     hex: String? = nil,
     bgHex: String? = nil,
     archive: Bool? = nil,
