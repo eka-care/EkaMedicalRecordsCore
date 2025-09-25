@@ -292,9 +292,10 @@ public final class RecordsRepo {
   /// Used to get record tag count
   /// - Returns: Dictionary with count of each tag
   /// - Parameter caseID: caseID of the case if any
-  public func getRecordTagCount(caseID: String? = nil) -> [String: Int] {
+  /// - Parameter documentType: documentType to filter records by
+  public func getRecordTagCount(caseID: String? = nil, documentType: String? = nil) -> [String: Int] {
     let oid = CoreInitConfigurations.shared.filterID
-    return databaseManager.getTagCounts(oid: oid, caseID: caseID)
+    return databaseManager.getTagCounts(oid: oid, caseID: caseID, documentType: documentType)
   }
   
   /// Used to get record in main thread from fetch request

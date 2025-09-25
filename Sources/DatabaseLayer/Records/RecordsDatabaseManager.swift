@@ -314,7 +314,8 @@ extension RecordsDatabaseManager {
   /// Get tag counts
   func getTagCounts(
     oid: [String]?,
-    caseID: String?
+    caseID: String?,
+    documentType: String? = nil
   ) -> [String: Int] {
     // Create a fetch request for records with the specified filters
     let recordFetchRequest = QueryHelper.fetchRecords(oid: oid)
@@ -335,6 +336,12 @@ extension RecordsDatabaseManager {
     if let caseID {
       let casePredicate = NSPredicate(format: "ANY toCaseModel.caseID == %@", caseID)
       predicates.append(casePredicate)
+    }
+    
+    // DocumentType predicate
+    if let documentType {
+      let documentTypePredicate = NSPredicate(format: "documentType == %@", documentType)
+      predicates.append(documentTypePredicate)
     }
     
     // Apply combined predicate
