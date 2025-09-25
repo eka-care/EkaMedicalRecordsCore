@@ -304,6 +304,10 @@ extension RecordsDatabaseManager {
           counts[documentType] = count
         }
       }
+      
+      /// Add totalDocumentsCount in all
+      counts["All"] = totalDocumentsCount
+      
     } catch {
       EkaMedicalRecordsCoreLogger.capture("Failed to fetch grouped document type counts: \(error)")
     }
