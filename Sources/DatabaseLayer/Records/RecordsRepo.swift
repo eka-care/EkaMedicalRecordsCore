@@ -176,7 +176,7 @@ public final class RecordsRepo {
     let documentURIs: [String] = record.toRecordMeta?.allObjects.compactMap { ($0 as? RecordMeta)?.documentURI } ?? []
     uploadRecordsV3(
       documentID: record.documentID ?? "",
-      recordURLs: documentURIs,
+      recordType: record.documentType, recordURLs: documentURIs,
       documentDate: record.documentDate?.toEpochInt(),
       contentType: FileType.getFileTypeFromFilePath(filePath: documentURIs.first ?? "")?.fileExtension ?? "",
       userOid: record.oid,
