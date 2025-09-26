@@ -306,6 +306,7 @@ public final class RecordsRepo {
   ///   - documentType: document type of the record
   ///   - documentOid: document oid of the record
   ///   - caseModel: case model of the record
+  ///   - tags: array of tag names for the record
   public func updateRecord(
     recordID: NSManagedObjectID,
     documentID: String,
@@ -313,7 +314,8 @@ public final class RecordsRepo {
     documentType: Int? = nil,
     documentOid: String? = CoreInitConfigurations.shared.primaryFilterID,
     isEdited: Bool?,
-    caseModels: [CaseModel]? = nil
+    caseModels: [CaseModel]? = nil,
+    tags: [String]? = nil
   ) {
     /// Update in database
     databaseManager.updateRecord(
@@ -323,7 +325,8 @@ public final class RecordsRepo {
       documentType: documentType,
       documentOid: documentOid,
       isEdited: isEdited,
-      caseModels: caseModels
+      caseModels: caseModels,
+      tags: tags
     )
     
     let caseListIds = caseModels?.compactMap(\.caseID) ?? []
@@ -333,7 +336,8 @@ public final class RecordsRepo {
       documentDate: documentDate,
       documentType: documentType,
       documentFilterId: documentOid,
-      linkedCases: caseListIds
+      linkedCases: caseListIds,
+      tags: tags
     ) { [weak self] isSuccess in
       guard let self = self else { return }
       self.databaseManager.updateRecord(
@@ -343,7 +347,8 @@ public final class RecordsRepo {
         documentType: documentType,
         documentOid: documentOid,
         isEdited: !isSuccess,
-        caseModels: caseModels
+        caseModels: caseModels,
+        tags: tags
       )
     }
   }
