@@ -131,49 +131,11 @@ public final class RecordsRepo {
     /// Add in database and store it in addedRecord
     let addedRecord = databaseManager.addSingleRecord(from: record)
     didAddRecord(addedRecord)
+    /// Upload to vault
+    uploadRecord(record: addedRecord) { _ in
+    }
   }
  
-  public func updateRecordDetailsAndUpload(
-    record: Record,
-    documentDate: Date? = nil,
-    documentType: String? = nil,
-    documentOid: String? = CoreInitConfigurations.shared.primaryFilterID,
-    isEdited: Bool?,
-    caseModels: [CaseModel]? = nil,
-    tags: [String]? = nil
-  ) {
-    /// Update the record properties directly
-    if let documentDate = documentDate {
-      record.documentDate = documentDate
-    }
-    if let documentType = documentType {
-      record.documentType = documentType
-    }
-    if let documentOid = documentOid {
-      record.oid = documentOid
-    }
-    if let isEdited = isEdited {
-      record.isEdited = isEdited
-    }
-    if let caseModels = caseModels {
-      record.removeAllCaseAssociations()
-      record.addCaseModels(caseModels)
-    }
-    if let tags = tags {
-      record.setTags(tags)
-    }
-    
-    /// Save the changes to database
-    do {
-      try databaseManager.container.viewContext.save()
-      
-      /// Upload the updated record directly
-      uploadRecord(record: record) { _ in
-      }
-    } catch {
-      EkaMedicalRecordsCoreLogger.capture("Failed to save updated record: \(error)")
-    }
-  }
   public func uploadRecord(
       record: Record,
       completion didUploadRecord: @escaping (Record?) -> Void
@@ -520,7 +482,6 @@ public final class RecordsRepo {
     let documentID = record.documentID
     
     /// Delete from vault v3 only if requested
-    if deleteFromServer {
       deleteRecordV3(documentID: documentID, oid: record.oid) { [weak self] success, statusCode in
         guard let self else {
           completion(false)
@@ -536,11 +497,6 @@ public final class RecordsRepo {
           completion(false)
         }
       }
-    } else {
-      /// If not deleting from server, just delete from database
-      databaseManager.deleteRecord(record: record)
-      completion(true)
-    }
   }
   
   /// Clears all data from the database on user logout
