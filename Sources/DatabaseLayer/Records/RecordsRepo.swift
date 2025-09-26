@@ -507,16 +507,40 @@ public final class RecordsRepo {
   }
   
   /// Used to delete a specific record from the database
-  /// - Parameter record: record to be deleted
+  /// - Parameters:
+  ///   - record: record to be deleted
+  ///   - deleteFromServer: whether to also delete the record from the server (default: true)
+  ///   - completion: completion handler with success status
   public func deleteRecord(
-    record: Record
+    record: Record,
+    deleteFromServer: Bool = true,
+    completion: @escaping (Bool) -> Void = { _ in }
   ) {
     /// We need to store it before deleting from database as once document is deleted we can't get the documentID
     let documentID = record.documentID
-    /// Delete from vault v3
-    deleteRecordV3(documentID: documentID, oid: record.oid)
-    /// Delete from database
-    databaseManager.deleteRecord(record: record)
+    
+    /// Delete from vault v3 only if requested
+    if deleteFromServer {
+      deleteRecordV3(documentID: documentID, oid: record.oid) { [weak self] success, statusCode in
+        guard let self else {
+          completion(false)
+          return
+        }
+        
+        /// Only delete from database if server deletion was successful and returned 204
+        if success && statusCode == 204 {
+          databaseManager.deleteRecord(record: record)
+          completion(true)
+        } else {
+          EkaMedicalRecordsCoreLogger.capture("Server deletion failed or didn't return 204. Status code: \(statusCode ?? -1)")
+          completion(false)
+        }
+      }
+    } else {
+      /// If not deleting from server, just delete from database
+      databaseManager.deleteRecord(record: record)
+      completion(true)
+    }
   }
   
   /// Clears all data from the database on user logout
