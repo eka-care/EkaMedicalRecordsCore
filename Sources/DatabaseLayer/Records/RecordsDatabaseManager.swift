@@ -288,9 +288,9 @@ extension RecordsDatabaseManager {
   func getDocumentTypeCounts(
     oid: [String]?,
     caseID: String?
-  ) -> [RecordDocumentType: Int] {
+  ) -> [String: Int] {
     let fetchRequest = QueryHelper.fetchRecordCountsByDocumentTypeFetchRequest(oid: oid, caseID: caseID)
-    var counts: [RecordDocumentType: Int] = [:]
+    var counts: [String: Int] = [:]
     
     do {
       let results = try container.viewContext.fetch(fetchRequest)
@@ -298,19 +298,77 @@ extension RecordsDatabaseManager {
       
       for result in results {
         if let resultDict = result as? [String: Any],
-           let documentTypeInt = resultDict["documentType"] as? Int,
-           let recordDocumentType = RecordDocumentType.from(intValue: documentTypeInt),
+           let documentType = resultDict["documentType"] as? String,
            let count = resultDict["count"] as? Int {
           totalDocumentsCount += count
-          counts[recordDocumentType] = count
+          counts[documentType] = count
+        }
+      }
+    } catch {
+      EkaMedicalRecordsCoreLogger.capture("Failed to fetch grouped document type counts: \(error)")
+    }
+    
+    return counts
+  }
+  
+  /// Get tag counts
+  func getTagCounts(
+    oid: [String]?,
+    caseID: String?,
+    documentType: String? = nil
+  ) -> [String: Int] {
+    // Create a fetch request for records with the specified filters
+    let recordFetchRequest = QueryHelper.fetchRecords(oid: oid)
+    
+    // Build predicates for additional filtering
+    var predicates: [NSPredicate] = []
+    
+    // Add existing predicate if any
+    if let existingPredicate = recordFetchRequest.predicate {
+      predicates.append(existingPredicate)
+    }
+    
+    // Only include records that have tags
+    let hasTagsPredicate = NSPredicate(format: "toTags.@count > 0")
+    predicates.append(hasTagsPredicate)
+    
+    // CaseID predicate
+    if let caseID {
+      let casePredicate = NSPredicate(format: "ANY toCaseModel.caseID == %@", caseID)
+      predicates.append(casePredicate)
+    }
+    
+    // DocumentType predicate
+    if let documentType {
+      let documentTypePredicate = NSPredicate(format: "documentType == %@", documentType)
+      predicates.append(documentTypePredicate)
+    }
+    
+    // Apply combined predicate
+    recordFetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+    
+    var counts: [String: Int] = [:]
+    var totalRecordsWithTagsCount = 0
+    
+    do {
+      let records = try container.viewContext.fetch(recordFetchRequest)
+      
+      // Process each record and count its tags
+      for record in records {
+        if let tags = record.toTags?.allObjects as? [Tags] {
+          for tag in tags {
+            if let tagName = tag.name, !tagName.isEmpty {
+              counts[tagName] = (counts[tagName] ?? 0) + 1
+            }
+          }
+          if !tags.isEmpty {
+            totalRecordsWithTagsCount += 1
+          }
         }
       }
       
-      /// Add totalDocumentsCount in all
-      counts[.typeAll] = totalDocumentsCount
-      
     } catch {
-      EkaMedicalRecordsCoreLogger.capture("Failed to fetch grouped document type counts: \(error)")
+      EkaMedicalRecordsCoreLogger.capture("Failed to fetch records for tag counts: \(error)")
     }
     
     return counts
@@ -339,6 +397,31 @@ extension RecordsDatabaseManager {
       
     } catch {
       EkaMedicalRecordsCoreLogger.capture("Failed to fetch unique tag names: \(error)")
+      return []
+    }
+  }
+  
+  /// Get all unique document types from the database
+  /// - Parameter caseID: Optional case ID to filter document types by
+  /// - Returns: Array of unique document types
+  func getAllUniqueDocumentTypes(caseID: String? = nil) -> [String] {
+    let fetchRequest = QueryHelper.fetchAllUniqueDocumentTypes(caseID: caseID)
+    
+    do {
+      let results = try container.viewContext.fetch(fetchRequest)
+      var documentTypes: [String] = []
+      
+      for result in results {
+        if let resultDict = result as? [String: Any],
+           let documentType = resultDict["documentType"] as? String {
+          documentTypes.append(documentType)
+        }
+      }
+      
+      return documentTypes.sorted()
+      
+    } catch {
+      EkaMedicalRecordsCoreLogger.capture("Failed to fetch unique document types: \(error)")
       return []
     }
   }
@@ -464,7 +547,7 @@ extension RecordsDatabaseManager {
   func updateRecord(
       documentID: String,
       documentDate: Date? = nil,
-      documentType: Int? = nil,
+      documentType: String? = nil,
       documentOid: String? = nil,
       syncStatus: RecordSyncState? = nil,
       isEdited: Bool? = nil,
@@ -495,7 +578,7 @@ extension RecordsDatabaseManager {
         }
        
         if let documentType {
-          record.documentType = Int64(documentType)
+          record.documentType = documentType
         }
         if let documentOid {
           record.oid = documentOid

@@ -117,6 +117,32 @@ public final class QueryHelper {
     
     return fetchRequest
   }
+  
+  /// Query to fetch all unique document types from the database
+  /// - Parameter caseID: Optional case ID to filter document types by
+  /// - Returns: NSFetchRequest configured to fetch unique document types
+  public static func fetchAllUniqueDocumentTypes(caseID: String? = nil) -> NSFetchRequest<NSFetchRequestResult> {
+    let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: Record.entity().name!)
+    fetchRequest.resultType = .dictionaryResultType
+    fetchRequest.propertiesToFetch = ["documentType"]
+    fetchRequest.returnsDistinctResults = true
+    
+    var predicates: [NSPredicate] = []
+    
+    // Base predicate to filter out nil and empty document types
+    let basePredicate = NSPredicate(format: "documentType != nil AND documentType != %@", "")
+    predicates.append(basePredicate)
+    
+    // CaseID predicate
+    if let caseID = caseID {
+      let casePredicate = NSPredicate(format: "ANY toCaseModel.caseID == %@", caseID)
+      predicates.append(casePredicate)
+    }
+    
+    fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+    fetchRequest.sortDescriptors = [NSSortDescriptor(key: "documentType", ascending: true)]
+    return fetchRequest
+  }
 }
 
 // MARK: - Cases

@@ -69,17 +69,15 @@ public struct PredicateHelper {
   }
   
   /// Generates a predicate for filtering records based on the provided filter
-  /// - Parameter filter: The filter to apply (e.g., document type)
+  /// - Parameter documentType: The document type string to filter by (pass "all" or nil for all types)
   /// - Returns: An NSPredicate that filters records based on the provided filter
-  public static func generatePredicate(for filter: RecordDocumentType, filterID: String) -> NSPredicate {
+  public static func generatePredicate(for documentType: String?, filterID: String) -> NSPredicate {
     let oidPredicate = PredicateHelper.equals("oid", value: filterID)
-    switch filter {
-    case .typeAll:
+    guard let documentType = documentType, documentType != "all" else {
       return oidPredicate
-    default:
-      let typePredicate = PredicateHelper.equals("documentType", value: Int64(filter.intValue))
-      return NSCompoundPredicate(andPredicateWithSubpredicates: [oidPredicate, typePredicate])
     }
+    let typePredicate = PredicateHelper.equals("documentType", value: documentType)
+    return NSCompoundPredicate(andPredicateWithSubpredicates: [oidPredicate, typePredicate])
   }
   
   public static func predicateForKeyInValues<T>(_ key: String, in values: [T]) -> NSPredicate {

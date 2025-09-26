@@ -23,7 +23,7 @@
         <attribute name="documentDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="documentHash" optional="YES" attributeType="String"/>
         <attribute name="documentID" optional="YES" attributeType="String"/>
-        <attribute name="documentType" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="documentType" optional="YES" attributeType="String"/>
         <attribute name="isAnalyzing" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="isArchived" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="isEdited" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>

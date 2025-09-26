@@ -18,7 +18,7 @@ extension Record {
       self.syncState = syncState.stringValue
     }
     if let documentType = record.documentType {
-      self.documentType = Int64(documentType.intValue)
+      self.documentType = documentType
     }
     if let isAnalyzing = record.isAnalyzing {
       self.isAnalyzing = isAnalyzing
