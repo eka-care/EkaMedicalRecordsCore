@@ -133,10 +133,8 @@ public final class RecordsRepo {
     didAddRecord(addedRecord)
   }
  
-  public func addRecordDetailsAndUpload(
+  public func updateRecordDetailsAndUpload(
     record: Record,
-    recordID: NSManagedObjectID,
-    documentID: String,
     documentDate: Date? = nil,
     documentType: String? = nil,
     documentOid: String? = CoreInitConfigurations.shared.primaryFilterID,
@@ -144,26 +142,37 @@ public final class RecordsRepo {
     caseModels: [CaseModel]? = nil,
     tags: [String]? = nil
   ) {
-    /// Update in database
-    databaseManager.updateRecord(
-      //      recordID: recordID,
-      documentID: documentID,
-      documentDate: documentDate,
-      documentType: documentType,
-      documentOid: documentOid,
-      isEdited: isEdited,
-      caseModels: caseModels,
-      tags: tags
-    )
-    
-    /// Fetch the updated record from database
-    let fetchRequest = QueryHelper.fetchRecordWith(documentID: documentID)
-    if let updatedRecord = getRecord(fetchRequest: fetchRequest) {
-      /// Upload the updated record
-      uploadRecord(record: updatedRecord) { _ in
-      }
+    /// Update the record properties directly
+    if let documentDate = documentDate {
+      record.documentDate = documentDate
+    }
+    if let documentType = documentType {
+      record.documentType = documentType
+    }
+    if let documentOid = documentOid {
+      record.oid = documentOid
+    }
+    if let isEdited = isEdited {
+      record.isEdited = isEdited
+    }
+    if let caseModels = caseModels {
+      record.removeAllCaseAssociations()
+      record.addCaseModels(caseModels)
+    }
+    if let tags = tags {
+      record.setTags(tags)
     }
     
+    /// Save the changes to database
+    do {
+      try databaseManager.container.viewContext.save()
+      
+      /// Upload the updated record directly
+      uploadRecord(record: record) { _ in
+      }
+    } catch {
+      EkaMedicalRecordsCoreLogger.capture("Failed to save updated record: \(error)")
+    }
   }
   public func uploadRecord(
       record: Record,
