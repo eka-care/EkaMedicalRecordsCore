@@ -140,7 +140,8 @@ extension RecordDatabaseAdapter {
   public func formRecordModelFromAddedData(
     data: [Data],
     contentType: FileType,
-    caseModels: [CaseModel]? = nil
+    documentType: String? = nil,
+    caseModels: [CaseModel]? = nil,
   ) -> RecordModel {
     let contentTypeString: String = contentType.fileExtension
     /// Form record local path
@@ -168,7 +169,7 @@ extension RecordDatabaseAdapter {
     }
     
     return RecordModel(
-      documentType: "ot", // other type
+      documentType: documentType, // other type
       oid: CoreInitConfigurations.shared.primaryFilterID,
       thumbnail: thumbnailUrl,
       updatedAt: Date(), // Current date
