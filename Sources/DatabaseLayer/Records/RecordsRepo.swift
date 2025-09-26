@@ -131,6 +131,9 @@ public final class RecordsRepo {
     /// Add in database and store it in addedRecord
     let addedRecord = databaseManager.addSingleRecord(from: record)
     didAddRecord(addedRecord)
+    /// Upload to vault
+    uploadRecord(record: addedRecord) { _ in
+    }
   }
  
   public func uploadRecord(
