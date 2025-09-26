@@ -131,11 +131,40 @@ public final class RecordsRepo {
     /// Add in database and store it in addedRecord
     let addedRecord = databaseManager.addSingleRecord(from: record)
     didAddRecord(addedRecord)
-    /// Upload to vault
-    uploadRecord(record: addedRecord) { _ in
-    }
   }
  
+  public func addRecordDetailsAndUpload(
+    record: Record,
+    recordID: NSManagedObjectID,
+    documentID: String,
+    documentDate: Date? = nil,
+    documentType: String? = nil,
+    documentOid: String? = CoreInitConfigurations.shared.primaryFilterID,
+    isEdited: Bool?,
+    caseModels: [CaseModel]? = nil,
+    tags: [String]? = nil
+  ) {
+    /// Update in database
+    databaseManager.updateRecord(
+      //      recordID: recordID,
+      documentID: documentID,
+      documentDate: documentDate,
+      documentType: documentType,
+      documentOid: documentOid,
+      isEdited: isEdited,
+      caseModels: caseModels,
+      tags: tags
+    )
+    
+    /// Fetch the updated record from database
+    let fetchRequest = QueryHelper.fetchRecordWith(documentID: documentID)
+    if let updatedRecord = getRecord(fetchRequest: fetchRequest) {
+      /// Upload the updated record
+      uploadRecord(record: updatedRecord) { _ in
+      }
+    }
+    
+  }
   public func uploadRecord(
       record: Record,
       completion didUploadRecord: @escaping (Record?) -> Void
