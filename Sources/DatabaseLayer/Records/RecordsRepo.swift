@@ -324,7 +324,6 @@ public final class RecordsRepo {
   ///   - caseModel: case model of the record
   ///   - tags: array of tag names for the record
   public func updateRecord(
-    recordID: NSManagedObjectID,
     documentID: String,
     documentDate: Date? = nil,
     documentType: String? = nil,
@@ -335,7 +334,6 @@ public final class RecordsRepo {
   ) {
     /// Update in database
     databaseManager.updateRecord(
-//      recordID: recordID,
       documentID: documentID,
       documentDate: documentDate,
       documentType: documentType,
