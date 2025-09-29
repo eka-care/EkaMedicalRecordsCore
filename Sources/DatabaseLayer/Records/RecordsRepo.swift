@@ -130,9 +130,9 @@ public final class RecordsRepo {
   ) {
     /// Add in database and store it in addedRecord
     let addedRecord = databaseManager.addSingleRecord(from: record)
-    didAddRecord(addedRecord)
     /// Upload to vault
-    uploadRecord(record: addedRecord) { _ in
+    uploadRecord(record: addedRecord) { record in
+      didAddRecord(record)
     }
   }
  
@@ -355,7 +355,6 @@ public final class RecordsRepo {
     ) { [weak self] isSuccess in
       guard let self = self else { return }
       self.databaseManager.updateRecord(
-//        recordID: recordID,
         documentID: documentID,
         documentDate: documentDate,
         documentType: documentType,
