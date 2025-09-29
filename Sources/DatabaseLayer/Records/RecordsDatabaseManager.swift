@@ -144,33 +144,24 @@ extension RecordsDatabaseManager {
   /// Used to add single record to the database, this will be faster than batch insert for single record
   func addSingleRecord(
     from record: RecordModel,
-    completion: @escaping (Record?) -> Void
-  ) {
-    
-    backgroundContext.perform { [weak self] in
-      guard let self else {
-        completion(nil)
-        return
-      }
-      
-      let newRecord = Record(context: self.backgroundContext)
-      newRecord.update(from: record)
-      do {
-        try self.backgroundContext.save()
-        /// Add record meta data after saving record entity
-        addRecordMetaData(
-          to: newRecord,
-          documentURIs: record.documentURIs
-        )
-        createRecordEvent(id: newRecord.id.debugDescription, status: .success)
-        EkaMedicalRecordsCoreLogger.capture("Record added successfully!")
-        completion(newRecord)
-      } catch {
-        let nsError = error as NSError
-        createRecordEvent(id: newRecord.id.debugDescription, status: .failure, message: error.localizedDescription)
-        EkaMedicalRecordsCoreLogger.capture("Error saving record: \(nsError), \(nsError.userInfo)")
-        completion(nil)
-      }
+  ) -> Record {
+    let newRecord = Record(context: container.viewContext)
+    newRecord.update(from: record)
+    do {
+      try container.viewContext.save()
+      /// Add record meta data after saving record entity
+      addRecordMetaData(
+        to: newRecord,
+        documentURIs: record.documentURIs
+      )
+      createRecordEvent(id: newRecord.id.debugDescription, status: .success)
+      EkaMedicalRecordsCoreLogger.capture("Record added successfully!")
+      return newRecord
+    } catch {
+      let nsError = error as NSError
+      createRecordEvent(id: newRecord.id.debugDescription, status: .failure, message: error.localizedDescription)
+      EkaMedicalRecordsCoreLogger.capture("Error saving record: \(nsError), \(nsError.userInfo)")
+      return newRecord
     }
   }
   

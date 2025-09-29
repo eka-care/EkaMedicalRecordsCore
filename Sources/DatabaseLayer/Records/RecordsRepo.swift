@@ -129,11 +129,10 @@ public final class RecordsRepo {
     completion didAddRecord: @escaping (Record?) -> Void
   ) {
     /// Add in database and store it in addedRecord
-    databaseManager.addSingleRecord(from: record) {[weak self] addedRecord in
-      guard let addedRecord else { return didAddRecord(nil)}
-      self?.uploadRecord(record: addedRecord) { record in
-        didAddRecord(record)
-      }
+    let addedRecord = databaseManager.addSingleRecord(from: record)
+    /// Upload to vault
+    uploadRecord(record: addedRecord) { record in
+      didAddRecord(record)
     }
   }
  
