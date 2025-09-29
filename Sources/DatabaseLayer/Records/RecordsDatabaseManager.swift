@@ -31,10 +31,27 @@ public final class RecordsDatabaseManager {
     let description = container.persistentStoreDescriptions.first!
     description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
     description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
-    /// Loading of persistent stores
+    /// Enable lightweight migration
+    description.setOption(true as NSNumber, forKey: NSMigratePersistentStoresAutomaticallyOption)
+    description.setOption(true as NSNumber, forKey: NSInferMappingModelAutomaticallyOption)
+    /// Loading of persistent stores with fallback to destroy and recreate on failure
     container.loadPersistentStores { (storeDescription, error) in
       if let error {
-        fatalError("Failed to load store: \(error)")
+        EkaMedicalRecordsCoreLogger.capture("Failed to load store (will attempt destroy): \(error)")
+        if let url = storeDescription.url {
+          do {
+            try container.persistentStoreCoordinator.destroyPersistentStore(at: url, ofType: NSSQLiteStoreType, options: nil)
+            container.loadPersistentStores { _, retryError in
+              if let retryError {
+                fatalError("Failed to load store after destroy: \(retryError)")
+              }
+            }
+          } catch {
+            fatalError("Failed to destroy persistent store for migration fallback: \(error)")
+          }
+        } else {
+          fatalError("Failed to load store (no URL to destroy): \(error)")
+        }
       }
     }
     /// Configure the viewContext (main context)
