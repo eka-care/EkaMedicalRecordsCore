@@ -298,7 +298,8 @@ public final class RecordsRepo {
   /// - Parameter caseID: Optional case ID to filter document types by
   /// - Returns: Array of unique document types
   public func getDocumentTypesList(caseID: String? = nil) -> [String] {
-    return databaseManager.getAllUniqueDocumentTypes(caseID: caseID)
+    let oid = CoreInitConfigurations.shared.filterID
+    return databaseManager.getAllUniqueDocumentTypes(oid: oid,caseID: caseID)
   }
   
   /// Used to get record tag count

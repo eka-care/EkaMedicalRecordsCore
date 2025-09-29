@@ -485,10 +485,12 @@ extension RecordsDatabaseManager {
   }
   
   /// Get all unique document types from the database
-  /// - Parameter caseID: Optional case ID to filter document types by
+  /// - Parameters:
+  ///   - oid: Optional array of owner IDs to filter by
+  ///   - caseID: Optional case ID to filter document types by
   /// - Returns: Array of unique document types
-  func getAllUniqueDocumentTypes(caseID: String? = nil) -> [String] {
-    let fetchRequest = QueryHelper.fetchAllUniqueDocumentTypes(caseID: caseID)
+  func getAllUniqueDocumentTypes(oid: [String]? = nil, caseID: String? = nil) -> [String] {
+    let fetchRequest = QueryHelper.fetchAllUniqueDocumentTypes(oid: oid, caseID: caseID)
     
     do {
       let results = try container.viewContext.fetch(fetchRequest)

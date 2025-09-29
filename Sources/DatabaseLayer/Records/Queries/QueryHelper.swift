@@ -119,9 +119,11 @@ public final class QueryHelper {
   }
   
   /// Query to fetch all unique document types from the database
-  /// - Parameter caseID: Optional case ID to filter document types by
+  /// - Parameters:
+  ///   - oid: Optional array of owner IDs to filter by
+  ///   - caseID: Optional case ID to filter document types by
   /// - Returns: NSFetchRequest configured to fetch unique document types
-  public static func fetchAllUniqueDocumentTypes(caseID: String? = nil) -> NSFetchRequest<NSFetchRequestResult> {
+  public static func fetchAllUniqueDocumentTypes(oid: [String]? = nil, caseID: String? = nil) -> NSFetchRequest<NSFetchRequestResult> {
     let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: Record.entity().name!)
     fetchRequest.resultType = .dictionaryResultType
     fetchRequest.propertiesToFetch = ["documentType"]
@@ -132,6 +134,12 @@ public final class QueryHelper {
     // Base predicate to filter out nil and empty document types
     let basePredicate = NSPredicate(format: "documentType != nil AND documentType != %@", "")
     predicates.append(basePredicate)
+    
+    // OID predicate
+    if let oid, !oid.isEmpty {
+      let oidPredicate = NSPredicate(format: "oid IN %@", oid)
+      predicates.append(oidPredicate)
+    }
     
     // CaseID predicate
     if let caseID = caseID {
