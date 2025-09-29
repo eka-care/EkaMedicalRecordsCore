@@ -144,24 +144,77 @@ extension RecordsDatabaseManager {
   /// Used to add single record to the database, this will be faster than batch insert for single record
   func addSingleRecord(
     from record: RecordModel,
-  ) -> Record {
-    let newRecord = Record(context: container.viewContext)
-    newRecord.update(from: record)
+    completion: @escaping (Record) -> Void
+  ) {
+    let container = self.container // Capture container before the closure
+    
+    backgroundContext.perform { [weak self] in
+      guard let self = self else {
+        // Create a temporary record for failure case
+        let failureRecord = Record(context: container.viewContext)
+        failureRecord.update(from: record)
+        DispatchQueue.main.async {
+          completion(failureRecord)
+        }
+        return
+      }
+      
+      let newRecord = Record(context: self.backgroundContext)
+      newRecord.update(from: record)
+      
+      self.performSave(
+        context: self.backgroundContext,
+        operation: "addSingleRecord",
+        recordId: record.documentID
+      ) { [weak self] success in
+        guard let self = self else {
+          DispatchQueue.main.async {
+            completion(newRecord)
+          }
+          return
+        }
+        
+        if success {
+          // Add record meta data after successful save
+          self.addRecordMetaData(
+            to: newRecord,
+            documentURIs: record.documentURIs
+          )
+          self.createRecordEvent(id: newRecord.id.debugDescription, status: .success)
+          EkaMedicalRecordsCoreLogger.capture("Record added successfully!")
+        } else {
+          self.createRecordEvent(id: newRecord.id.debugDescription, status: .failure, message: "Failed to save record")
+        }
+        
+        DispatchQueue.main.async {
+          completion(newRecord)
+        }
+      }
+    }
+  }
+  
+  /// Generic Core Data save operation with consistent error handling
+  /// - Parameters:
+  ///   - context: The managed object context to save
+  ///   - operation: Description of the operation for logging
+  ///   - recordId: Optional record ID for event logging
+  ///   - completion: Completion handler with success boolean
+  private func performSave(
+    context: NSManagedObjectContext,
+    operation: String,
+    recordId: String? = nil,
+    completion: @escaping (Bool) -> Void
+  ) {
     do {
-      try container.viewContext.save()
-      /// Add record meta data after saving record entity
-      addRecordMetaData(
-        to: newRecord,
-        documentURIs: record.documentURIs
-      )
-      createRecordEvent(id: newRecord.id.debugDescription, status: .success)
-      EkaMedicalRecordsCoreLogger.capture("Record added successfully!")
-      return newRecord
+      try context.save()
+      completion(true)
     } catch {
-      let nsError = error as NSError
-      createRecordEvent(id: newRecord.id.debugDescription, status: .failure, message: error.localizedDescription)
-      EkaMedicalRecordsCoreLogger.capture("Error saving record: \(nsError), \(nsError.userInfo)")
-      return newRecord
+      let dbError = ErrorHelper.databaseOperationError(
+        operation: operation,
+        underlyingError: error
+      )
+      EkaMedicalRecordsCoreLogger.capture("Database operation failed: \(dbError.localizedDescription)")
+      completion(false)
     }
   }
   
@@ -185,41 +238,54 @@ extension RecordsDatabaseManager {
   /// Used to add record meta data as a one to many relationship to record entity
   /// - Parameters:
   ///   - record: Entity Model to which meta data is to be attached
-  ///   - recordModel: Record Model that has all the data
+  ///   - documentURIs: Array of document URIs to be added as metadata
   private func addRecordMetaData(
     to record: Record,
     documentURIs: [String]?
   ) {
     guard let documentURIs else { return }
+    
+    // Use the same context as the record
+    let context = record.managedObjectContext ?? self.container.viewContext
+    
     documentURIs.forEach { uriPath in
-      let recordMeta = RecordMeta(context: container.viewContext)
+      let recordMeta = RecordMeta(context: context)
       recordMeta.documentURI = uriPath
       record.addToToRecordMeta(recordMeta)
     }
-    do {
-      try container.viewContext.save()
-      EkaMedicalRecordsCoreLogger.capture("Record meta data added successfully!")
-    } catch {
-      let nsError = error as NSError
-      EkaMedicalRecordsCoreLogger.capture("Error saving record meta data: \(nsError), \(nsError.userInfo)")
+    
+    self.performSave(
+      context: context,
+      operation: "addRecordMetaData"
+    ) { success in
+      if success {
+        EkaMedicalRecordsCoreLogger.capture("Record meta data added successfully!")
+      }
     }
   }
   
   /// Used to add smart report data to a record
-  /// - Parameter record: record to which smart report is to be added
+  /// - Parameters:
+  ///   - record: record to which smart report is to be added
+  ///   - smartReportData: Data for the smart report
   func addSmartReport(
     to record: Record,
     smartReportData: Data
   ) {
-    let smartReport = SmartReport(context: container.viewContext)
+    // Use the same context as the record
+    let context = record.managedObjectContext ?? self.container.viewContext
+    
+    let smartReport = SmartReport(context: context)
     smartReport.data = smartReportData
     record.toSmartReport = smartReport
-    do {
-      try container.viewContext.save()
-      EkaMedicalRecordsCoreLogger.capture("Smart report saved successfully")
-    } catch {
-      let nsError = error as NSError
-      EkaMedicalRecordsCoreLogger.capture("Error saving smart report \(nsError)")
+    
+    self.performSave(
+      context: context,
+      operation: "addSmartReport"
+    ) { success in
+      if success {
+        EkaMedicalRecordsCoreLogger.capture("Smart report saved successfully")
+      }
     }
   }
 }
