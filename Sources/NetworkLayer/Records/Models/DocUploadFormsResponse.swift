@@ -20,7 +20,7 @@ struct DocUploadFormsResponse: Codable {
   struct BatchResponse: Codable {
     let documentID: String?
     let forms: [Form]?
-    let errorDetails: ErrorDetails
+    let errorDetails: ErrorDetails?
     enum CodingKeys: String, CodingKey {
       case documentID = "document_id"
       case forms
