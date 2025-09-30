@@ -644,76 +644,80 @@ extension RecordsDatabaseManager {
       caseModels: [CaseModel]? = nil,
       tags: [String]? = nil
     ) {
-      do {
-        // Fetch the record by document ID
-        let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "documentID == %@", documentID)
-        fetchRequest.fetchLimit = 1
+      backgroundContext.perform { [weak self] in
+        guard let self = self else { return }
         
-        let records = try container.viewContext.fetch(fetchRequest)
-        guard let record = records.first else {
-          EkaMedicalRecordsCoreLogger.capture("Record not found for document ID: \(documentID)")
-          updateRecordEvent(
-            id: documentID,
-            status: .failure,
-            message: "Record not found"
-          )
-          return
-        }
-        
-        // Update the record properties
-        record.documentID = documentID
-        if let documentDate = documentDate {
-          record.documentDate = documentDate
-        }
-       
-        if let documentType {
-          record.documentType = documentType
-        }
-        if let documentOid {
-          record.oid = documentOid
-        }
-        if let syncStatus {
-          record.syncState = syncStatus.stringValue
-        }
-        if let caseModels {
-          record.removeAllCaseAssociations()
-          record.addCaseModels(caseModels)
-        }
-        if let isEdited {
-          record.isEdited = isEdited
-        }
-        if let tags {
-          record.setTags(tags)
-        }
-        
-        // Save the changes to the database
-        performSave(
-          context: container.viewContext,
-          operation: "updateRecord",
-          recordId: documentID
-        ) { [weak self] success in
-          guard let self = self else { return }
-          if success {
-            self.updateRecordEvent(
-              id: record.documentID,
-              status: .success
-            )
-          } else {
+        do {
+          // Fetch the record by document ID
+          let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
+          fetchRequest.predicate = NSPredicate(format: "documentID == %@", documentID)
+          fetchRequest.fetchLimit = 1
+          
+          let records = try self.backgroundContext.fetch(fetchRequest)
+          guard let record = records.first else {
+            EkaMedicalRecordsCoreLogger.capture("Record not found for document ID: \(documentID)")
             self.updateRecordEvent(
               id: documentID,
               status: .failure,
-              message: "Failed to save record"
+              message: "Record not found"
             )
+            return
           }
+          
+          // Update the record properties
+          record.documentID = documentID
+          if let documentDate = documentDate {
+            record.documentDate = documentDate
+          }
+         
+          if let documentType {
+            record.documentType = documentType
+          }
+          if let documentOid {
+            record.oid = documentOid
+          }
+          if let syncStatus {
+            record.syncState = syncStatus.stringValue
+          }
+          if let caseModels {
+            record.removeAllCaseAssociations()
+            record.addCaseModels(caseModels)
+          }
+          if let isEdited {
+            record.isEdited = isEdited
+          }
+          if let tags {
+            record.setTags(tags)
+          }
+          
+          // Save the changes to the database
+          self.performSave(
+            context: self.backgroundContext,
+            operation: "updateRecord",
+            recordId: documentID
+          ) { [weak self] success in
+            guard let self = self else { return }
+            if success {
+              self.updateRecordEvent(
+                id: record.documentID,
+                status: .success
+              )
+            } else {
+              self.updateRecordEvent(
+                id: documentID,
+                status: .failure,
+                message: "Failed to save record"
+              )
+            }
+          }
+        } catch {
+          EkaMedicalRecordsCoreLogger.capture("Failed to fetch or update record: \(error)")
+          self.updateRecordEvent(
+            id: documentID,
+            status: .failure,
+            message: error.localizedDescription
+          )
         }
-      } catch {
-        EkaMedicalRecordsCoreLogger.capture("Failed to fetch or update record: \(error)")
-        updateRecordEvent(
-          id: documentID,
-          status: .failure,
-          message: error.localizedDescription
-        )
       }
     }
 }
