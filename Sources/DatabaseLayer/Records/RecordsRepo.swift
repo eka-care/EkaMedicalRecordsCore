@@ -172,7 +172,7 @@ public final class RecordsRepo {
       
       
       guard error == nil, let uploadFormsResponse else {
-        databaseManager.updateRecord(documentID: documentId,syncStatus: RecordSyncState.upload(success: false))
+        databaseManager.updateRecord(documentID: documentId,syncStatus: statusCode == 409 ? RecordSyncState.upload(success: false) : RecordSyncState.upload(success: false))
         /// Make delete api record call so that its not availabe on server
         if let docId = uploadFormsResponse?.batchResponses?.first?.documentID  {
           deleteRecordV3(documentID: docId, oid: record.oid)
