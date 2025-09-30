@@ -144,13 +144,10 @@ extension RecordsDatabaseManager {
       }
       
       // Save all changes at once
-      do {
-        try self.backgroundContext.save()
-        DispatchQueue.main.async {
-          completion()
-        }
-      } catch {
-        EkaMedicalRecordsCoreLogger.capture("Error saving records: \(error)")
+      self.performSave(
+        context: self.backgroundContext,
+        operation: "upsertRecords"
+      ) { _ in
         DispatchQueue.main.async {
           completion()
         }
@@ -601,14 +598,21 @@ extension RecordsDatabaseManager {
           self.backgroundContext.delete(tag)
         }
         
-        try self.backgroundContext.save()
-        
-        DispatchQueue.main.async {
-          EkaMedicalRecordsCoreLogger.capture("Cleaned up \(count) orphaned tags")
-          completion(count)
+        self.performSave(
+          context: self.backgroundContext,
+          operation: "cleanupOrphanedTags"
+        ) { success in
+          DispatchQueue.main.async {
+            if success {
+              EkaMedicalRecordsCoreLogger.capture("Cleaned up \(count) orphaned tags")
+              completion(count)
+            } else {
+              completion(0)
+            }
+          }
         }
       } catch {
-        EkaMedicalRecordsCoreLogger.capture("Failed to cleanup orphaned tags: \(error)")
+        EkaMedicalRecordsCoreLogger.capture("Failed to fetch orphaned tags: \(error)")
         DispatchQueue.main.async {
           completion(0)
         }
@@ -684,13 +688,27 @@ extension RecordsDatabaseManager {
         }
         
         // Save the changes to the database
-        try container.viewContext.save()
-        updateRecordEvent(
-          id: record.documentID,
-          status: .success
-        )
+        performSave(
+          context: container.viewContext,
+          operation: "updateRecord",
+          recordId: documentID
+        ) { [weak self] success in
+          guard let self = self else { return }
+          if success {
+            self.updateRecordEvent(
+              id: record.documentID,
+              status: .success
+            )
+          } else {
+            self.updateRecordEvent(
+              id: documentID,
+              status: .failure,
+              message: "Failed to save record"
+            )
+          }
+        }
       } catch {
-        EkaMedicalRecordsCoreLogger.capture("Failed to update record: \(error)")
+        EkaMedicalRecordsCoreLogger.capture("Failed to fetch or update record: \(error)")
         updateRecordEvent(
           id: documentID,
           status: .failure,
@@ -722,12 +740,16 @@ extension RecordsDatabaseManager {
       let deleteRequest = NSBatchDeleteRequest(fetchRequest: request)
       do {
         try backgroundContext.execute(deleteRequest)
-        try backgroundContext.save()
-        DispatchQueue.main.async {
-          completion()
+        self.performSave(
+          context: self.backgroundContext,
+          operation: "deleteRecords"
+        ) { _ in
+          DispatchQueue.main.async {
+            completion()
+          }
         }
       } catch {
-        EkaMedicalRecordsCoreLogger.capture("There was an error deleting entity: \(error)")
+        EkaMedicalRecordsCoreLogger.capture("There was an error executing batch delete: \(error)")
         DispatchQueue.main.async {
           completion()
         }
@@ -738,20 +760,27 @@ extension RecordsDatabaseManager {
   /// Used to delete a given record
   /// - Parameter record: record object that is to be deleted
   func deleteRecord(record: Record) {
+    let recordId = record.documentID ?? record.objectID.uriRepresentation().absoluteString
     container.viewContext.delete(record)
-    do {
-      try container.viewContext.save()
-      deleteRecordEvent(
-        id: record.documentID ?? record.objectID.uriRepresentation().absoluteString,
-        status: .success
-      )
-    } catch {
-      EkaMedicalRecordsCoreLogger.capture("Error deleting record: \(error)")
-      deleteRecordEvent(
-        id: record.documentID ?? record.objectID.uriRepresentation().absoluteString,
-        status: .failure,
-        message: error.localizedDescription
-      )
+    
+    performSave(
+      context: container.viewContext,
+      operation: "deleteRecord",
+      recordId: recordId
+    ) { [weak self] success in
+      guard let self = self else { return }
+      if success {
+        self.deleteRecordEvent(
+          id: recordId,
+          status: .success
+        )
+      } else {
+        self.deleteRecordEvent(
+          id: recordId,
+          status: .failure,
+          message: "Failed to delete record"
+        )
+      }
     }
   }
   
