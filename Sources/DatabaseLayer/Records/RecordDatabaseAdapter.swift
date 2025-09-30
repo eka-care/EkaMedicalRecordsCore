@@ -17,7 +17,7 @@ public struct RecordModel {
   public var documentID: String
   public var documentDate: Date?
   public var documentHash: String?
-  public var documentType: RecordDocumentType?
+  public var documentType: String?
   public var syncState: RecordSyncState?
   public var isAnalyzing: Bool?
   public var isSmart: Bool?
@@ -30,11 +30,12 @@ public struct RecordModel {
   public var isEdited: Bool?
   public var caseModels: [CaseModel]? // Array of case models for many-to-many relationship
   public var caseIDs: [String]? // Array of case IDs for lazy loading
+  public var tags: [String]?
   
   public init(
     documentDate: Date? = nil,
     documentHash: String? = nil,
-    documentType: RecordDocumentType? = nil,
+    documentType: String? = nil,
     syncState: RecordSyncState? = nil,
     isAnalyzing: Bool? = nil,
     isSmart: Bool? = nil,
@@ -46,7 +47,8 @@ public struct RecordModel {
     contentType: String? = nil,
     isEdited: Bool? = nil,
     caseModels: [CaseModel]? = nil,
-    caseIDs: [String]? = nil
+    caseIDs: [String]? = nil,
+    tags: [String]? = nil
   ) {
     self.documentID = UUID().uuidString
     self.documentDate = documentDate
@@ -64,6 +66,7 @@ public struct RecordModel {
     self.contentType = contentType
     self.caseModels = caseModels
     self.caseIDs = caseIDs
+    self.tags = tags
   }
 }
 
@@ -137,7 +140,8 @@ extension RecordDatabaseAdapter {
   public func formRecordModelFromAddedData(
     data: [Data],
     contentType: FileType,
-    caseModels: [CaseModel]? = nil
+    documentType: String? = nil,
+    caseModels: [CaseModel]? = nil,
   ) -> RecordModel {
     let contentTypeString: String = contentType.fileExtension
     /// Form record local path
@@ -165,7 +169,7 @@ extension RecordDatabaseAdapter {
     }
     
     return RecordModel(
-      documentType: .typeOther,
+      documentType: documentType, // other type
       oid: CoreInitConfigurations.shared.primaryFilterID,
       thumbnail: thumbnailUrl,
       updatedAt: Date(), // Current date
@@ -215,13 +219,19 @@ extension RecordDatabaseAdapter {
     insertModel.documentHash = UUID().uuidString /// To update ui
     insertModel.documentID = networkModel.recordDocument.item.documentID
     if let documentType = networkModel.recordDocument.item.documentType {
-      insertModel.documentType = RecordDocumentType(rawValue: documentType)
+      insertModel.documentType = documentType
     }
     /// Form smart of the document
-    insertModel.isSmart = networkModel.recordDocument.item.metadata?.tags?.contains(where: { $0 == RecordDocumentTagType.smartTag.networkName }) ?? false
+    insertModel.isSmart = networkModel.recordDocument.item.metadata?.autoTags?.contains(where: { $0 == RecordDocumentTagType.smartTag.networkName }) ?? false
     if let oid = networkModel.recordDocument.item.patientID {
       insertModel.oid = oid
     }
+    
+    // Extract tags from metadata
+    if let tags = networkModel.recordDocument.item.metadata?.tags {
+      insertModel.tags = tags
+    }
+    
     if let updatedAt = networkModel.recordDocument.item.updatedAt {
       insertModel.updatedAt = updatedAt.toDate()
     }

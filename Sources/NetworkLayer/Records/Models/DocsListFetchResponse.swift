@@ -59,13 +59,15 @@ struct Metadata: Codable {
   let thumbnail: String?
   let documentDate: Int?
   let tags: [String]?
+  let autoTags: [String]?
   let title: String?
   let abha: Abha?
   
   enum CodingKeys: String, CodingKey {
     case thumbnail
     case documentDate = "document_date"
-    case tags = "auto_tags"
+    case autoTags = "auto_tags"
+    case tags
     case title, abha
   }
 }

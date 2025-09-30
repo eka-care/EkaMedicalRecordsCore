@@ -100,17 +100,27 @@ extension RecordsRepo {
 
 extension RecordsRepo {
   /// Delete record from v3 network
-  /// - Parameter documentID: documentID of the document to be deleted
+  /// - Parameters:
+  ///   - documentID: documentID of the document to be deleted
+  ///   - oid: organization ID
+  ///   - completion: completion handler with success status and status code
   func deleteRecordV3(
     documentID: String?,
-    oid: String?
+    oid: String?,
+    completion: @escaping (Bool, Int?) -> Void = { _, _ in }
   ) {
-    guard let documentID else { return }
+    guard let documentID else { 
+      completion(false, nil)
+      return 
+    }
     service.delete(
       documentId: documentID,
       oid: oid
     ) { [weak self] result, statusCode in
-      guard let self else { return }
+      guard let self else { 
+        completion(false, statusCode)
+        return 
+      }
       switch result {
       case .success:
         deleteRecordEvent(
@@ -118,6 +128,7 @@ extension RecordsRepo {
           status: .success
         )
         EkaMedicalRecordsCoreLogger.capture("Record deleted successfully from v3")
+        completion(true, statusCode)
       case .failure(let error):
         deleteRecordEvent(
           id: documentID,
@@ -125,6 +136,7 @@ extension RecordsRepo {
           message: error.localizedDescription
         )
         EkaMedicalRecordsCoreLogger.capture("Failed to delete record \(error.localizedDescription)")
+        completion(false, statusCode)
       }
     }
   }
@@ -204,9 +216,10 @@ extension RecordsRepo {
   func editDocument(
     documentID: String?,
     documentDate: Date? = nil,
-    documentType: Int? = nil,
+    documentType: String? = nil,
     documentFilterId: String? = nil,
     linkedCases: [String]? = nil,
+    tags: [String]? = nil,
     completion: @escaping (Bool) -> Void
   ) {
     guard let documentID,
@@ -214,14 +227,14 @@ extension RecordsRepo {
       EkaMedicalRecordsCoreLogger.capture("Document ID not found while editing record")
       return
     }
-    /// Set document type
-    let recordDocumentType = RecordDocumentType.from(intValue: documentType)
+    /// Set document type - use the documentType string directly
     /// Form request
     let request = DocUpdateRequest(
       oid: documentFilterId,
-      documentType: recordDocumentType?.rawValue,
+      documentType: documentType,
       documentDate: documentDate?.toEpochInt(),
-      cases: linkedCases
+      cases: linkedCases,
+      tags: tags
     )
     service.editDocumentDetails(
       documentId: documentID,

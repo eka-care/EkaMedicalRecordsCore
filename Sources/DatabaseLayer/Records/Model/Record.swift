@@ -18,7 +18,7 @@ extension Record {
       self.syncState = syncState.stringValue
     }
     if let documentType = record.documentType {
-      self.documentType = Int64(documentType.intValue)
+      self.documentType = documentType
     }
     if let isAnalyzing = record.isAnalyzing {
       self.isAnalyzing = isAnalyzing
@@ -44,6 +44,10 @@ extension Record {
     // Handle array of case IDs (for lazy loading)
     if let caseIDs = record.caseIDs {
       associateCaseModels(with: caseIDs)
+    }
+    
+    if let tags = record.tags {
+      associateTags(with: tags)
     }
   }
   
@@ -155,5 +159,193 @@ extension Record {
   public func removeAllCaseAssociations() {
     let caseModels = getCaseModels()
     removeCaseModels(caseModels)
+  }
+}
+
+// MARK: - Tag Relationship Management
+
+extension Record {
+  /// Used to associate tags with this record
+  /// - Parameter tagNames: Array of tag names to associate with this record
+  private func associateTags(with tagNames: [String]) {
+    guard let managedContext = managedObjectContext else { return }
+    guard !tagNames.isEmpty else { return }
+    
+    // Remove existing tag associations first to avoid duplicates
+    removeAllTags()
+    
+    // Create or find existing Tags entities for each tag name
+    for tagName in tagNames {
+      let trimmedTagName = tagName.trimmingCharacters(in: .whitespaces)
+      guard !trimmedTagName.isEmpty else { continue }
+      
+      // Check if a Tag with this name already exists in the database
+      let fetchRequest: NSFetchRequest<Tags> = Tags.fetchRequest()
+      fetchRequest.predicate = NSPredicate(format: "name == %@", trimmedTagName)
+      fetchRequest.fetchLimit = 1
+      
+      do {
+        let existingTags = try managedContext.fetch(fetchRequest)
+        let tagEntity: Tags
+        
+        if let existingTag = existingTags.first {
+          // Use existing tag
+          tagEntity = existingTag
+        } else {
+          // Create new tag
+          tagEntity = Tags(context: managedContext)
+          tagEntity.name = trimmedTagName
+        }
+        
+        // Associate the tag with this record
+        addToToTags(tagEntity)
+        
+      } catch {
+        EkaMedicalRecordsCoreLogger.capture("Error fetching/creating tag '\(trimmedTagName)': \(error.localizedDescription)")
+      }
+    }
+    
+    EkaMedicalRecordsCoreLogger.capture("Associated \(tagNames.count) tags with record \(self.documentID ?? "unknown")")
+  }
+  
+  /// Get all tag names associated with this record
+  /// - Returns: Array of tag name strings
+  public func getTagNames() -> [String] {
+    guard let tags = toTags else { return [] }
+    let tagEntities = tags.allObjects as? [Tags] ?? []
+    return tagEntities.compactMap { $0.name }.sorted()
+  }
+  
+  /// Get all tag entities associated with this record
+  /// - Returns: Array of Tags entities
+  public func getTags() -> [Tags] {
+    guard let tags = toTags else { return [] }
+    return tags.allObjects as? [Tags] ?? []
+  }
+  
+  /// Add or update tags for this record
+  /// - Parameter tagNames: Array of tag names to set for this record
+  public func setTags(_ tagNames: [String]) {
+    associateTags(with: tagNames)
+  }
+  
+  /// Add a single tag to this record
+  /// - Parameter tagName: The tag name to add
+  public func addTag(_ tagName: String) {
+    guard let managedContext = managedObjectContext else { return }
+    let trimmedTagName = tagName.trimmingCharacters(in: .whitespaces)
+    guard !trimmedTagName.isEmpty else { return }
+    
+    // Check if this record already has this tag
+    if hasTag(named: trimmedTagName) {
+      return // Tag already exists for this record
+    }
+    
+    // Check if a Tag with this name already exists in the database
+    let fetchRequest: NSFetchRequest<Tags> = Tags.fetchRequest()
+    fetchRequest.predicate = NSPredicate(format: "name == %@", trimmedTagName)
+    fetchRequest.fetchLimit = 1
+    
+    do {
+      let existingTags = try managedContext.fetch(fetchRequest)
+      let tagEntity: Tags
+      
+      if let existingTag = existingTags.first {
+        // Use existing tag
+        tagEntity = existingTag
+      } else {
+        // Create new tag
+        tagEntity = Tags(context: managedContext)
+        tagEntity.name = trimmedTagName
+      }
+      
+      // Associate the tag with this record
+      addToToTags(tagEntity)
+      
+    } catch {
+      EkaMedicalRecordsCoreLogger.capture("Error adding tag '\(trimmedTagName)': \(error.localizedDescription)")
+    }
+  }
+  
+  /// Remove a specific tag from this record
+  /// - Parameter tagName: The tag name to remove
+  public func removeTag(_ tagName: String) {
+    guard let tags = toTags else { return }
+    let tagEntities = tags.allObjects as? [Tags] ?? []
+    
+    for tagEntity in tagEntities {
+      if tagEntity.name == tagName {
+        removeFromToTags(tagEntity)
+        
+        // If this tag is not associated with any other records, delete it
+        if let tagRecords = tagEntity.toRecords, tagRecords.count == 0 {
+          managedObjectContext?.delete(tagEntity)
+        }
+        break
+      }
+    }
+  }
+  
+  /// Remove multiple tags from this record
+  /// - Parameter tagNames: Array of tag names to remove
+  public func removeTags(_ tagNames: [String]) {
+    for tagName in tagNames {
+      removeTag(tagName)
+    }
+  }
+  
+  /// Remove all tags from this record
+  public func removeAllTags() {
+    guard let tags = toTags else { return }
+    let tagEntities = tags.allObjects as? [Tags] ?? []
+    
+    for tagEntity in tagEntities {
+      removeFromToTags(tagEntity)
+      
+      // If this tag is not associated with any other records, delete it
+      if let tagRecords = tagEntity.toRecords, tagRecords.count == 0 {
+        managedObjectContext?.delete(tagEntity)
+      }
+    }
+  }
+  
+  /// Check if this record has any tags
+  /// - Returns: True if the record has tags, false otherwise
+  public func hasTags() -> Bool {
+    guard let tags = toTags else { return false }
+    return tags.count > 0
+  }
+  
+  /// Check if this record has a specific tag
+  /// - Parameter tagName: The tag name to check for
+  /// - Returns: True if the record has the specified tag, false otherwise
+  public func hasTag(named tagName: String) -> Bool {
+    guard let tags = toTags else { return false }
+    let tagEntities = tags.allObjects as? [Tags] ?? []
+    return tagEntities.contains { $0.name == tagName }
+  }
+  
+  /// Check if this record has all of the specified tags
+  /// - Parameter tagNames: Array of tag names to check for
+  /// - Returns: True if the record has all specified tags, false otherwise
+  public func hasAllTags(_ tagNames: [String]) -> Bool {
+    for tagName in tagNames {
+      if !hasTag(named: tagName) {
+        return false
+      }
+    }
+    return true
+  }
+  
+  /// Check if this record has any of the specified tags
+  /// - Parameter tagNames: Array of tag names to check for
+  /// - Returns: True if the record has any of the specified tags, false otherwise
+  public func hasAnyTags(_ tagNames: [String]) -> Bool {
+    for tagName in tagNames {
+      if hasTag(named: tagName) {
+        return true
+      }
+    }
+    return false
   }
 }
