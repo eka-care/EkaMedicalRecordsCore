@@ -387,4 +387,41 @@ extension QueryHelper {
     fetchRequest.predicate = NSPredicate(format: "toRecords.@count == 0")
     return fetchRequest
   }
+  
+  /// Query to fetch total count of all records
+  /// - Parameters:
+  ///   - oid: Optional array of owner IDs to filter by
+  ///   - caseID: Optional case ID to filter records by
+  ///   - documentType: Optional document type to filter records by
+  /// - Returns: NSFetchRequest configured to fetch total count of records
+  public static func fetchAllRecordsCountQuery(oid: [String]? = nil, caseID: String? = nil, documentType: String? = nil) -> NSFetchRequest<NSFetchRequestResult> {
+    let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: Record.entity().name!)
+    fetchRequest.resultType = .countResultType
+    
+    var predicates: [NSPredicate] = []
+    
+    // OID predicate
+    if let oid, !oid.isEmpty {
+      let oidPredicate = NSPredicate(format: "oid IN %@", oid)
+      predicates.append(oidPredicate)
+    }
+    
+    // CaseID predicate
+    if let caseID, !caseID.isEmpty {
+      let casePredicate = NSPredicate(format: "ANY toCaseModel.caseID == %@", caseID)
+      predicates.append(casePredicate)
+    }
+    
+    // DocumentType predicate
+    if let documentType, !documentType.isEmpty {
+      let documentTypePredicate = NSPredicate(format: "documentType == %@", documentType)
+      predicates.append(documentTypePredicate)
+    }
+    
+    if !predicates.isEmpty {
+      fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+    }
+    
+    return fetchRequest
+  }
 }

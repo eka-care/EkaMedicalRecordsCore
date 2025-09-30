@@ -471,6 +471,28 @@ extension RecordsDatabaseManager {
     
     return counts
   }
+  
+  /// Get total count of all records
+  /// - Parameters:
+  ///   - oid: Optional array of owner IDs to filter by
+  ///   - caseID: Optional case ID to filter records by
+  ///   - documentType: Optional document type to filter records by
+  /// - Returns: Total count of records matching the criteria
+  func getRecordsCount(
+    oid: [String]? = nil,
+    caseID: String? = nil,
+    documentType: String? = nil
+  ) -> Int {
+    let fetchRequest = QueryHelper.fetchAllRecordsCountQuery(oid: oid, caseID: caseID, documentType: documentType)
+    
+    do {
+      let result = try container.viewContext.fetch(fetchRequest)
+      return result.first as? Int ?? 0
+    } catch {
+      EkaMedicalRecordsCoreLogger.capture("Failed to fetch records count: \(error)")
+      return 0
+    }
+  }
 }
 
 extension RecordsDatabaseManager {

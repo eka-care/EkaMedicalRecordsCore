@@ -140,6 +140,21 @@ public final class RecordsRepo {
       }
     }
   }
+  
+  /// Used to get the total count of all records
+  /// - Parameters:
+  ///   - caseID: Optional case ID to filter records by
+  ///   - documentType: Optional document type to filter records by
+  ///   - completion: Completion block with the total count
+  public func getAllRecordsCount(
+    caseID: String? = nil,
+    documentType: String? = nil,
+    completion: @escaping (Int) -> Void
+  ) {
+    let oid = CoreInitConfigurations.shared.filterID
+    let count = databaseManager.getRecordsCount(oid: oid, caseID: caseID, documentType: documentType)
+    completion(count)
+  }
  
   public func uploadRecord(
       record: Record,
