@@ -12,6 +12,24 @@ import CoreData
  This file contains CRUD functions for the database layer.
  */
 
+/// Enum representing different database operations for logging and error handling
+enum DatabaseOperation: String, CaseIterable {
+  case upsertRecords = "upsertRecords"
+  case addSingleRecord = "addSingleRecord"
+  case addRecordMetaData = "addRecordMetaData"
+  case addSmartReport = "addSmartReport"
+  case cleanupOrphanedTags = "cleanupOrphanedTags"
+  case updateRecord = "updateRecord"
+  case deleteRecords = "deleteRecords"
+  case deleteRecord = "deleteRecord"
+  
+  var description: String {
+    return self.rawValue
+  }
+}
+
+
+
 enum RecordsDatabaseVersion {
   static let containerName = "EkaMedicalRecordsCoreSdkV2"
 }
@@ -146,7 +164,7 @@ extension RecordsDatabaseManager {
       // Save all changes at once
       self.performSave(
         context: self.backgroundContext,
-        operation: "upsertRecords"
+        operation: .upsertRecords
       ) { _ in
         DispatchQueue.main.async {
           completion()
@@ -178,7 +196,7 @@ extension RecordsDatabaseManager {
       
       self.performSave(
         context: self.backgroundContext,
-        operation: "addSingleRecord",
+        operation: .addSingleRecord,
         recordId: record.documentID
       ) { [weak self] success in
         guard let self = self else {
@@ -210,12 +228,12 @@ extension RecordsDatabaseManager {
   /// Generic Core Data save operation with consistent error handling
   /// - Parameters:
   ///   - context: The managed object context to save
-  ///   - operation: Description of the operation for logging
+  ///   - operation: Database operation enum for logging
   ///   - recordId: Optional record ID for event logging
   ///   - completion: Completion handler with success boolean
   private func performSave(
     context: NSManagedObjectContext,
-    operation: String,
+    operation: DatabaseOperation,
     recordId: String? = nil,
     completion: @escaping (Bool) -> Void
   ) {
@@ -224,7 +242,7 @@ extension RecordsDatabaseManager {
       completion(true)
     } catch {
       let dbError = ErrorHelper.databaseOperationError(
-        operation: operation,
+        operation: operation.description,
         underlyingError: error
       )
       EkaMedicalRecordsCoreLogger.capture("Database operation failed: \(dbError.localizedDescription)")
@@ -270,7 +288,7 @@ extension RecordsDatabaseManager {
     
     self.performSave(
       context: context,
-      operation: "addRecordMetaData"
+      operation: .addRecordMetaData
     ) { success in
       if success {
         EkaMedicalRecordsCoreLogger.capture("Record meta data added successfully!")
@@ -295,7 +313,7 @@ extension RecordsDatabaseManager {
     
     self.performSave(
       context: context,
-      operation: "addSmartReport"
+      operation: .addSmartReport
     ) { success in
       if success {
         EkaMedicalRecordsCoreLogger.capture("Smart report saved successfully")
@@ -600,7 +618,7 @@ extension RecordsDatabaseManager {
         
         self.performSave(
           context: self.backgroundContext,
-          operation: "cleanupOrphanedTags"
+          operation: .cleanupOrphanedTags
         ) { success in
           DispatchQueue.main.async {
             if success {
@@ -693,7 +711,7 @@ extension RecordsDatabaseManager {
           // Save the changes to the database
           self.performSave(
             context: self.backgroundContext,
-            operation: "updateRecord",
+            operation: .updateRecord,
             recordId: documentID
           ) { [weak self] success in
             guard let self = self else { return }
@@ -746,7 +764,7 @@ extension RecordsDatabaseManager {
         try backgroundContext.execute(deleteRequest)
         self.performSave(
           context: self.backgroundContext,
-          operation: "deleteRecords"
+          operation: .deleteRecords
         ) { _ in
           DispatchQueue.main.async {
             completion()
@@ -769,7 +787,7 @@ extension RecordsDatabaseManager {
     
     performSave(
       context: container.viewContext,
-      operation: "deleteRecord",
+      operation: .deleteRecord,
       recordId: recordId
     ) { [weak self] success in
       guard let self = self else { return }
