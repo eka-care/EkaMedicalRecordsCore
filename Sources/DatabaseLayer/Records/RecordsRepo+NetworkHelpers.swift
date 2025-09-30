@@ -58,7 +58,7 @@ extension RecordsRepo {
     isLinkedWithAbha: Bool? = false,
     userOid: String? = nil,
     linkedCases: [String]? = nil,
-    completion: @escaping (DocUploadFormsResponse?, RecordUploadErrorType?) -> Void
+    completion: @escaping (DocUploadFormsResponse?, RecordUploadErrorType?, Int?) -> Void
   ) {
     guard let recordURLs,
           let documentsMetaData = RecordUploadManager.formDocumentsMetaData(recordsPath: recordURLs, contentType: contentType) else { return }
@@ -72,7 +72,7 @@ extension RecordsRepo {
       linkedCases: linkedCases,
       isLinkedWithAbha: isLinkedWithAbha,
       userOid: userOid
-    ) { [weak self] response,error in
+    ) { [weak self] response, error, statusCode in
       guard let self else { return }
       if let error {
         createRecordEvent(
@@ -81,7 +81,7 @@ extension RecordsRepo {
           message: error.errorDescription,
           userOid: userOid
         )
-        completion(response, error)
+        completion(response, error, statusCode)
         return
       }
       if let response {
@@ -90,7 +90,7 @@ extension RecordsRepo {
           status: .success,
           userOid: userOid
         )
-        completion(response, error)
+        completion(response, error, statusCode)
       }
     }
   }
