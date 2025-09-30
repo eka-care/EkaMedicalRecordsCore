@@ -126,24 +126,24 @@ public final class RecordsRepo {
   /// - Parameter record: record to be added
   public func addSingleRecord(
     record: RecordModel,
-    completion didAddRecord: @escaping (Record?, Int?) -> Void
+    completion didAddRecord: @escaping (Record?) -> Void
   ) {
     /// Add in database and store it in addedRecord
     databaseManager.addSingleRecord(from: record) { [weak self] addedRecord in
       guard let self else {
-        didAddRecord(nil, nil)
+        didAddRecord(nil)
         return
       }
       /// Upload to vault
-      self.uploadRecord(record: addedRecord) { record, statusCode in
-        didAddRecord(record, statusCode)
+      self.uploadRecord(record: addedRecord) { record in
+        didAddRecord(record)
       }
     }
   }
  
   public func uploadRecord(
       record: Record,
-      completion didUploadRecord: @escaping (Record?, Int?) -> Void
+      completion didUploadRecord: @escaping (Record?) -> Void
   ) {
     /// Update the upload sync status
     record.syncState = RecordSyncState.uploading.stringValue
@@ -159,14 +159,13 @@ public final class RecordsRepo {
       linkedCases: casesLinkedToRecord
     ) {
       [weak self] uploadFormsResponse,
-      error,
-      statusCode in
+      error in
       guard let self else {
-        didUploadRecord(nil, statusCode)
+        didUploadRecord(nil)
         return
       }
       guard let documentId = record.documentID else {
-        didUploadRecord(nil, statusCode)
+        didUploadRecord(nil)
         return
       }
       
@@ -177,12 +176,12 @@ public final class RecordsRepo {
         if let docId = uploadFormsResponse?.batchResponses?.first?.documentID  {
           deleteRecordV3(documentID: docId, oid: record.oid)
         }
-        didUploadRecord(nil, statusCode)
+        didUploadRecord(nil)
         return
       }
       
       guard let documentId = record.documentID else {
-        didUploadRecord(nil, statusCode)
+        didUploadRecord(nil)
         return
       }
       
@@ -195,7 +194,7 @@ public final class RecordsRepo {
       )
       
       record.documentID = uploadFormsResponse.batchResponses?.first?.documentID
-      didUploadRecord(record, statusCode)
+      didUploadRecord(record)
     }
   }
   
@@ -576,7 +575,7 @@ extension RecordsRepo {
           
           for record in records {
               uploadGroup.enter()
-              self.uploadRecord(record: record) { uploadedRecord, statuscode in
+              self.uploadRecord(record: record) { uploadedRecord in
                   if uploadedRecord == nil {
                       let uploadError = ErrorHelper.createError(
                           domain: .sync,

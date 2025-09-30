@@ -9,7 +9,7 @@ import Foundation
 
 final class RecordUploadManager {
   let service: RecordsProvider = RecordsApiService()
-  typealias RecordUploadCompletion = (DocUploadFormsResponse?, RecordUploadErrorType?, Int?) -> Void
+  typealias RecordUploadCompletion = (DocUploadFormsResponse?, RecordUploadErrorType?) -> Void
   
   /// Upload Records to Vault
   /// - Parameters:
@@ -50,7 +50,7 @@ final class RecordUploadManager {
     guard recordDataReceivedCount == nestedFiles.count else {
       recordUploadError = .recordCountMetaDataMismatch
       EkaMedicalRecordsCoreLogger.capture("Count of file data does not match with count of files to be uploaded")
-      recordUploadCompletion(nil, recordUploadError, nil)
+      recordUploadCompletion(nil, recordUploadError)
       return
     }
     
@@ -70,7 +70,7 @@ final class RecordUploadManager {
         guard let batchResponses = response.batchResponses, !batchResponses.isEmpty else {
           recordUploadError = .emptyFormResponse
           EkaMedicalRecordsCoreLogger.capture("Received empty or nil BatchResponse")
-          recordUploadCompletion(nil, recordUploadError, statusCode)
+          recordUploadCompletion(nil, recordUploadError)
           return
         }
         
@@ -116,12 +116,12 @@ final class RecordUploadManager {
         }
         
         group.notify(queue: .main) {
-          recordUploadCompletion(response, recordUploadError, statusCode)
+          recordUploadCompletion(response, recordUploadError)
         }
         
       case .failure(let error):
         EkaMedicalRecordsCoreLogger.capture("❌ 📁 Failed to upload files - \(error.localizedDescription)")
-        recordUploadCompletion(nil, recordUploadError, statusCode)
+        recordUploadCompletion(nil, recordUploadError)
       }
     }
   }
