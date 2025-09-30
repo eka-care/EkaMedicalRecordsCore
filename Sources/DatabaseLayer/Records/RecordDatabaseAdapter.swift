@@ -17,7 +17,7 @@ public struct RecordModel {
   public var documentID: String
   public var documentDate: Date?
   public var documentHash: String?
-  public var documentType: RecordDocumentType?
+  public var documentType: String?
   public var syncState: RecordSyncState?
   public var isAnalyzing: Bool?
   public var isSmart: Bool?
@@ -35,7 +35,7 @@ public struct RecordModel {
   public init(
     documentDate: Date? = nil,
     documentHash: String? = nil,
-    documentType: RecordDocumentType? = nil,
+    documentType: String? = nil,
     syncState: RecordSyncState? = nil,
     isAnalyzing: Bool? = nil,
     isSmart: Bool? = nil,
@@ -140,7 +140,8 @@ extension RecordDatabaseAdapter {
   public func formRecordModelFromAddedData(
     data: [Data],
     contentType: FileType,
-    caseModels: [CaseModel]? = nil
+    documentType: String? = nil,
+    caseModels: [CaseModel]? = nil,
   ) -> RecordModel {
     let contentTypeString: String = contentType.fileExtension
     /// Form record local path
@@ -168,7 +169,7 @@ extension RecordDatabaseAdapter {
     }
     
     return RecordModel(
-      documentType: .typeOther,
+      documentType: documentType, // other type
       oid: CoreInitConfigurations.shared.primaryFilterID,
       thumbnail: thumbnailUrl,
       updatedAt: Date(), // Current date
@@ -218,7 +219,7 @@ extension RecordDatabaseAdapter {
     insertModel.documentHash = UUID().uuidString /// To update ui
     insertModel.documentID = networkModel.recordDocument.item.documentID
     if let documentType = networkModel.recordDocument.item.documentType {
-      insertModel.documentType = RecordDocumentType(rawValue: documentType)
+      insertModel.documentType = documentType
     }
     /// Form smart of the document
     insertModel.isSmart = networkModel.recordDocument.item.metadata?.autoTags?.contains(where: { $0 == RecordDocumentTagType.smartTag.networkName }) ?? false

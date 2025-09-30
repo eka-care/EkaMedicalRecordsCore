@@ -12,6 +12,24 @@ import CoreData
  This file contains CRUD functions for the database layer.
  */
 
+/// Enum representing different database operations for logging and error handling
+enum DatabaseOperation: String, CaseIterable {
+  case upsertRecords = "upsertRecords"
+  case addSingleRecord = "addSingleRecord"
+  case addRecordMetaData = "addRecordMetaData"
+  case addSmartReport = "addSmartReport"
+  case cleanupOrphanedTags = "cleanupOrphanedTags"
+  case updateRecord = "updateRecord"
+  case deleteRecords = "deleteRecords"
+  case deleteRecord = "deleteRecord"
+  
+  var description: String {
+    return self.rawValue
+  }
+}
+
+
+
 enum RecordsDatabaseVersion {
   static let containerName = "EkaMedicalRecordsCoreSdkV2"
 }
@@ -31,10 +49,27 @@ public final class RecordsDatabaseManager {
     let description = container.persistentStoreDescriptions.first!
     description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
     description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
-    /// Loading of persistent stores
+    /// Enable lightweight migration
+    description.setOption(true as NSNumber, forKey: NSMigratePersistentStoresAutomaticallyOption)
+    description.setOption(true as NSNumber, forKey: NSInferMappingModelAutomaticallyOption)
+    /// Loading of persistent stores with fallback to destroy and recreate on failure
     container.loadPersistentStores { (storeDescription, error) in
       if let error {
-        fatalError("Failed to load store: \(error)")
+        EkaMedicalRecordsCoreLogger.capture("Failed to load store (will attempt destroy): \(error)")
+        if let url = storeDescription.url {
+          do {
+            try container.persistentStoreCoordinator.destroyPersistentStore(at: url, ofType: NSSQLiteStoreType, options: nil)
+            container.loadPersistentStores { _, retryError in
+              if let retryError {
+                fatalError("Failed to load store after destroy: \(retryError)")
+              }
+            }
+          } catch {
+            fatalError("Failed to destroy persistent store for migration fallback: \(error)")
+          }
+        } else {
+          fatalError("Failed to load store (no URL to destroy): \(error)")
+        }
       }
     }
     /// Configure the viewContext (main context)
@@ -127,13 +162,10 @@ extension RecordsDatabaseManager {
       }
       
       // Save all changes at once
-      do {
-        try self.backgroundContext.save()
-        DispatchQueue.main.async {
-          completion()
-        }
-      } catch {
-        EkaMedicalRecordsCoreLogger.capture("Error saving records: \(error)")
+      self.performSave(
+        context: self.backgroundContext,
+        operation: .upsertRecords
+      ) { _ in
         DispatchQueue.main.async {
           completion()
         }
@@ -144,24 +176,77 @@ extension RecordsDatabaseManager {
   /// Used to add single record to the database, this will be faster than batch insert for single record
   func addSingleRecord(
     from record: RecordModel,
-  ) -> Record {
-    let newRecord = Record(context: container.viewContext)
-    newRecord.update(from: record)
+    completion: @escaping (Record) -> Void
+  ) {
+    let container = self.container // Capture container before the closure
+    
+    backgroundContext.perform { [weak self] in
+      guard let self = self else {
+        // Create a temporary record for failure case
+        let failureRecord = Record(context: container.viewContext)
+        failureRecord.update(from: record)
+        DispatchQueue.main.async {
+          completion(failureRecord)
+        }
+        return
+      }
+      
+      let newRecord = Record(context: self.backgroundContext)
+      newRecord.update(from: record)
+      
+      self.performSave(
+        context: self.backgroundContext,
+        operation: .addSingleRecord,
+        recordId: record.documentID
+      ) { [weak self] success in
+        guard let self = self else {
+          DispatchQueue.main.async {
+            completion(newRecord)
+          }
+          return
+        }
+        
+        if success {
+          // Add record meta data after successful save
+          self.addRecordMetaData(
+            to: newRecord,
+            documentURIs: record.documentURIs
+          )
+          self.createRecordEvent(id: newRecord.id.debugDescription, status: .success)
+          EkaMedicalRecordsCoreLogger.capture("Record added successfully!")
+        } else {
+          self.createRecordEvent(id: newRecord.id.debugDescription, status: .failure, message: "Failed to save record")
+        }
+        
+        DispatchQueue.main.async {
+          completion(newRecord)
+        }
+      }
+    }
+  }
+  
+  /// Generic Core Data save operation with consistent error handling
+  /// - Parameters:
+  ///   - context: The managed object context to save
+  ///   - operation: Database operation enum for logging
+  ///   - recordId: Optional record ID for event logging
+  ///   - completion: Completion handler with success boolean
+  private func performSave(
+    context: NSManagedObjectContext,
+    operation: DatabaseOperation,
+    recordId: String? = nil,
+    completion: @escaping (Bool) -> Void
+  ) {
     do {
-      try container.viewContext.save()
-      /// Add record meta data after saving record entity
-      addRecordMetaData(
-        to: newRecord,
-        documentURIs: record.documentURIs
-      )
-      createRecordEvent(id: newRecord.id.debugDescription, status: .success)
-      EkaMedicalRecordsCoreLogger.capture("Record added successfully!")
-      return newRecord
+      try context.save()
+      completion(true)
     } catch {
-      let nsError = error as NSError
-      createRecordEvent(id: newRecord.id.debugDescription, status: .failure, message: error.localizedDescription)
-      EkaMedicalRecordsCoreLogger.capture("Error saving record: \(nsError), \(nsError.userInfo)")
-      return newRecord
+      let dbError = ErrorHelper.databaseOperationError(
+        operation: operation.description,
+        underlyingError: error
+      )
+      EkaMedicalRecordsCoreLogger.capture("Database operation failed: \(dbError.localizedDescription)")
+      completion(false)
     }
   }
   
@@ -185,41 +270,54 @@ extension RecordsDatabaseManager {
   /// Used to add record meta data as a one to many relationship to record entity
   /// - Parameters:
   ///   - record: Entity Model to which meta data is to be attached
-  ///   - recordModel: Record Model that has all the data
+  ///   - documentURIs: Array of document URIs to be added as metadata
   private func addRecordMetaData(
     to record: Record,
     documentURIs: [String]?
   ) {
     guard let documentURIs else { return }
+    
+    // Use the same context as the record
+    let context = record.managedObjectContext ?? self.container.viewContext
+    
     documentURIs.forEach { uriPath in
-      let recordMeta = RecordMeta(context: container.viewContext)
+      let recordMeta = RecordMeta(context: context)
       recordMeta.documentURI = uriPath
       record.addToToRecordMeta(recordMeta)
     }
-    do {
-      try container.viewContext.save()
-      EkaMedicalRecordsCoreLogger.capture("Record meta data added successfully!")
-    } catch {
-      let nsError = error as NSError
-      EkaMedicalRecordsCoreLogger.capture("Error saving record meta data: \(nsError), \(nsError.userInfo)")
+    
+    self.performSave(
+      context: context,
+      operation: .addRecordMetaData
+    ) { success in
+      if success {
+        EkaMedicalRecordsCoreLogger.capture("Record meta data added successfully!")
+      }
     }
   }
   
   /// Used to add smart report data to a record
-  /// - Parameter record: record to which smart report is to be added
+  /// - Parameters:
+  ///   - record: record to which smart report is to be added
+  ///   - smartReportData: Data for the smart report
   func addSmartReport(
     to record: Record,
     smartReportData: Data
   ) {
-    let smartReport = SmartReport(context: container.viewContext)
+    // Use the same context as the record
+    let context = record.managedObjectContext ?? self.container.viewContext
+    
+    let smartReport = SmartReport(context: context)
     smartReport.data = smartReportData
     record.toSmartReport = smartReport
-    do {
-      try container.viewContext.save()
-      EkaMedicalRecordsCoreLogger.capture("Smart report saved successfully")
-    } catch {
-      let nsError = error as NSError
-      EkaMedicalRecordsCoreLogger.capture("Error saving smart report \(nsError)")
+    
+    self.performSave(
+      context: context,
+      operation: .addSmartReport
+    ) { success in
+      if success {
+        EkaMedicalRecordsCoreLogger.capture("Smart report saved successfully")
+      }
     }
   }
 }
@@ -288,9 +386,9 @@ extension RecordsDatabaseManager {
   func getDocumentTypeCounts(
     oid: [String]?,
     caseID: String?
-  ) -> [RecordDocumentType: Int] {
+  ) -> [String: Int] {
     let fetchRequest = QueryHelper.fetchRecordCountsByDocumentTypeFetchRequest(oid: oid, caseID: caseID)
-    var counts: [RecordDocumentType: Int] = [:]
+    var counts: [String: Int] = [:]
     
     do {
       let results = try container.viewContext.fetch(fetchRequest)
@@ -298,19 +396,77 @@ extension RecordsDatabaseManager {
       
       for result in results {
         if let resultDict = result as? [String: Any],
-           let documentTypeInt = resultDict["documentType"] as? Int,
-           let recordDocumentType = RecordDocumentType.from(intValue: documentTypeInt),
+           let documentType = resultDict["documentType"] as? String,
            let count = resultDict["count"] as? Int {
           totalDocumentsCount += count
-          counts[recordDocumentType] = count
+          counts[documentType] = count
+        }
+      }
+    } catch {
+      EkaMedicalRecordsCoreLogger.capture("Failed to fetch grouped document type counts: \(error)")
+    }
+    
+    return counts
+  }
+  
+  /// Get tag counts
+  func getTagCounts(
+    oid: [String]?,
+    caseID: String?,
+    documentType: String? = nil
+  ) -> [String: Int] {
+    // Create a fetch request for records with the specified filters
+    let recordFetchRequest = QueryHelper.fetchRecords(oid: oid)
+    
+    // Build predicates for additional filtering
+    var predicates: [NSPredicate] = []
+    
+    // Add existing predicate if any
+    if let existingPredicate = recordFetchRequest.predicate {
+      predicates.append(existingPredicate)
+    }
+    
+    // Only include records that have tags
+    let hasTagsPredicate = NSPredicate(format: "toTags.@count > 0")
+    predicates.append(hasTagsPredicate)
+    
+    // CaseID predicate
+    if let caseID {
+      let casePredicate = NSPredicate(format: "ANY toCaseModel.caseID == %@", caseID)
+      predicates.append(casePredicate)
+    }
+    
+    // DocumentType predicate
+    if let documentType {
+      let documentTypePredicate = NSPredicate(format: "documentType == %@", documentType)
+      predicates.append(documentTypePredicate)
+    }
+    
+    // Apply combined predicate
+    recordFetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+    
+    var counts: [String: Int] = [:]
+    var totalRecordsWithTagsCount = 0
+    
+    do {
+      let records = try container.viewContext.fetch(recordFetchRequest)
+      
+      // Process each record and count its tags
+      for record in records {
+        if let tags = record.toTags?.allObjects as? [Tags] {
+          for tag in tags {
+            if let tagName = tag.name, !tagName.isEmpty {
+              counts[tagName] = (counts[tagName] ?? 0) + 1
+            }
+          }
+          if !tags.isEmpty {
+            totalRecordsWithTagsCount += 1
+          }
         }
       }
       
-      /// Add totalDocumentsCount in all
-      counts[.typeAll] = totalDocumentsCount
-      
     } catch {
-      EkaMedicalRecordsCoreLogger.capture("Failed to fetch grouped document type counts: \(error)")
+      EkaMedicalRecordsCoreLogger.capture("Failed to fetch records for tag counts: \(error)")
     }
     
     return counts
@@ -339,6 +495,34 @@ extension RecordsDatabaseManager {
       
     } catch {
       EkaMedicalRecordsCoreLogger.capture("Failed to fetch unique tag names: \(error)")
+      return []
+    }
+  }
+  
+  /// Get all unique document types from the database
+  /// - Parameters:
+  ///   - oid: Optional array of owner IDs to filter by
+  ///   - bid: Optional array of beneficiary IDs to filter by
+  ///   - caseID: Optional case ID to filter document types by
+  /// - Returns: Array of unique document types
+  func getAllUniqueDocumentTypes(oid: [String]? = nil, bid: String? = nil, caseID: String? = nil) -> [String] {
+    let fetchRequest = QueryHelper.fetchAllUniqueDocumentTypes(oid: oid, bid: bid, caseID: caseID)
+    
+    do {
+      let results = try container.viewContext.fetch(fetchRequest)
+      var documentTypes: [String] = []
+      
+      for result in results {
+        if let resultDict = result as? [String: Any],
+           let documentType = resultDict["documentType"] as? String {
+          documentTypes.append(documentType)
+        }
+      }
+      
+      return documentTypes.sorted()
+      
+    } catch {
+      EkaMedicalRecordsCoreLogger.capture("Failed to fetch unique document types: \(error)")
       return []
     }
   }
@@ -432,14 +616,21 @@ extension RecordsDatabaseManager {
           self.backgroundContext.delete(tag)
         }
         
-        try self.backgroundContext.save()
-        
-        DispatchQueue.main.async {
-          EkaMedicalRecordsCoreLogger.capture("Cleaned up \(count) orphaned tags")
-          completion(count)
+        self.performSave(
+          context: self.backgroundContext,
+          operation: .cleanupOrphanedTags
+        ) { success in
+          DispatchQueue.main.async {
+            if success {
+              EkaMedicalRecordsCoreLogger.capture("Cleaned up \(count) orphaned tags")
+              completion(count)
+            } else {
+              completion(0)
+            }
+          }
         }
       } catch {
-        EkaMedicalRecordsCoreLogger.capture("Failed to cleanup orphaned tags: \(error)")
+        EkaMedicalRecordsCoreLogger.capture("Failed to fetch orphaned tags: \(error)")
         DispatchQueue.main.async {
           completion(0)
         }
@@ -464,69 +655,87 @@ extension RecordsDatabaseManager {
   func updateRecord(
       documentID: String,
       documentDate: Date? = nil,
-      documentType: Int? = nil,
+      documentType: String? = nil,
       documentOid: String? = nil,
       syncStatus: RecordSyncState? = nil,
       isEdited: Bool? = nil,
       caseModels: [CaseModel]? = nil,
       tags: [String]? = nil
     ) {
-      do {
-        // Fetch the record by document ID
-        let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "documentID == %@", documentID)
-        fetchRequest.fetchLimit = 1
+      backgroundContext.perform { [weak self] in
+        guard let self = self else { return }
         
-        let records = try container.viewContext.fetch(fetchRequest)
-        guard let record = records.first else {
-          EkaMedicalRecordsCoreLogger.capture("Record not found for document ID: \(documentID)")
-          updateRecordEvent(
+        do {
+          // Fetch the record by document ID
+          let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
+          fetchRequest.predicate = NSPredicate(format: "documentID == %@", documentID)
+          fetchRequest.fetchLimit = 1
+          
+          let records = try self.backgroundContext.fetch(fetchRequest)
+          guard let record = records.first else {
+            EkaMedicalRecordsCoreLogger.capture("Record not found for document ID: \(documentID)")
+            self.updateRecordEvent(
+              id: documentID,
+              status: .failure,
+              message: "Record not found"
+            )
+            return
+          }
+          
+          // Update the record properties
+          record.documentID = documentID
+          if let documentDate = documentDate {
+            record.documentDate = documentDate
+          }
+         
+          if let documentType {
+            record.documentType = documentType
+          }
+          if let documentOid {
+            record.oid = documentOid
+          }
+          if let syncStatus {
+            record.syncState = syncStatus.stringValue
+          }
+          if let caseModels {
+            record.removeAllCaseAssociations()
+            record.addCaseModels(caseModels)
+          }
+          if let isEdited {
+            record.isEdited = isEdited
+          }
+          if let tags {
+            record.setTags(tags)
+          }
+          
+          // Save the changes to the database
+          self.performSave(
+            context: self.backgroundContext,
+            operation: .updateRecord,
+            recordId: documentID
+          ) { [weak self] success in
+            guard let self = self else { return }
+            if success {
+              self.updateRecordEvent(
+                id: record.documentID,
+                status: .success
+              )
+            } else {
+              self.updateRecordEvent(
+                id: documentID,
+                status: .failure,
+                message: "Failed to save record"
+              )
+            }
+          }
+        } catch {
+          EkaMedicalRecordsCoreLogger.capture("Failed to fetch or update record: \(error)")
+          self.updateRecordEvent(
             id: documentID,
             status: .failure,
-            message: "Record not found"
+            message: error.localizedDescription
           )
-          return
         }
-        
-        // Update the record properties
-        record.documentID = documentID
-        if let documentDate = documentDate {
-          record.documentDate = documentDate
-        }
-       
-        if let documentType {
-          record.documentType = Int64(documentType)
-        }
-        if let documentOid {
-          record.oid = documentOid
-        }
-        if let syncStatus {
-          record.syncState = syncStatus.stringValue
-        }
-        if let caseModels {
-          record.removeAllCaseAssociations()
-          record.addCaseModels(caseModels)
-        }
-        if let isEdited {
-          record.isEdited = isEdited
-        }
-        if let tags {
-          record.setTags(tags)
-        }
-        
-        // Save the changes to the database
-        try container.viewContext.save()
-        updateRecordEvent(
-          id: record.documentID,
-          status: .success
-        )
-      } catch {
-        EkaMedicalRecordsCoreLogger.capture("Failed to update record: \(error)")
-        updateRecordEvent(
-          id: documentID,
-          status: .failure,
-          message: error.localizedDescription
-        )
       }
     }
 }
@@ -553,12 +762,16 @@ extension RecordsDatabaseManager {
       let deleteRequest = NSBatchDeleteRequest(fetchRequest: request)
       do {
         try backgroundContext.execute(deleteRequest)
-        try backgroundContext.save()
-        DispatchQueue.main.async {
-          completion()
+        self.performSave(
+          context: self.backgroundContext,
+          operation: .deleteRecords
+        ) { _ in
+          DispatchQueue.main.async {
+            completion()
+          }
         }
       } catch {
-        EkaMedicalRecordsCoreLogger.capture("There was an error deleting entity: \(error)")
+        EkaMedicalRecordsCoreLogger.capture("There was an error executing batch delete: \(error)")
         DispatchQueue.main.async {
           completion()
         }
@@ -569,20 +782,27 @@ extension RecordsDatabaseManager {
   /// Used to delete a given record
   /// - Parameter record: record object that is to be deleted
   func deleteRecord(record: Record) {
+    let recordId = record.documentID ?? record.objectID.uriRepresentation().absoluteString
     container.viewContext.delete(record)
-    do {
-      try container.viewContext.save()
-      deleteRecordEvent(
-        id: record.documentID ?? record.objectID.uriRepresentation().absoluteString,
-        status: .success
-      )
-    } catch {
-      EkaMedicalRecordsCoreLogger.capture("Error deleting record: \(error)")
-      deleteRecordEvent(
-        id: record.documentID ?? record.objectID.uriRepresentation().absoluteString,
-        status: .failure,
-        message: error.localizedDescription
-      )
+    
+    performSave(
+      context: container.viewContext,
+      operation: .deleteRecord,
+      recordId: recordId
+    ) { [weak self] success in
+      guard let self = self else { return }
+      if success {
+        self.deleteRecordEvent(
+          id: recordId,
+          status: .success
+        )
+      } else {
+        self.deleteRecordEvent(
+          id: recordId,
+          status: .failure,
+          message: "Failed to delete record"
+        )
+      }
     }
   }
   

@@ -117,6 +117,47 @@ public final class QueryHelper {
     
     return fetchRequest
   }
+  
+  /// Query to fetch all unique document types from the database
+  /// - Parameters:
+  ///   - oid: Optional array of owner IDs to filter by (Record.oid)
+  ///   - bid: Optional array of beneficiary IDs to filter by (Record.bid)
+  ///   - caseID: Optional case ID to filter document types by
+  /// - Returns: NSFetchRequest configured to fetch unique document types
+  public static func fetchAllUniqueDocumentTypes(oid: [String]? = nil, bid: String? = nil, caseID: String? = nil) -> NSFetchRequest<NSFetchRequestResult> {
+    let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: Record.entity().name!)
+    fetchRequest.resultType = .dictionaryResultType
+    fetchRequest.propertiesToFetch = ["documentType"]
+    fetchRequest.returnsDistinctResults = true
+    
+    var predicates: [NSPredicate] = []
+    
+    // Base predicate to filter out nil and empty document types
+    let basePredicate = NSPredicate(format: "documentType != nil AND documentType != %@", "")
+    predicates.append(basePredicate)
+    
+    // OID predicate
+    if let oid, !oid.isEmpty {
+      let oidPredicate = NSPredicate(format: "oid IN %@", oid)
+      predicates.append(oidPredicate)
+    }
+    
+    // BID predicate
+    if let bid, !bid.isEmpty {
+      let bidPredicate = NSPredicate(format: "bid == %@", bid)
+      predicates.append(bidPredicate)
+    }
+    
+    // CaseID predicate
+    if let caseID = caseID {
+      let casePredicate = NSPredicate(format: "ANY toCaseModel.caseID == %@", caseID)
+      predicates.append(casePredicate)
+    }
+    
+    fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+    fetchRequest.sortDescriptors = [NSSortDescriptor(key: "documentType", ascending: true)]
+    return fetchRequest
+  }
 }
 
 // MARK: - Cases

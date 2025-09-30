@@ -129,10 +129,15 @@ public final class RecordsRepo {
     completion didAddRecord: @escaping (Record?) -> Void
   ) {
     /// Add in database and store it in addedRecord
-    let addedRecord = databaseManager.addSingleRecord(from: record)
-    didAddRecord(addedRecord)
-    /// Upload to vault
-    uploadRecord(record: addedRecord) { _ in
+    databaseManager.addSingleRecord(from: record) { [weak self] addedRecord in
+      guard let self else {
+        didAddRecord(nil)
+        return
+      }
+      /// Upload to vault
+      self.uploadRecord(record: addedRecord) { record in
+        didAddRecord(record)
+      }
     }
   }
  
@@ -147,7 +152,7 @@ public final class RecordsRepo {
     let documentURIs: [String] = record.toRecordMeta?.allObjects.compactMap { ($0 as? RecordMeta)?.documentURI } ?? []
     uploadRecordsV3(
       documentID: record.documentID ?? "",
-      recordURLs: documentURIs,
+      recordType: record.documentType, recordURLs: documentURIs,
       documentDate: record.documentDate?.toEpochInt(),
       contentType: FileType.getFileTypeFromFilePath(filePath: documentURIs.first ?? "")?.fileExtension ?? "",
       userOid: record.oid,
@@ -166,9 +171,11 @@ public final class RecordsRepo {
       
       
       guard error == nil, let uploadFormsResponse else {
-        databaseManager.updateRecord(documentID: documentId,syncStatus: RecordSyncState.upload(success: false))
+        let isDocumentIsOnServer = uploadFormsResponse?.batchResponses?.first?.errorDetails?.code == "409"
+        
+        databaseManager.updateRecord(documentID: documentId,syncStatus: isDocumentIsOnServer  ? RecordSyncState.upload(success: true) :  RecordSyncState.upload(success: false))
         /// Make delete api record call so that its not availabe on server
-        if let docId = uploadFormsResponse?.batchResponses?.first?.documentID  {
+        if let docId = uploadFormsResponse?.batchResponses?.first?.documentID, !isDocumentIsOnServer  {
           deleteRecordV3(documentID: docId, oid: record.oid)
         }
         didUploadRecord(nil)
@@ -284,9 +291,27 @@ public final class RecordsRepo {
   /// Used to get record document type count
   /// - Returns: Dictionary with count of each document type
   /// - Parameter caseID: caseID of the case if any
-  public func getRecordDocumentTypeCount(caseID: String? = nil) -> [RecordDocumentType: Int] {
+  public func getRecordDocumentTypeCount(caseID: String? = nil) -> [String: Int] {
     let oid = CoreInitConfigurations.shared.filterID
     return databaseManager.getDocumentTypeCounts(oid: oid, caseID: caseID)
+  }
+  
+  /// Used to get all unique document types
+  /// - Parameter caseID: Optional case ID to filter document types by
+  /// - Returns: Array of unique document types
+  public func getDocumentTypesList(caseID: String? = nil) -> [String] {
+    let oid = CoreInitConfigurations.shared.filterID
+    let bid = CoreInitConfigurations.shared.ownerID
+    return databaseManager.getAllUniqueDocumentTypes(oid: oid,bid: bid,caseID: caseID)
+  }
+  
+  /// Used to get record tag count
+  /// - Returns: Dictionary with count of each tag
+  /// - Parameter caseID: caseID of the case if any
+  /// - Parameter documentType: documentType to filter records by
+  public func getRecordTagCount(caseID: String? = nil, documentType: String? = nil) -> [String: Int] {
+    let oid = CoreInitConfigurations.shared.filterID
+    return databaseManager.getTagCounts(oid: oid, caseID: caseID, documentType: documentType)
   }
   
   /// Used to get record in main thread from fetch request
@@ -308,10 +333,9 @@ public final class RecordsRepo {
   ///   - caseModel: case model of the record
   ///   - tags: array of tag names for the record
   public func updateRecord(
-    recordID: NSManagedObjectID,
     documentID: String,
     documentDate: Date? = nil,
-    documentType: Int? = nil,
+    documentType: String? = nil,
     documentOid: String? = CoreInitConfigurations.shared.primaryFilterID,
     isEdited: Bool?,
     caseModels: [CaseModel]? = nil,
@@ -319,7 +343,6 @@ public final class RecordsRepo {
   ) {
     /// Update in database
     databaseManager.updateRecord(
-//      recordID: recordID,
       documentID: documentID,
       documentDate: documentDate,
       documentType: documentType,
@@ -341,7 +364,6 @@ public final class RecordsRepo {
     ) { [weak self] isSuccess in
       guard let self = self else { return }
       self.databaseManager.updateRecord(
-//        recordID: recordID,
         documentID: documentID,
         documentDate: documentDate,
         documentType: documentType,
@@ -419,7 +441,7 @@ public final class RecordsRepo {
     editDocument(
       documentID: documentID,
       documentDate: record.documentDate,
-      documentType: Int(record.documentType),
+      documentType: record.documentType,
       documentFilterId: record.oid,
       linkedCases: updatedLinkedCases
     ) { [weak self] isSuccess in
@@ -453,16 +475,34 @@ public final class RecordsRepo {
   }
   
   /// Used to delete a specific record from the database
-  /// - Parameter record: record to be deleted
+  /// - Parameters:
+  ///   - record: record to be deleted
+  ///   - deleteFromServer: whether to also delete the record from the server (default: true)
+  ///   - completion: completion handler with success status
   public func deleteRecord(
-    record: Record
+    record: Record,
+    deleteFromServer: Bool = true,
+    completion: @escaping (Bool) -> Void = { _ in }
   ) {
     /// We need to store it before deleting from database as once document is deleted we can't get the documentID
     let documentID = record.documentID
-    /// Delete from vault v3
-    deleteRecordV3(documentID: documentID, oid: record.oid)
-    /// Delete from database
-    databaseManager.deleteRecord(record: record)
+    
+    /// Delete from vault v3 only if requested
+      deleteRecordV3(documentID: documentID, oid: record.oid) { [weak self] success, statusCode in
+        guard let self else {
+          completion(false)
+          return
+        }
+        
+        /// Only delete from database if server deletion was successful and returned 204
+        if success && statusCode == 204 {
+          databaseManager.deleteRecord(record: record)
+          completion(true)
+        } else {
+          EkaMedicalRecordsCoreLogger.capture("Server deletion failed or didn't return 204. Status code: \(statusCode ?? -1)")
+          completion(false)
+        }
+      }
   }
   
   /// Clears all data from the database on user logout
@@ -594,7 +634,7 @@ extension RecordsRepo {
               }
               editGroup.enter()
             let linkedCaseIds: [String] = record.getCaseIDs()
-            self.editDocument(documentID: documentID,documentType: Int(record.documentType) ,documentFilterId: record.oid, linkedCases: linkedCaseIds) { [weak self] isSuccess in
+            self.editDocument(documentID: documentID, documentType: record.documentType, documentFilterId: record.oid, linkedCases: linkedCaseIds) { [weak self] isSuccess in
                   guard let self = self else {
                       editGroup.leave()
                       return
