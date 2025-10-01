@@ -152,8 +152,9 @@ public final class RecordsRepo {
     completion: @escaping (Int) -> Void
   ) {
     let oid = CoreInitConfigurations.shared.filterID
-    let count = databaseManager.getRecordsCount(oid: oid, caseID: caseID, documentType: documentType)
-    completion(count)
+    databaseManager.getRecordsCount(oid: oid, caseID: caseID, documentType: documentType) { count in
+      completion(count)
+    }
   }
  
   public func uploadRecord(

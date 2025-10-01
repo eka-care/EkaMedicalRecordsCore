@@ -460,20 +460,35 @@ extension RecordsDatabaseManager {
   ///   - oid: Optional array of owner IDs to filter by
   ///   - caseID: Optional case ID to filter records by
   ///   - documentType: Optional document type to filter records by
-  /// - Returns: Total count of records matching the criteria
+  ///   - completion: Completion handler with the total count of records matching the criteria
   func getRecordsCount(
     oid: [String]? = nil,
     caseID: String? = nil,
-    documentType: String? = nil
-  ) -> Int {
+    documentType: String? = nil,
+    completion: @escaping (Int) -> Void
+  ) {
     let fetchRequest = QueryHelper.fetchAllRecordsCountQuery(oid: oid, caseID: caseID, documentType: documentType)
     
-    do {
-      let result = try container.viewContext.fetch(fetchRequest)
-      return result.first as? Int ?? 0
-    } catch {
-      EkaMedicalRecordsCoreLogger.capture("Failed to fetch records count: \(error)")
-      return 0
+    backgroundContext.perform { [weak self] in
+      guard let self else {
+        DispatchQueue.main.async {
+          completion(0)
+        }
+        return
+      }
+      
+      do {
+        let result = try self.backgroundContext.fetch(fetchRequest)
+        let count = result.first as? Int ?? 0
+        DispatchQueue.main.async {
+          completion(count)
+        }
+      } catch {
+        EkaMedicalRecordsCoreLogger.capture("Failed to fetch records count: \(error)")
+        DispatchQueue.main.async {
+          completion(0)
+        }
+      }
     }
   }
 }
