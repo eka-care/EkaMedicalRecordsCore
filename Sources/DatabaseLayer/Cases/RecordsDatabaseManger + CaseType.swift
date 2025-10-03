@@ -84,37 +84,30 @@ extension RecordsDatabaseManager {
   }
   
   func bulkInsertCaseTypes(models: [CaseTypeModel], completion: @escaping ([CaseType]) -> Void) {
-      container.performBackgroundTask { context in
-          var objectIDs: [NSManagedObjectID] = []
-          
-          // Create all entities in background context
-          for model in models {
-              let newCaseType = CaseType(context: context)
-              newCaseType.update(from: model)
-              objectIDs.append(newCaseType.objectID)
+      backgroundContext.perform { [weak self] in
+          guard let self else {
+              completion([])
+              return
           }
-          
+
+          var createdObjects: [CaseType] = []
+
+          // Create entities in background context
+          for model in models {
+              let newCaseType = CaseType(context: self.backgroundContext)
+              newCaseType.update(from: model)
+              createdObjects.append(newCaseType)
+          }
+
+          // Save background context
           do {
-              try context.save()
-              EkaMedicalRecordsCoreLogger.capture("All \(models.count) CaseTypes added successfully!")
-              
-              // Fetch objects in main context using objectIDs
-              DispatchQueue.main.async { [weak self] in
-                  guard let self = self else {
-                      completion([])
-                      return
-                  }
-                  
-                  let mainContextObjects = objectIDs.compactMap { objectID in
-                      try? self.container.viewContext.existingObject(with: objectID) as? CaseType
-                  }
-                  completion(mainContextObjects)
-              }
+              try self.backgroundContext.save()
+              EkaMedicalRecordsCoreLogger.capture("All \(createdObjects.count) CaseTypes added successfully!")
+                            completion(createdObjects)
           } catch {
               EkaMedicalRecordsCoreLogger.capture("Error saving CaseTypes: \(error.localizedDescription)")
-              DispatchQueue.main.async {
-                  completion([])
-              }
+              self.backgroundContext.rollback()
+              completion([])
           }
       }
   }
