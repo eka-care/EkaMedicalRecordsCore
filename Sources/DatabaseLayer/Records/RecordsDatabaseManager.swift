@@ -49,10 +49,29 @@ public final class RecordsDatabaseManager {
     let description = container.persistentStoreDescriptions.first!
     description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
     description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
+    
+    // ✅ Enable lightweight migration
+    description.shouldMigrateStoreAutomatically = true
+    description.shouldInferMappingModelAutomatically = true
+    
     /// Loading of persistent stores
     container.loadPersistentStores { (storeDescription, error) in
       if let error {
-        fatalError("Failed to load store: \(error)")
+        EkaMedicalRecordsCoreLogger.capture("Failed to load store (will attempt destroy): \(error)")
+        if let url = storeDescription.url {
+          do {
+            try container.persistentStoreCoordinator.destroyPersistentStore(at: url, ofType: NSSQLiteStoreType, options: nil)
+            container.loadPersistentStores { _, retryError in
+              if let retryError {
+                fatalError("Failed to load store after destroy: \(retryError)")
+              }
+            }
+          } catch {
+            fatalError("Failed to destroy persistent store for migration fallback: \(error)")
+          }
+        } else {
+          fatalError("Failed to load store (no URL to destroy): \(error)")
+        }
       }
     }
     /// Configure the viewContext (main context)
@@ -828,8 +847,10 @@ extension RecordsDatabaseManager {
           do {
               // Loop through all entities in the model
               for entity in container.managedObjectModel.entities {
-                  guard let entityName = entity.name else { continue }
-                  
+                guard let entityName = entity.name,
+                         container.managedObjectModel.entitiesByName[entityName] != nil else {
+                       continue // skip if entity missing
+                   }
                   let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
                   let batchDeleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
                   batchDeleteRequest.resultType = .resultTypeObjectIDs
