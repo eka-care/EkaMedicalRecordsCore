@@ -847,8 +847,10 @@ extension RecordsDatabaseManager {
           do {
               // Loop through all entities in the model
               for entity in container.managedObjectModel.entities {
-                  guard let entityName = entity.name else { continue }
-                  
+                guard let entityName = entity.name,
+                         container.managedObjectModel.entitiesByName[entityName] != nil else {
+                       continue // skip if entity missing
+                   }
                   let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
                   let batchDeleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
                   batchDeleteRequest.resultType = .resultTypeObjectIDs
