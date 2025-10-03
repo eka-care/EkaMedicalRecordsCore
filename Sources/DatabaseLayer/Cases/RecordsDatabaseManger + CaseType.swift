@@ -83,37 +83,55 @@ extension RecordsDatabaseManager {
     }
   }
   
-  func bulkInsertCaseTypes(models: [CaseTypeModel]) -> [CaseType] {
-      var createdCaseTypes: [CaseType] = []
-      
-      // Create all entities first
-      for model in models {
-          let newCaseType = CaseType(context: container.viewContext)
-          newCaseType.update(from: model)
-          createdCaseTypes.append(newCaseType)
-      }
-      
-      // Save all at once
-      do {
-          try container.viewContext.save()
-          EkaMedicalRecordsCoreLogger.capture("All \(createdCaseTypes.count) CaseTypes added successfully!")
-          return createdCaseTypes
-      } catch {
-          EkaMedicalRecordsCoreLogger.capture("Error saving CaseTypes: \(error.localizedDescription)")
-          container.viewContext.rollback()
-          return [] // Return empty array on failure
+  func bulkInsertCaseTypes(models: [CaseTypeModel], completion: @escaping ([CaseType]) -> Void) {
+      container.performBackgroundTask { context in
+          var objectIDs: [NSManagedObjectID] = []
+          
+          // Create all entities in background context
+          for model in models {
+              let newCaseType = CaseType(context: context)
+              newCaseType.update(from: model)
+              objectIDs.append(newCaseType.objectID)
+          }
+          
+          do {
+              try context.save()
+              EkaMedicalRecordsCoreLogger.capture("All \(models.count) CaseTypes added successfully!")
+              
+              // Fetch objects in main context using objectIDs
+              DispatchQueue.main.async { [weak self] in
+                  guard let self = self else {
+                      completion([])
+                      return
+                  }
+                  
+                  let mainContextObjects = objectIDs.compactMap { objectID in
+                      try? self.container.viewContext.existingObject(with: objectID) as? CaseType
+                  }
+                  completion(mainContextObjects)
+              }
+          } catch {
+              EkaMedicalRecordsCoreLogger.capture("Error saving CaseTypes: \(error.localizedDescription)")
+              DispatchQueue.main.async {
+                  completion([])
+              }
+          }
       }
   }
-  
-  func checkAndPreloadCaseTypes(fetchRequest: NSFetchRequest<CaseType>, preloadData: [CaseTypeModel], completion: @escaping ([CaseType]) -> Void ) {
-    fetchAllCasesType(fetchRequest: fetchRequest) { [self] caseTypes in
-      if caseTypes.count > 0 {
-        completion(caseTypes)
-      } else {
-        let insertedData = bulkInsertCaseTypes(models: preloadData)
-        completion(insertedData)
+
+  func checkAndPreloadCaseTypes(fetchRequest: NSFetchRequest<CaseType>, preloadData: [CaseTypeModel], completion: @escaping ([CaseType]) -> Void) {
+      fetchAllCasesType(fetchRequest: fetchRequest) { [weak self] caseTypes in
+          guard let self = self else {
+              completion([])
+              return
+          }
+          
+          if caseTypes.count > 0 {
+              completion(caseTypes)
+          } else {
+              self.bulkInsertCaseTypes(models: preloadData, completion: completion)
+          }
       }
-    }
   }
 }
 
