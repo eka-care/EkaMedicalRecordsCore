@@ -13,16 +13,18 @@ extension RecordsDatabaseManager {
   
   // To Insert CaseType In DB
   func insertCaseType(from model: CaseTypeModel) -> CaseType {
-    let newCasetype = CaseType(context: container.viewContext)
-    newCasetype.update(from: model)
-    do {
-      try container.viewContext.save()
-      EkaMedicalRecordsCoreLogger.capture("CaseType added successfully!")
-      return newCasetype
-    } catch {
-      EkaMedicalRecordsCoreLogger.capture("Error saving record: \(error.localizedDescription)")
-      return newCasetype
+    var newCasetype: CaseType!
+    container.viewContext.performAndWait {
+      newCasetype = CaseType(context: container.viewContext)
+      newCasetype.update(from: model)
+      do {
+        try container.viewContext.save()
+        EkaMedicalRecordsCoreLogger.capture("CaseType added successfully!")
+      } catch {
+        EkaMedicalRecordsCoreLogger.capture("Error saving record: \(error.localizedDescription)")
+      }
     }
+    return newCasetype
   }
   
   // To Upsert CaseType In DB (Update if exists, Insert if not)
@@ -78,7 +80,7 @@ extension RecordsDatabaseManager {
   ) {
     backgroundContext.perform { [weak self] in
       guard let self else { return }
-      let casesType = try? backgroundContext.fetch(fetchRequest)
+      let casesType = try? self.backgroundContext.fetch(fetchRequest)
       completion(casesType ?? [])
     }
   }
@@ -86,31 +88,35 @@ extension RecordsDatabaseManager {
   func bulkInsertCaseTypes(models: [CaseTypeModel]) -> [CaseType] {
       var createdCaseTypes: [CaseType] = []
       
-      // Create all entities first
-      for model in models {
-          let newCaseType = CaseType(context: container.viewContext)
-          newCaseType.update(from: model)
-          createdCaseTypes.append(newCaseType)
+      container.viewContext.performAndWait {
+          // Create all entities first
+          for model in models {
+              let newCaseType = CaseType(context: container.viewContext)
+              newCaseType.update(from: model)
+              createdCaseTypes.append(newCaseType)
+          }
+          
+          // Save all at once
+          do {
+              try container.viewContext.save()
+              EkaMedicalRecordsCoreLogger.capture("All \(createdCaseTypes.count) CaseTypes added successfully!")
+          } catch {
+              EkaMedicalRecordsCoreLogger.capture("Error saving CaseTypes: \(error.localizedDescription)")
+              container.viewContext.rollback()
+              createdCaseTypes = [] // Clear array on failure
+          }
       }
       
-      // Save all at once
-      do {
-          try container.viewContext.save()
-          EkaMedicalRecordsCoreLogger.capture("All \(createdCaseTypes.count) CaseTypes added successfully!")
-          return createdCaseTypes
-      } catch {
-          EkaMedicalRecordsCoreLogger.capture("Error saving CaseTypes: \(error.localizedDescription)")
-          container.viewContext.rollback()
-          return [] // Return empty array on failure
-      }
+      return createdCaseTypes
   }
   
   func checkAndPreloadCaseTypes(fetchRequest: NSFetchRequest<CaseType>, preloadData: [CaseTypeModel], completion: @escaping ([CaseType]) -> Void ) {
-    fetchAllCasesType(fetchRequest: fetchRequest) { [self] caseTypes in
+    fetchAllCasesType(fetchRequest: fetchRequest) { [weak self] caseTypes in
+      guard let self else { return }
       if caseTypes.count > 0 {
         completion(caseTypes)
       } else {
-        let insertedData = bulkInsertCaseTypes(models: preloadData)
+        let insertedData = self.bulkInsertCaseTypes(models: preloadData)
         completion(insertedData)
       }
     }

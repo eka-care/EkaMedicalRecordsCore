@@ -49,29 +49,10 @@ public final class RecordsDatabaseManager {
     let description = container.persistentStoreDescriptions.first!
     description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
     description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
-    
-    // ✅ Enable lightweight migration
-    description.shouldMigrateStoreAutomatically = true
-    description.shouldInferMappingModelAutomatically = true
-    
     /// Loading of persistent stores
     container.loadPersistentStores { (storeDescription, error) in
       if let error {
-        EkaMedicalRecordsCoreLogger.capture("Failed to load store (will attempt destroy): \(error)")
-        if let url = storeDescription.url {
-          do {
-            try container.persistentStoreCoordinator.destroyPersistentStore(at: url, ofType: NSSQLiteStoreType, options: nil)
-            container.loadPersistentStores { _, retryError in
-              if let retryError {
-                fatalError("Failed to load store after destroy: \(retryError)")
-              }
-            }
-          } catch {
-            fatalError("Failed to destroy persistent store for migration fallback: \(error)")
-          }
-        } else {
-          fatalError("Failed to load store (no URL to destroy): \(error)")
-        }
+        fatalError("Failed to load store: \(error)")
       }
     }
     /// Configure the viewContext (main context)
@@ -369,19 +350,22 @@ extension RecordsDatabaseManager {
     return nil
   }
   
-  /// Used to get record for given fetch request on main thread
+  /// Used to get record for given fetch request on background thread
   /// - Parameter fetchRequest: fetch request for filtering
   /// - Returns: The given record
   func getRecord(
     fetchRequest: NSFetchRequest<Record>
   ) -> Record? {
-    do {
-      let record = try container.viewContext.fetch(fetchRequest).first
-      return record
-    } catch {
-      EkaMedicalRecordsCoreLogger.capture("Not able to fetch record with given id")
+    var result: Record?
+    backgroundContext.performAndWait {
+      do {
+        result = try backgroundContext.fetch(fetchRequest).first
+      } catch {
+        EkaMedicalRecordsCoreLogger.capture("Not able to fetch record with given id")
+        result = nil
+      }
     }
-    return nil
+    return result
   }
   
   /// Get document type counts
@@ -392,20 +376,22 @@ extension RecordsDatabaseManager {
     let fetchRequest = QueryHelper.fetchRecordCountsByDocumentTypeFetchRequest(oid: oid, caseID: caseID)
     var counts: [String: Int] = [:]
     
-    do {
-      let results = try container.viewContext.fetch(fetchRequest)
-      var totalDocumentsCount = 0
-      
-      for result in results {
-        if let resultDict = result as? [String: Any],
-           let documentType = resultDict["documentType"] as? String,
-           let count = resultDict["count"] as? Int {
-          totalDocumentsCount += count
-          counts[documentType] = count
+    backgroundContext.performAndWait {
+      do {
+        let results = try backgroundContext.fetch(fetchRequest)
+        var totalDocumentsCount = 0
+        
+        for result in results {
+          if let resultDict = result as? [String: Any],
+             let documentType = resultDict["documentType"] as? String,
+             let count = resultDict["count"] as? Int {
+            totalDocumentsCount += count
+            counts[documentType] = count
+          }
         }
+      } catch {
+        EkaMedicalRecordsCoreLogger.capture("Failed to fetch grouped document type counts: \(error)")
       }
-    } catch {
-      EkaMedicalRecordsCoreLogger.capture("Failed to fetch grouped document type counts: \(error)")
     }
     
     return counts
@@ -450,25 +436,27 @@ extension RecordsDatabaseManager {
     var counts: [String: Int] = [:]
     var totalRecordsWithTagsCount = 0
     
-    do {
-      let records = try container.viewContext.fetch(recordFetchRequest)
-      
-      // Process each record and count its tags
-      for record in records {
-        if let tags = record.toTags?.allObjects as? [Tags] {
-          for tag in tags {
-            if let tagName = tag.name, !tagName.isEmpty {
-              counts[tagName] = (counts[tagName] ?? 0) + 1
+    backgroundContext.performAndWait {
+      do {
+        let records = try backgroundContext.fetch(recordFetchRequest)
+        
+        // Process each record and count its tags
+        for record in records {
+          if let tags = record.toTags?.allObjects as? [Tags] {
+            for tag in tags {
+              if let tagName = tag.name, !tagName.isEmpty {
+                counts[tagName] = (counts[tagName] ?? 0) + 1
+              }
+            }
+            if !tags.isEmpty {
+              totalRecordsWithTagsCount += 1
             }
           }
-          if !tags.isEmpty {
-            totalRecordsWithTagsCount += 1
-          }
         }
+        
+      } catch {
+        EkaMedicalRecordsCoreLogger.capture("Failed to fetch records for tag counts: \(error)")
       }
-      
-    } catch {
-      EkaMedicalRecordsCoreLogger.capture("Failed to fetch records for tag counts: \(error)")
     }
     
     return counts
@@ -479,20 +467,35 @@ extension RecordsDatabaseManager {
   ///   - oid: Optional array of owner IDs to filter by
   ///   - caseID: Optional case ID to filter records by
   ///   - documentType: Optional document type to filter records by
-  /// - Returns: Total count of records matching the criteria
+  ///   - completion: Completion handler with the total count of records matching the criteria
   func getRecordsCount(
     oid: [String]? = nil,
     caseID: String? = nil,
-    documentType: String? = nil
-  ) -> Int {
+    documentType: String? = nil,
+    completion: @escaping (Int) -> Void
+  ) {
     let fetchRequest = QueryHelper.fetchAllRecordsCountQuery(oid: oid, caseID: caseID, documentType: documentType)
     
-    do {
-      let result = try container.viewContext.fetch(fetchRequest)
-      return result.first as? Int ?? 0
-    } catch {
-      EkaMedicalRecordsCoreLogger.capture("Failed to fetch records count: \(error)")
-      return 0
+    backgroundContext.perform { [weak self] in
+      guard let self else {
+        DispatchQueue.main.async {
+          completion(0)
+        }
+        return
+      }
+      
+      do {
+        let result = try self.backgroundContext.fetch(fetchRequest)
+        let count = result.first as? Int ?? 0
+        DispatchQueue.main.async {
+          completion(count)
+        }
+      } catch {
+        EkaMedicalRecordsCoreLogger.capture("Failed to fetch records count: \(error)")
+        DispatchQueue.main.async {
+          completion(0)
+        }
+      }
     }
   }
 }
@@ -503,24 +506,28 @@ extension RecordsDatabaseManager {
   /// - Returns: Array of unique tag names
   func getAllUniqueTagNames() -> [String] {
     let fetchRequest = QueryHelper.fetchAllUniqueTagNames()
+    var tagNames: [String] = []
     
-    do {
-      let results = try container.viewContext.fetch(fetchRequest)
-      var tagNames: [String] = []
-      
-      for result in results {
-        if let resultDict = result as? [String: Any],
-           let tagName = resultDict["name"] as? String {
-          tagNames.append(tagName)
+    backgroundContext.performAndWait {
+      do {
+        let results = try backgroundContext.fetch(fetchRequest)
+        
+        for result in results {
+          if let resultDict = result as? [String: Any],
+             let tagName = resultDict["name"] as? String {
+            tagNames.append(tagName)
+          }
         }
+        
+        tagNames = tagNames.sorted()
+        
+      } catch {
+        EkaMedicalRecordsCoreLogger.capture("Failed to fetch unique tag names: \(error)")
+        tagNames = []
       }
-      
-      return tagNames.sorted()
-      
-    } catch {
-      EkaMedicalRecordsCoreLogger.capture("Failed to fetch unique tag names: \(error)")
-      return []
     }
+    
+    return tagNames
   }
   
   /// Get all unique document types from the database
@@ -531,24 +538,28 @@ extension RecordsDatabaseManager {
   /// - Returns: Array of unique document types
   func getAllUniqueDocumentTypes(oid: [String]? = nil, bid: String? = nil, caseID: String? = nil) -> [String] {
     let fetchRequest = QueryHelper.fetchAllUniqueDocumentTypes(oid: oid, bid: bid, caseID: caseID)
+    var documentTypes: [String] = []
     
-    do {
-      let results = try container.viewContext.fetch(fetchRequest)
-      var documentTypes: [String] = []
-      
-      for result in results {
-        if let resultDict = result as? [String: Any],
-           let documentType = resultDict["documentType"] as? String {
-          documentTypes.append(documentType)
+    backgroundContext.performAndWait {
+      do {
+        let results = try backgroundContext.fetch(fetchRequest)
+        
+        for result in results {
+          if let resultDict = result as? [String: Any],
+             let documentType = resultDict["documentType"] as? String {
+            documentTypes.append(documentType)
+          }
         }
+        
+        documentTypes = documentTypes.sorted()
+        
+      } catch {
+        EkaMedicalRecordsCoreLogger.capture("Failed to fetch unique document types: \(error)")
+        documentTypes = []
       }
-      
-      return documentTypes.sorted()
-      
-    } catch {
-      EkaMedicalRecordsCoreLogger.capture("Failed to fetch unique document types: \(error)")
-      return []
     }
+    
+    return documentTypes
   }
   
   /// Get records with specific tags
@@ -556,26 +567,36 @@ extension RecordsDatabaseManager {
   /// - Returns: Array of records that have any of the specified tags
   func getRecordsWithTags(_ tagNames: [String]) -> [Record] {
     let fetchRequest = QueryHelper.fetchRecordsWithTags(tagNames: tagNames)
+    var records: [Record] = []
     
-    do {
-      return try container.viewContext.fetch(fetchRequest)
-    } catch {
-      EkaMedicalRecordsCoreLogger.capture("Failed to fetch records with tags \(tagNames): \(error)")
-      return []
+    backgroundContext.performAndWait {
+      do {
+        records = try backgroundContext.fetch(fetchRequest)
+      } catch {
+        EkaMedicalRecordsCoreLogger.capture("Failed to fetch records with tags \(tagNames): \(error)")
+        records = []
+      }
     }
+    
+    return records
   }
   
   /// Get records without any tags
   /// - Returns: Array of records that have no tags
   func getRecordsWithoutTags() -> [Record] {
     let fetchRequest = QueryHelper.fetchRecordsWithoutTags()
+    var records: [Record] = []
     
-    do {
-      return try container.viewContext.fetch(fetchRequest)
-    } catch {
-      EkaMedicalRecordsCoreLogger.capture("Failed to fetch records without tags: \(error)")
-      return []
+    backgroundContext.performAndWait {
+      do {
+        records = try backgroundContext.fetch(fetchRequest)
+      } catch {
+        EkaMedicalRecordsCoreLogger.capture("Failed to fetch records without tags: \(error)")
+        records = []
+      }
     }
+    
+    return records
   }
   
   /// Get records that have ALL of the specified tags
@@ -583,26 +604,36 @@ extension RecordsDatabaseManager {
   /// - Returns: Array of records that have all of the specified tags
   func getRecordsWithAllTags(_ tagNames: [String]) -> [Record] {
     let fetchRequest = QueryHelper.fetchRecordsWithAllTags(tagNames: tagNames)
+    var records: [Record] = []
     
-    do {
-      return try container.viewContext.fetch(fetchRequest)
-    } catch {
-      EkaMedicalRecordsCoreLogger.capture("Failed to fetch records with all tags \(tagNames): \(error)")
-      return []
+    backgroundContext.performAndWait {
+      do {
+        records = try backgroundContext.fetch(fetchRequest)
+      } catch {
+        EkaMedicalRecordsCoreLogger.capture("Failed to fetch records with all tags \(tagNames): \(error)")
+        records = []
+      }
     }
+    
+    return records
   }
   
   /// Get all tag entities from the database
   /// - Returns: Array of all tag entities
   func getAllTags() -> [Tags] {
     let fetchRequest = QueryHelper.fetchAllTags()
+    var tags: [Tags] = []
     
-    do {
-      return try container.viewContext.fetch(fetchRequest)
-    } catch {
-      EkaMedicalRecordsCoreLogger.capture("Failed to fetch all tags: \(error)")
-      return []
+    backgroundContext.performAndWait {
+      do {
+        tags = try backgroundContext.fetch(fetchRequest)
+      } catch {
+        EkaMedicalRecordsCoreLogger.capture("Failed to fetch all tags: \(error)")
+        tags = []
+      }
     }
+    
+    return tags
   }
   
   /// Get a specific tag by name
@@ -610,13 +641,18 @@ extension RecordsDatabaseManager {
   /// - Returns: The tag entity if found, nil otherwise
   func getTag(withName tagName: String) -> Tags? {
     let fetchRequest = QueryHelper.fetchTag(withName: tagName)
+    var tag: Tags?
     
-    do {
-      return try container.viewContext.fetch(fetchRequest).first
-    } catch {
-      EkaMedicalRecordsCoreLogger.capture("Failed to fetch tag '\(tagName)': \(error)")
-      return nil
+    backgroundContext.performAndWait {
+      do {
+        tag = try backgroundContext.fetch(fetchRequest).first
+      } catch {
+        EkaMedicalRecordsCoreLogger.capture("Failed to fetch tag '\(tagName)': \(error)")
+        tag = nil
+      }
     }
+    
+    return tag
   }
   
   /// Clean up orphaned tags (tags not associated with any records)
@@ -807,10 +843,13 @@ extension RecordsDatabaseManager {
   /// - Parameter record: record object that is to be deleted
   func deleteRecord(record: Record) {
     let recordId = record.documentID ?? record.objectID.uriRepresentation().absoluteString
-    container.viewContext.delete(record)
+    
+    backgroundContext.performAndWait {
+      backgroundContext.delete(record)
+    }
     
     performSave(
-      context: container.viewContext,
+      context: backgroundContext,
       operation: .deleteRecord,
       recordId: recordId
     ) { [weak self] success in
@@ -847,10 +886,8 @@ extension RecordsDatabaseManager {
           do {
               // Loop through all entities in the model
               for entity in container.managedObjectModel.entities {
-                guard let entityName = entity.name,
-                         container.managedObjectModel.entitiesByName[entityName] != nil else {
-                       continue // skip if entity missing
-                   }
+                  guard let entityName = entity.name else { continue }
+                  
                   let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
                   let batchDeleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
                   batchDeleteRequest.resultType = .resultTypeObjectIDs

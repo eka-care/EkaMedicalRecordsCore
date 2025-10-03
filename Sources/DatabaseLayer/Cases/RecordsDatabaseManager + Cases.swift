@@ -14,16 +14,18 @@ extension RecordsDatabaseManager {
   /// - Parameter model: model from which we will read a case
   /// - Returns: case model which had been created
   func createCase(from model: CaseArguementModel) -> CaseModel {
-    let newCase = CaseModel(context: container.viewContext)
-    newCase.update(from: model)
-    do {
-      try container.viewContext.save()
-      EkaMedicalRecordsCoreLogger.capture("Case added successfully!")
-      return newCase
-    } catch {
-      EkaMedicalRecordsCoreLogger.capture("Error saving record: \(error.localizedDescription)")
-      return newCase
+    var newCase: CaseModel!
+    container.viewContext.performAndWait {
+      newCase = CaseModel(context: container.viewContext)
+      newCase.update(from: model)
+      do {
+        try container.viewContext.save()
+        EkaMedicalRecordsCoreLogger.capture("Case added successfully!")
+      } catch {
+        EkaMedicalRecordsCoreLogger.capture("Error saving record: \(error.localizedDescription)")
+      }
     }
+    return newCase
   }
 }
 
@@ -55,13 +57,16 @@ extension RecordsDatabaseManager {
   /// - Parameter id: Id of the case
   /// - Returns: The case model which was fetched using given object id
   public func fetchCase(with id: NSManagedObjectID) -> CaseModel? {
-    do {
-      let caseModel = try container.viewContext.existingObject(with: id) as? CaseModel
-      return caseModel
-    } catch {
-      EkaMedicalRecordsCoreLogger.capture("Not able to fetch case with given id \(error.localizedDescription)")
+    var caseModel: CaseModel?
+    container.viewContext.performAndWait {
+      do {
+        caseModel = try container.viewContext.existingObject(with: id) as? CaseModel
+      } catch {
+        EkaMedicalRecordsCoreLogger.capture("Not able to fetch case with given id \(error.localizedDescription)")
+        caseModel = nil
+      }
     }
-    return nil
+    return caseModel
   }
 }
 
@@ -76,11 +81,13 @@ extension RecordsDatabaseManager {
     caseModel: CaseModel,
     caseArguementModel: CaseArguementModel
   ) {
-    caseModel.update(from: caseArguementModel)
-    do {
-      try container.viewContext.save()
-    } catch {
-      EkaMedicalRecordsCoreLogger.capture("No able to update case \(error.localizedDescription)")
+    container.viewContext.performAndWait {
+      caseModel.update(from: caseArguementModel)
+      do {
+        try container.viewContext.save()
+      } catch {
+        EkaMedicalRecordsCoreLogger.capture("No able to update case \(error.localizedDescription)")
+      }
     }
   }
 }
@@ -93,11 +100,13 @@ extension RecordsDatabaseManager {
   func deleteCase(
     caseModel: CaseModel
   ) {
-    container.viewContext.delete(caseModel)
-    do {
-      try container.viewContext.save()
-    } catch {
-      EkaMedicalRecordsCoreLogger.capture("Error in deleting case \(error.localizedDescription)")
+    container.viewContext.performAndWait {
+      container.viewContext.delete(caseModel)
+      do {
+        try container.viewContext.save()
+      } catch {
+        EkaMedicalRecordsCoreLogger.capture("Error in deleting case \(error.localizedDescription)")
+      }
     }
   }
 }
