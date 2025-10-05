@@ -83,37 +83,48 @@ extension RecordsDatabaseManager {
     }
   }
   
-  func bulkInsertCaseTypes(models: [CaseTypeModel]) -> [CaseType] {
-      var createdCaseTypes: [CaseType] = []
-      
-      // Create all entities first
-      for model in models {
-          let newCaseType = CaseType(context: container.viewContext)
-          newCaseType.update(from: model)
-          createdCaseTypes.append(newCaseType)
-      }
-      
-      // Save all at once
-      do {
-          try container.viewContext.save()
-          EkaMedicalRecordsCoreLogger.capture("All \(createdCaseTypes.count) CaseTypes added successfully!")
-          return createdCaseTypes
-      } catch {
-          EkaMedicalRecordsCoreLogger.capture("Error saving CaseTypes: \(error.localizedDescription)")
-          container.viewContext.rollback()
-          return [] // Return empty array on failure
+  func bulkInsertCaseTypes(models: [CaseTypeModel], completion: @escaping ([CaseType]) -> Void) {
+      backgroundContext.perform { [weak self] in
+          guard let self else {
+              completion([])
+              return
+          }
+
+          var createdObjects: [CaseType] = []
+
+          // Create entities in background context
+          for model in models {
+              let newCaseType = CaseType(context: self.backgroundContext)
+              newCaseType.update(from: model)
+              createdObjects.append(newCaseType)
+          }
+
+          // Save background context
+          do {
+              try self.backgroundContext.save()
+              EkaMedicalRecordsCoreLogger.capture("All \(createdObjects.count) CaseTypes added successfully!")
+                            completion(createdObjects)
+          } catch {
+              EkaMedicalRecordsCoreLogger.capture("Error saving CaseTypes: \(error.localizedDescription)")
+              self.backgroundContext.rollback()
+              completion([])
+          }
       }
   }
-  
-  func checkAndPreloadCaseTypes(fetchRequest: NSFetchRequest<CaseType>, preloadData: [CaseTypeModel], completion: @escaping ([CaseType]) -> Void ) {
-    fetchAllCasesType(fetchRequest: fetchRequest) { [self] caseTypes in
-      if caseTypes.count > 0 {
-        completion(caseTypes)
-      } else {
-        let insertedData = bulkInsertCaseTypes(models: preloadData)
-        completion(insertedData)
+
+  func checkAndPreloadCaseTypes(fetchRequest: NSFetchRequest<CaseType>, preloadData: [CaseTypeModel], completion: @escaping ([CaseType]) -> Void) {
+      fetchAllCasesType(fetchRequest: fetchRequest) { [weak self] caseTypes in
+          guard let self = self else {
+              completion([])
+              return
+          }
+          
+          if caseTypes.count > 0 {
+              completion(caseTypes)
+          } else {
+              self.bulkInsertCaseTypes(models: preloadData, completion: completion)
+          }
       }
-    }
   }
 }
 
