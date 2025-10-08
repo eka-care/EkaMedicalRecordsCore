@@ -68,8 +68,30 @@ extension Record {
   private func associateCaseModels(_ caseModels: [CaseModel]) {
     guard !caseModels.isEmpty else { return }
     
-    for caseModel in caseModels {
-      addToToCaseModel(caseModel)
+    // Ensure we're using the background context from RecordsDatabaseManager
+    let backgroundContext = RecordsDatabaseManager.shared.backgroundContext
+    
+    // Verify this record is in the background context
+    guard self.managedObjectContext == backgroundContext else {
+      EkaMedicalRecordsCoreLogger.capture("Warning: Record is not in background context, skipping case association")
+      return
+    }
+    
+    //  Fix cross-context issue: fetch case models in the correct context
+    let caseIDs = caseModels.compactMap { $0.caseID }
+    let fetchRequest = QueryHelper.fetchCases(caseIDs: caseIDs)
+    
+    do {
+      let backgroundCaseModels = try backgroundContext.fetch(fetchRequest)
+      
+      // Associate all fetched case models
+      for caseModel in backgroundCaseModels {
+        addToToCaseModel(caseModel)
+      }
+      
+      EkaMedicalRecordsCoreLogger.capture("Successfully associated \(backgroundCaseModels.count) case(s) with record \(self.documentID ?? "unknown") on background context")
+    } catch {
+      EkaMedicalRecordsCoreLogger.capture("Error fetching case models in background context: \(error.localizedDescription)")
     }
   }
   
@@ -144,7 +166,7 @@ extension Record {
   /// Add multiple case models to this record
   /// - Parameter caseModels: Array of CaseModel objects to associate with this record
   public func addCaseModels(_ caseModels: [CaseModel]) {
-    caseModels.forEach { addToToCaseModel($0) }
+    associateCaseModels(caseModels)
   }
   
   /// Remove multiple case models from this record
