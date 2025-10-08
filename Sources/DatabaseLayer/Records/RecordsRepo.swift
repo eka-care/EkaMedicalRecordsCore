@@ -438,26 +438,32 @@ public final class RecordsRepo {
       return
     }
     
-    // Find the specific case model to remove
-    let caseModels = record.getCaseModels()
-    guard let caseModelToRemove = caseModels.first(where: { $0.caseID == caseId }) else {
-      EkaMedicalRecordsCoreLogger.capture("Case model not found for case ID: \(caseId)")
-      completion(false)
-      return
-    }
+    let currentCaseModels = record.getCaseModels()
+    let updatedCaseModels = currentCaseModels.filter { $0.caseID != caseId }
+    let updatedLinkedCases = updatedCaseModels.compactMap { $0.caseID }
     
-    // Remove the case association from the database
-    record.removeCaseModel(caseModelToRemove)
+    let recordDate = record.documentDate
+    let recordType = record.documentType
+    let recordOid = record.oid
     
-    // Get the updated list of linked cases after removal
-    let updatedLinkedCases = record.getCaseIDs()
+    // ✅ Pessimistic approach: Update DB first to delink the case
+    EkaMedicalRecordsCoreLogger.capture("Delinking case \(caseId) from record \(documentID) in database")
+    databaseManager.updateRecord(
+      documentID: documentID,
+      documentDate: recordDate,
+      documentType: recordType,
+      documentOid: recordOid,
+      isEdited: true, // Mark as edited until server sync succeeds
+      caseModels: updatedCaseModels,
+      tags: nil
+    )
     
-    // Sync the change with the server
+    // ✅ Now sync with server
     editDocument(
       documentID: documentID,
-      documentDate: record.documentDate,
-      documentType: record.documentType,
-      documentFilterId: record.oid,
+      documentDate: recordDate,
+      documentType: recordType,
+      documentFilterId: recordOid,
       linkedCases: updatedLinkedCases
     ) { [weak self] isSuccess in
       guard let self = self else {
@@ -470,13 +476,11 @@ public final class RecordsRepo {
         // Update the record's edit status to reflect successful sync
         self.databaseManager.updateRecord(
           documentID: documentID,
-          documentOid: record.oid,
+          documentOid: recordOid,
           isEdited: false
         )
         completion(true)
       } else {
-        // If network sync failed, re-add the case association to maintain consistency
-        record.addCaseModel(caseModelToRemove)
         EkaMedicalRecordsCoreLogger.capture("Failed to sync delink operation for case \(caseId) from record \(documentID)")
         // Mark record as edited since local and server state are now out of sync
         self.databaseManager.updateRecord(

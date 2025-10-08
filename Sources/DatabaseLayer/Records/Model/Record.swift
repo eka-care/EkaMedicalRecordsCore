@@ -68,22 +68,54 @@ extension Record {
   private func associateCaseModels(_ caseModels: [CaseModel]) {
     guard !caseModels.isEmpty else { return }
     
-    for caseModel in caseModels {
-      addToToCaseModel(caseModel)
+    // Ensure we're using the background context from RecordsDatabaseManager
+    let backgroundContext = RecordsDatabaseManager.shared.backgroundContext
+    
+    // Verify this record is in the background context
+    guard self.managedObjectContext == backgroundContext else {
+      EkaMedicalRecordsCoreLogger.capture("Warning: Record is not in background context, skipping case association")
+      return
+    }
+    
+    //  Fix cross-context issue: fetch case models in the correct context
+    let caseIDs = caseModels.compactMap { $0.caseID }
+    let fetchRequest = QueryHelper.fetchCases(caseIDs: caseIDs)
+    
+    do {
+      let backgroundCaseModels = try backgroundContext.fetch(fetchRequest)
+      
+      // Associate all fetched case models
+      for caseModel in backgroundCaseModels {
+        addToToCaseModel(caseModel)
+      }
+      
+      EkaMedicalRecordsCoreLogger.capture("Successfully associated \(backgroundCaseModels.count) case(s) with record \(self.documentID ?? "unknown") on background context")
+    } catch {
+      EkaMedicalRecordsCoreLogger.capture("Error fetching case models in background context: \(error.localizedDescription)")
     }
   }
   
   /// Used to associate multiple case models with this record using case IDs
   /// - Parameter caseIDs: Array of case ID strings to associate with this record
   private func associateCaseModels(with caseIDs: [String]) {
-    guard let managedContext = managedObjectContext else { return }
     guard !caseIDs.isEmpty else { return }
+    
+    // Ensure we're using the background context from RecordsDatabaseManager
+    let backgroundContext = RecordsDatabaseManager.shared.backgroundContext
+    
+    // Verify this record is in the background context
+    guard self.managedObjectContext == backgroundContext else {
+      EkaMedicalRecordsCoreLogger.capture("Warning: Record is not in background context, skipping case association")
+      return
+    }
     
     // Use batch fetch for better performance
     let fetchRequest = QueryHelper.fetchCases(caseIDs: caseIDs)
     
     do {
-      let caseModels = try managedContext.fetch(fetchRequest)
+      let caseModels = try backgroundContext.fetch(fetchRequest)
+      
+      // Associate all fetched case models
       for caseModel in caseModels {
         addToToCaseModel(caseModel)
       }
@@ -92,10 +124,13 @@ extension Record {
       let foundCaseIDs = caseModels.compactMap { $0.caseID }
       let missingCaseIDs = Set(caseIDs).subtracting(Set(foundCaseIDs))
       if !missingCaseIDs.isEmpty {
-        EkaMedicalRecordsCoreLogger.capture("Cases with IDs \(Array(missingCaseIDs)) not found in database")
+        EkaMedicalRecordsCoreLogger.capture("Warning: Cases with IDs \(Array(missingCaseIDs)) not found in database during association")
       }
+      
+      EkaMedicalRecordsCoreLogger.capture("Successfully associated \(caseModels.count) case(s) with record \(self.documentID ?? "unknown") on background context")
     } catch {
-      EkaMedicalRecordsCoreLogger.capture("Error fetching cases with IDs \(caseIDs): \(error.localizedDescription)")
+      let errorMessage = "Error fetching cases with IDs \(caseIDs): \(error.localizedDescription)"
+      EkaMedicalRecordsCoreLogger.capture(errorMessage)
     }
   }
 }
@@ -131,7 +166,7 @@ extension Record {
   /// Add multiple case models to this record
   /// - Parameter caseModels: Array of CaseModel objects to associate with this record
   public func addCaseModels(_ caseModels: [CaseModel]) {
-    caseModels.forEach { addToToCaseModel($0) }
+    associateCaseModels(caseModels)
   }
   
   /// Remove multiple case models from this record
@@ -168,8 +203,16 @@ extension Record {
   /// Used to associate tags with this record
   /// - Parameter tagNames: Array of tag names to associate with this record
   private func associateTags(with tagNames: [String]) {
-    guard let managedContext = managedObjectContext else { return }
     guard !tagNames.isEmpty else { return }
+    
+    // Ensure we're using the background context from RecordsDatabaseManager
+    let backgroundContext = RecordsDatabaseManager.shared.backgroundContext
+    
+    // Verify this record is in the background context
+    guard self.managedObjectContext == backgroundContext else {
+      EkaMedicalRecordsCoreLogger.capture("Warning: Record is not in background context, skipping tag association")
+      return
+    }
     
     // Remove existing tag associations first to avoid duplicates
     removeAllTags()
@@ -185,7 +228,7 @@ extension Record {
       fetchRequest.fetchLimit = 1
       
       do {
-        let existingTags = try managedContext.fetch(fetchRequest)
+        let existingTags = try backgroundContext.fetch(fetchRequest)
         let tagEntity: Tags
         
         if let existingTag = existingTags.first {
@@ -193,7 +236,7 @@ extension Record {
           tagEntity = existingTag
         } else {
           // Create new tag
-          tagEntity = Tags(context: managedContext)
+          tagEntity = Tags(context: backgroundContext)
           tagEntity.name = trimmedTagName
         }
         
@@ -205,7 +248,7 @@ extension Record {
       }
     }
     
-    EkaMedicalRecordsCoreLogger.capture("Associated \(tagNames.count) tags with record \(self.documentID ?? "unknown")")
+    EkaMedicalRecordsCoreLogger.capture("Associated \(tagNames.count) tags with record \(self.documentID ?? "unknown") on background context")
   }
   
   /// Get all tag names associated with this record
@@ -232,9 +275,17 @@ extension Record {
   /// Add a single tag to this record
   /// - Parameter tagName: The tag name to add
   public func addTag(_ tagName: String) {
-    guard let managedContext = managedObjectContext else { return }
     let trimmedTagName = tagName.trimmingCharacters(in: .whitespaces)
     guard !trimmedTagName.isEmpty else { return }
+    
+    // Ensure we're using the background context from RecordsDatabaseManager
+    let backgroundContext = RecordsDatabaseManager.shared.backgroundContext
+    
+    // Verify this record is in the background context
+    guard self.managedObjectContext == backgroundContext else {
+      EkaMedicalRecordsCoreLogger.capture("Warning: Record is not in background context, skipping tag addition")
+      return
+    }
     
     // Check if this record already has this tag
     if hasTag(named: trimmedTagName) {
@@ -247,7 +298,7 @@ extension Record {
     fetchRequest.fetchLimit = 1
     
     do {
-      let existingTags = try managedContext.fetch(fetchRequest)
+      let existingTags = try backgroundContext.fetch(fetchRequest)
       let tagEntity: Tags
       
       if let existingTag = existingTags.first {
@@ -255,7 +306,7 @@ extension Record {
         tagEntity = existingTag
       } else {
         // Create new tag
-        tagEntity = Tags(context: managedContext)
+        tagEntity = Tags(context: backgroundContext)
         tagEntity.name = trimmedTagName
       }
       
