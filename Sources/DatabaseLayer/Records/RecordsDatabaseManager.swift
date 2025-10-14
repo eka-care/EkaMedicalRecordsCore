@@ -807,10 +807,10 @@ extension RecordsDatabaseManager {
   /// - Parameter record: record object that is to be deleted
   func deleteRecord(record: Record) {
     let recordId = record.documentID ?? record.objectID.uriRepresentation().absoluteString
-    container.viewContext.delete(record)
+    backgroundContext.delete(record)
     
     performSave(
-      context: container.viewContext,
+      context: backgroundContext,
       operation: .deleteRecord,
       recordId: recordId
     ) { [weak self] success in
