@@ -807,10 +807,16 @@ extension RecordsDatabaseManager {
   /// - Parameter record: record object that is to be deleted
   func deleteRecord(record: Record) {
     let recordId = record.documentID ?? record.objectID.uriRepresentation().absoluteString
-    container.viewContext.delete(record)
+    // Use the record's own context to avoid threading issues
+    guard let context = record.managedObjectContext else {
+      EkaMedicalRecordsCoreLogger.capture("Cannot delete record: no managed object context")
+      return
+    }
+    
+    context.delete(record)
     
     performSave(
-      context: container.viewContext,
+      context: context,
       operation: .deleteRecord,
       recordId: recordId
     ) { [weak self] success in
