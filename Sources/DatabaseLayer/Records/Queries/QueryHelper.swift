@@ -133,7 +133,7 @@ public final class QueryHelper {
     var predicates: [NSPredicate] = []
     
     // Base predicate to filter out nil and empty document types
-    let basePredicate = NSPredicate(format: "documentType != nil AND documentType != %@", "")
+    let basePredicate = NSPredicate(format: "documentType != nil")
     predicates.append(basePredicate)
     
     // OID predicate
