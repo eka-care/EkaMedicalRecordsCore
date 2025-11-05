@@ -23,7 +23,7 @@ extension RecordsRepo {
       updatedAt: updatedAt,
       oid: oid
     ) { [weak self] result, metaData in
-      guard let self = self else { return }
+      guard self != nil else { return }
       switch result {
       case .success(let response):
         let recordsItems = response.items

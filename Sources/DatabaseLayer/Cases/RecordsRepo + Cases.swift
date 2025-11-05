@@ -209,7 +209,8 @@ extension RecordsRepo {
     let request = CasesUpdateRequest(
       displayName: updateCase.caseName,
       type: updateCase.caseType,
-      hiType: nil
+      hiType: nil,
+      occuredAt: updateCase.occuredAt?.toEpochInt()
     )
     
     casesService.updateCases(caseId: caseId, oid: oid, request: request) { result, error in
@@ -251,7 +252,7 @@ extension RecordsRepo {
         }
         casesUpdateEpoch = updatedAt
         fetchCasesFromServer(oid: oid, pageOffsetTokenCases: nil) { [weak self] success in
-          guard let self = self else {
+          guard self != nil else {
             hasError = true
             dispatchGroup.leave()
             return
