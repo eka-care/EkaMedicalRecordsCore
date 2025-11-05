@@ -79,14 +79,14 @@ extension RecordsRepo {
         updatedArg.isEdited = false
         self?.databaseManager.updateCase(
           caseModel: caseModel,
-          caseArguementModel: caseArguementModel
+          caseArguementModel: updatedArg
         )
       case .failure(let error):
         EkaMedicalRecordsCoreLogger.capture("Failed to update case \(caseId) on server: \(error.localizedDescription)")
         updatedArg.isEdited = true
         self?.databaseManager.updateCase(
           caseModel: caseModel,
-          caseArguementModel: caseArguementModel
+          caseArguementModel: updatedArg
         )
       }
     }
