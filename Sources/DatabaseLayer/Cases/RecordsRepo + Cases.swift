@@ -43,6 +43,55 @@ extension RecordsRepo {
     }
   }
   
+  /// Updates an existing case locally and attempts to sync it to the server.
+  /// - Parameters:
+  ///   - caseModel: The case model to be updated.
+  ///   - caseArguementModel: Model describing the case updates.
+  /// On API success, the case is updated with the new values.
+  /// On API failure, an error is logged.
+  public func updateCase(
+    caseModel: CaseModel,
+    caseArguementModel: CaseArguementModel
+  ) {
+    
+    databaseManager.updateCase(
+      caseModel: caseModel,
+      caseArguementModel: caseArguementModel
+    )
+   
+    
+    guard let caseId = caseModel.caseID else {
+      EkaMedicalRecordsCoreLogger.capture("Case ID is missing, skipping server update.")
+      return
+    }
+    guard let oid = caseModel.oid else {
+      EkaMedicalRecordsCoreLogger.capture("Case OID is missing, skipping server update.")
+      return
+    }
+    
+    var updatedArg = caseArguementModel
+    
+    // Try syncing with server
+    updateCaseOnServer(caseId: caseId, oid: oid, updateCase: caseModel) { [weak self] result in
+      switch result {
+      case .success:
+        EkaMedicalRecordsCoreLogger.capture("Case \(caseId) updated successfully on server.")
+        updatedArg.isEdited = false
+        self?.databaseManager.updateCase(
+          caseModel: caseModel,
+          caseArguementModel: caseArguementModel
+        )
+      case .failure(let error):
+        EkaMedicalRecordsCoreLogger.capture("Failed to update case \(caseId) on server: \(error.localizedDescription)")
+        updatedArg.isEdited = true
+        self?.databaseManager.updateCase(
+          caseModel: caseModel,
+          caseArguementModel: caseArguementModel
+        )
+      }
+    }
+  }
+  
   /// Deletes a case locally and then attempts to delete it on the server (if caseId and oid exist).
   /// - Parameter caseModel: The case to be deleted.
   public func deleteCase(
@@ -322,3 +371,4 @@ extension RecordsRepo {
     }
   }
 }
+
