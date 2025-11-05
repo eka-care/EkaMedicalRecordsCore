@@ -15,10 +15,12 @@ struct CasesUpdateRequest: Codable {
     let displayName: String?
     let type: String?
     let hiType: String?
+    let occuredAt: Int?
 
     enum CodingKeys: String, CodingKey {
         case displayName = "display_name"
         case type
         case hiType = "hi_type"
+        case occuredAt = "occurred_at"
     }
 }
