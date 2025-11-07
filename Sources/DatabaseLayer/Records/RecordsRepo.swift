@@ -162,6 +162,8 @@ public final class RecordsRepo {
   ) {
     /// Update the upload sync status
     record.syncState = RecordSyncState.uploading.stringValue
+    databaseManager.updateRecord(documentID: record.documentID ,syncStatus: RecordSyncState.uploading)
+    
     let casesLinkedToRecord: [String]? = record.toCaseModel?.allObjects.compactMap { ($0 as? CaseModel)?.caseID }
     
     let documentURIs: [String] = record.toRecordMeta?.allObjects.compactMap { ($0 as? RecordMeta)?.documentURI } ?? []
