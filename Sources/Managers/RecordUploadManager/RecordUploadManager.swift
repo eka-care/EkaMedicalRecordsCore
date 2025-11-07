@@ -121,6 +121,7 @@ final class RecordUploadManager {
         
       case .failure(let error):
         EkaMedicalRecordsCoreLogger.capture("❌ 📁 Failed to upload files - \(error.localizedDescription)")
+        recordUploadError = .emptyFormResponse
         recordUploadCompletion(nil, recordUploadError)
       }
     }
