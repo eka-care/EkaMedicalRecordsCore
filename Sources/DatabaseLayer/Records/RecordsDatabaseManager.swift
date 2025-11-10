@@ -138,15 +138,15 @@ extension RecordsDatabaseManager {
       for record in records {
         // Check if the record already exists
         let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "documentID == %@", record.documentID)
+        fetchRequest.predicate = NSPredicate(format: "documentID == %@", record.documentID ?? "")
         
         do {
           if let existingRecord = try self.backgroundContext.fetch(fetchRequest).first {
             // Update existing record
-            EkaMedicalRecordsCoreLogger.capture("Document id of document being updated is \(record.documentID)")
+            EkaMedicalRecordsCoreLogger.capture("Document id of document being updated is \(record.documentID ?? "")")
             existingRecord.update(from: record)
             updateRecordEvent(
-              id: record.documentID,
+              id: record.documentID ?? existingRecord.objectID.uriRepresentation().absoluteString,
               status: .success
             )
           } else {
@@ -684,8 +684,7 @@ extension RecordsDatabaseManager {
       syncStatus: RecordSyncState? = nil,
       isEdited: Bool? = nil,
       caseModels: [CaseModel]? = nil,
-      tags: [String]? = nil,
-      isArchieved: Bool? = nil
+      tags: [String]? = nil
     ) {
       backgroundContext.perform { [weak self] in
         guard let self = self else { return }
@@ -731,9 +730,6 @@ extension RecordsDatabaseManager {
           }
           if let tags {
             record.setTags(tags)
-          }
-          if let isArchieved {
-            record.isArchived = isArchieved
           }
           
           // Save the changes to the database

@@ -81,17 +81,6 @@ public final class QueryHelper {
     return fetchRequest
   }
   
-  /// Query to fetch records marked archived (soft-deleted) that still exist locally
-  /// These are candidates for server-side deletion sync
-  public static func fetchRecordsForArchivedDeletionSync() -> NSFetchRequest<Record> {
-    let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
-    fetchRequest.predicate = NSPredicate(
-      format: "isArchived == %@ AND documentID != nil",
-      NSNumber(value: true)
-    )
-    return fetchRequest
-  }
-  
   public static func fetchRecordCountsByDocumentTypeFetchRequest(oid: [String]?, caseID: String?) -> NSFetchRequest<NSFetchRequestResult> {
     let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: Record.entity().name!)
     fetchRequest.resultType = .dictionaryResultType
