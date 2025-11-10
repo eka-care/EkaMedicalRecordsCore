@@ -810,26 +810,32 @@ extension RecordsDatabaseManager {
   /// Used to delete a given record
   /// - Parameter record: record object that is to be deleted
   func deleteRecord(record: Record) {
-    let recordId = record.documentID ?? record.objectID.uriRepresentation().absoluteString
-    container.viewContext.delete(record)
+    let objectID = record.objectID
+    let recordId = record.documentID ?? objectID.uriRepresentation().absoluteString
     
-    performSave(
-      context: container.viewContext,
-      operation: .deleteRecord,
-      recordId: recordId
-    ) { [weak self] success in
-      guard let self = self else { return }
-      if success {
-        self.deleteRecordEvent(
-          id: recordId,
-          status: .success
-        )
-      } else {
-        self.deleteRecordEvent(
-          id: recordId,
-          status: .failure,
-          message: "Failed to delete record"
-        )
+    backgroundContext.perform { [weak self] in
+      guard let self else { return }
+      let backgroundRecord = self.backgroundContext.object(with: objectID)
+      self.backgroundContext.delete(backgroundRecord)
+      
+      self.performSave(
+        context: self.backgroundContext,
+        operation: .deleteRecord,
+        recordId: recordId
+      ) { [weak self] success in
+        guard let self = self else { return }
+        if success {
+          self.deleteRecordEvent(
+            id: recordId,
+            status: .success
+          )
+        } else {
+          self.deleteRecordEvent(
+            id: recordId,
+            status: .failure,
+            message: "Failed to delete record"
+          )
+        }
       }
     }
   }
