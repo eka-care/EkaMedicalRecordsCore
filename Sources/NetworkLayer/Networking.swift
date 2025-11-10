@@ -32,9 +32,9 @@ protocol Networking: Sendable {
     completion: @escaping (Result<T, EkaAPIError>, Int?) -> Void
   )
   
-  func execute(
+  func execute<T: Decodable>(
     _ requestProvider: RequestProvider,
-    completion: @escaping (Result<Bool, MRError>, Int?) -> Void
+    completion: @escaping (Result<T, MRError>, Int?) -> Void
   )
   
   func download(
@@ -80,6 +80,16 @@ extension Networking {
   ) {
     let request = requestProvider.urlRequest
     request.ekaErrorResponseSerializer(of: T.self) { result, statusCode in
+      completion(result, statusCode)
+    }
+  }
+  
+  func execute<T: Decodable>(
+    _ requestProvider: RequestProvider,
+    completion: @escaping (Result<T, MRError>, Int?) -> Void
+  ) {
+    let request = requestProvider.urlRequest
+    request.mrErrorResponseSerializer(of: T.self) { result, statusCode in
       completion(result, statusCode)
     }
   }
@@ -247,4 +257,69 @@ struct MRError: Codable, Error {
   var error: Bool?
   var code: String?
   var message: String?
+}
+
+// MARK: - Custom serializer for MR endpoints
+
+final class MRErrorResponseSerializer<T: Decodable>: ResponseSerializer, @unchecked Sendable {
+  
+  private let decoder = JSONDecoder()
+  private let successSerializer: DecodableResponseSerializer<T>
+  private let errorSerializer: DecodableResponseSerializer<MRError>
+  
+  init() {
+    self.successSerializer = DecodableResponseSerializer<T>(decoder: decoder)
+    self.errorSerializer = DecodableResponseSerializer<MRError>(decoder: decoder)
+  }
+  
+  public func serialize(
+    request: URLRequest?,
+    response: HTTPURLResponse?,
+    data: Data?,
+    error: Error?
+  ) throws -> Result<T, MRError> {
+    
+    guard error == nil else {
+      EkaMedicalRecordsCoreLogger.capture("Error in MR custom serializer \(String(describing: error?.localizedDescription))")
+      return .failure(MRError(error: true, code: nil, message: "Something went wrong"))
+    }
+    
+    guard let response = response else { 
+      return .failure(MRError(error: true, code: nil, message: "Something went wrong")) 
+    }
+    
+    EkaMedicalRecordsCoreLogger.capture("Response code - \(response.statusCode)")
+    
+    do {
+      if response.statusCode < 200 || response.statusCode >= 300 {
+        let result = try errorSerializer.serialize(request: request, response: response, data: data, error: nil)
+        return .failure(result)
+      } else {
+        let result = try successSerializer.serialize(request: request, response: response, data: data, error: nil)
+        return .success(result)
+      }
+    } catch(let error) {
+      EkaMedicalRecordsCoreLogger.capture("Error in catch block of MRErrorResponseSerializer custom serializer\(error)")
+      return .failure(MRError(error: true, code: nil, message: "Something went wrong"))
+    }
+  }
+}
+
+extension DataRequest {
+  @discardableResult
+  func mrErrorResponseSerializer<T: Decodable>(
+    queue: DispatchQueue = DispatchQueue.global(qos: .userInitiated),
+    of t: T.Type,
+    completionHandler: @escaping (Result<T, MRError>, Int?) -> Void) -> Self {
+      return response(queue: .main, responseSerializer: MRErrorResponseSerializer<T>()) { response in
+        switch response.result {
+        case .success(let result):
+          completionHandler(result, response.response?.statusCode)
+        case .failure(let error):
+          EkaMedicalRecordsCoreLogger.capture("ERROR IN MR RESPONSE DECODABLE\(error)")
+          completionHandler(.failure(MRError(error: true, code: nil, message: "Something went wrong")), response.response?.statusCode)
+        }
+      }
+      .validate(statusCode: 200...599)
+    }
 }

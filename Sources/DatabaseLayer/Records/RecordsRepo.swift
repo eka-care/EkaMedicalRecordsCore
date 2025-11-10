@@ -135,7 +135,7 @@ public final class RecordsRepo {
         return
       }
       /// Upload to vault
-      self.uploadRecord(record: addedRecord) { record in
+      self.uploadRecord(record: addedRecord) { record, errorType in
         didAddRecord(record)
       }
     }
@@ -158,7 +158,7 @@ public final class RecordsRepo {
  
   public func uploadRecord(
       record: Record,
-      completion didUploadRecord: @escaping (Record?) -> Void
+      completion didUploadRecord: @escaping (Record?, RecordUploadErrorType?) -> Void
   ) {
     /// Update the upload sync status
     record.syncState = RecordSyncState.uploading.stringValue
@@ -179,11 +179,11 @@ public final class RecordsRepo {
       [weak self] uploadFormsResponse,
       error in
       guard let self else {
-        didUploadRecord(nil)
+        didUploadRecord(nil, error)
         return
       }
       guard let documentId = record.documentID else {
-        didUploadRecord(nil)
+        didUploadRecord(nil, error)
         return
       }
       
@@ -196,12 +196,12 @@ public final class RecordsRepo {
         if let docId = uploadFormsResponse?.batchResponses?.first?.documentID, !isDocumentIsOnServer  {
           deleteRecordV3(documentID: docId, oid: record.oid)
         }
-        didUploadRecord(nil)
+        didUploadRecord(nil, error)
         return
       }
       
       guard let documentId = record.documentID else {
-        didUploadRecord(nil)
+        didUploadRecord(nil, error)
         return
       }
       
@@ -214,7 +214,7 @@ public final class RecordsRepo {
       )
       
       record.documentID = uploadFormsResponse.batchResponses?.first?.documentID
-      didUploadRecord(record)
+      didUploadRecord(record, nil)
     }
   }
   
@@ -599,7 +599,7 @@ extension RecordsRepo {
           
           for record in records {
               uploadGroup.enter()
-              self.uploadRecord(record: record) { uploadedRecord in
+              self.uploadRecord(record: record) { uploadedRecord, errorType in
                   if uploadedRecord == nil {
                       let uploadError = ErrorHelper.createError(
                           domain: .sync,
