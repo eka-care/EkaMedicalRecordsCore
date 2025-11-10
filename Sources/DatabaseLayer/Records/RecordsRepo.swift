@@ -126,17 +126,17 @@ public final class RecordsRepo {
   /// - Parameter record: record to be added
   public func addSingleRecord(
     record: RecordModel,
-    completion didAddRecord: @escaping (Record?) -> Void
+    completion didAddRecord: @escaping (Record?, RecordUploadErrorType?) -> Void
   ) {
     /// Add in database and store it in addedRecord
     databaseManager.addSingleRecord(from: record) { [weak self] addedRecord in
       guard let self else {
-        didAddRecord(nil)
+        didAddRecord(nil, nil)
         return
       }
       /// Upload to vault
       self.uploadRecord(record: addedRecord) { record, errorType in
-        didAddRecord(record)
+        didAddRecord(record, errorType)
       }
     }
   }
