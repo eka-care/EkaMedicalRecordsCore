@@ -603,7 +603,7 @@ extension RecordsRepo {
                   if uploadedRecord == nil {
                       let uploadError = ErrorHelper.createError(
                           domain: .sync,
-                          code: .networkRequestFailed,
+                          code: errorType == .uploadLimitReached ? .uploadLimitReached : .networkRequestFailed ,
                           message: "Failed to upload record: \(record.documentID ?? "unknown")"
                       )
                       errorsQueue.async(flags: .barrier) {
