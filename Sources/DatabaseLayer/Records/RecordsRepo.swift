@@ -509,7 +509,11 @@ public final class RecordsRepo {
     /// We need to store it before deleting from database as once document is deleted we can't get the documentID
     let documentID = record.documentID
     
-    /// Delete from vault v3 only if requested
+    if record.syncState ==  RecordSyncState.upload(success: false).stringValue {
+      databaseManager.deleteRecord(record: record)
+      completion(true)
+    } else {
+      /// Delete from vault v3 only if requested
       deleteRecordV3(documentID: documentID, oid: record.oid) { [weak self] success, statusCode in
         guard let self else {
           completion(false)
@@ -525,6 +529,7 @@ public final class RecordsRepo {
           completion(false)
         }
       }
+    }
   }
   
   /// Clears all data from the database on user logout
