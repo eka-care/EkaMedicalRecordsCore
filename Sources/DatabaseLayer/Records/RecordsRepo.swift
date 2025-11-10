@@ -507,27 +507,28 @@ public final class RecordsRepo {
     completion: @escaping (Bool) -> Void = { _ in }
   ) {
     /// We need to store it before deleting from database as once document is deleted we can't get the documentID
-    let documentID = record.documentID
-    
-    if record.syncState ==  RecordSyncState.upload(success: false).stringValue {
-      databaseManager.deleteRecord(record: record)
+    guard let documentID = record.documentID else {
+      completion(false)
+      return
+    }
+    databaseManager.updateRecord(documentID: documentID, isArchieved: true)
+    /// Delete from server ONLY if requested; otherwise just mark archived for later sync
+    guard deleteFromServer else {
       completion(true)
-    } else {
-      /// Delete from vault v3 only if requested
-      deleteRecordV3(documentID: documentID, oid: record.oid) { [weak self] success, statusCode in
-        guard let self else {
-          completion(false)
-          return
-        }
-        
-        /// Only delete from database if server deletion was successful and returned 204
-        if success && statusCode == 204 {
-          databaseManager.deleteRecord(record: record)
-          completion(true)
-        } else {
-          EkaMedicalRecordsCoreLogger.capture("Server deletion failed or didn't return 204. Status code: \(statusCode ?? -1)")
-          completion(false)
-        }
+      return
+    }
+    deleteRecordV3(documentID: documentID, oid: record.oid) { [weak self] success, statusCode in
+      guard let self else {
+        completion(false)
+        return
+      }
+      /// Only delete from database if server deletion was successful and returned 204
+      if success && statusCode == 204 {
+        databaseManager.deleteRecord(record: record)
+        completion(true)
+      } else {
+        EkaMedicalRecordsCoreLogger.capture("Server deletion failed or didn't return 204. Status code: \(statusCode ?? -1)")
+        completion(false)
       }
     }
   }
@@ -577,7 +578,14 @@ extension RecordsRepo {
           switch newRecordsResult {
           case .success:
             self.syncEditedRecords { editedRecordsResult in
-              completion(editedRecordsResult)
+              switch editedRecordsResult {
+              case .success:
+                self.syncArchivedRecords { archivedDeletionResult in
+                  completion(archivedDeletionResult)
+                }
+              case .failure(let error):
+                completion(.failure(error))
+              }
             }
           case .failure(let error):
             completion(.failure(error))
@@ -700,6 +708,61 @@ extension RecordsRepo {
               }
           }
       }
+  }
+  
+  /// Sync locally archived (soft-deleted) records by deleting them on the server, then remove locally
+  private func syncArchivedRecords(completion: @escaping (Result<Void, Error>) -> Void) {
+    fetchRecords(fetchRequest: QueryHelper.fetchRecordsForArchivedDeletionSync()) { [weak self] records in
+      guard let self = self else {
+        completion(.failure(ErrorHelper.selfDeallocatedError()))
+        return
+      }
+      
+      // Nothing to delete
+      guard !records.isEmpty else {
+        completion(.success(()))
+        return
+      }
+      
+      let deleteGroup = DispatchGroup()
+      var errors: [Error] = []
+      let errorsQueue = DispatchQueue(label: "syncArchivedRecords.errors", attributes: .concurrent)
+      
+      for record in records {
+        deleteGroup.enter()
+        // Reuse central deletion function to keep behavior consistent
+        self.deleteRecord(record: record, deleteFromServer: true) { [weak self] success in
+          guard self != nil else {
+            deleteGroup.leave()
+            return
+          }
+          if !success {
+            let deleteError = ErrorHelper.createError(
+              domain: .sync,
+              code: .networkRequestFailed,
+              message: "Failed to delete archived record on server: \(record.documentID ?? "unknown")"
+            )
+            errorsQueue.async(flags: .barrier) {
+              errors.append(deleteError)
+            }
+          }
+          deleteGroup.leave()
+        }
+      }
+      
+      deleteGroup.notify(queue: .global(qos: .utility)) {
+        if errors.isEmpty {
+          completion(.success(()))
+        } else {
+          let combinedError = ErrorHelper.syncOperationError(
+            operation: "sync archived deletions",
+            failureCount: errors.count,
+            errors: errors
+          )
+          completion(.failure(combinedError))
+        }
+      }
+    }
   }
 }
 
