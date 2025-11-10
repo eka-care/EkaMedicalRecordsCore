@@ -94,59 +94,6 @@ extension Networking {
     }
   }
   
-  func execute(
-    _ requestProvider: RequestProvider,
-    completion: @escaping (Result<Bool, MRError>, Int?) -> Void
-  ) {
-    let request = requestProvider.urlRequest
-    request.response { response in
-      let statusCode = response.response?.statusCode
-      
-      if let error = response.error {
-        // Try to decode error data as EkaError
-        if let data = response.data {
-          do {
-            let decoder = JSONDecoder()
-            let ekaError = try decoder.decode(MRError.self, from: data)
-            completion(.failure(ekaError), statusCode)
-            return
-          } catch {
-            // If decoding fails, return a generic EkaError
-            let genericError = MRError(error: true, code: nil, message: error.localizedDescription)
-            completion(.failure(genericError), statusCode)
-            return
-          }
-        } else {
-          let genericError = MRError(error: true, code: nil, message: error.localizedDescription)
-          completion(.failure(genericError), statusCode)
-          return
-        }
-      }
-      
-      // Check if response indicates an error even without AFError
-      if let statusCode = statusCode, statusCode < 200 || statusCode >= 300 {
-        if let data = response.data {
-          do {
-            let decoder = JSONDecoder()
-            let ekaError = try decoder.decode(MRError.self, from: data)
-            completion(.failure(ekaError), statusCode)
-            return
-          } catch {
-            let genericError = MRError(error: true, code: "\(statusCode)", message: "Request failed with status code \(statusCode)")
-            completion(.failure(genericError), statusCode)
-            return
-          }
-        } else {
-          let genericError = MRError(error: true, code: "\(statusCode)", message: "Request failed with status code \(statusCode)")
-          completion(.failure(genericError), statusCode)
-          return
-        }
-      }
-      
-      completion(.success(true), statusCode)
-    }
-  }
-  
   public func download(
     _ requestProvider: RequestProvider,
     completion: @escaping (Result<Data, Error>, Int?) -> Void
@@ -278,11 +225,6 @@ final class MRErrorResponseSerializer<T: Decodable>: ResponseSerializer, @unchec
     data: Data?,
     error: Error?
   ) throws -> Result<T, MRError> {
-    
-    guard error == nil else {
-      EkaMedicalRecordsCoreLogger.capture("Error in MR custom serializer \(String(describing: error?.localizedDescription))")
-      return .failure(MRError(error: true, code: nil, message: "Something went wrong"))
-    }
     
     guard let response = response else { 
       return .failure(MRError(error: true, code: nil, message: "Something went wrong")) 
