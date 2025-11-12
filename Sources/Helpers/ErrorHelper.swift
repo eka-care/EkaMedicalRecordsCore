@@ -34,6 +34,7 @@ public final class ErrorHelper {
         case serializationFailed = -11
         case responseParsingFailed = -12
         case missingResponseData = -13
+        case uploadLimitReached = -14
     }
     
     // MARK: - Error Creation Methods

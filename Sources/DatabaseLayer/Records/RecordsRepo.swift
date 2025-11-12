@@ -126,17 +126,17 @@ public final class RecordsRepo {
   /// - Parameter record: record to be added
   public func addSingleRecord(
     record: RecordModel,
-    completion didAddRecord: @escaping (Record?) -> Void
+    completion didAddRecord: @escaping (Record?, RecordUploadErrorType?) -> Void
   ) {
     /// Add in database and store it in addedRecord
     databaseManager.addSingleRecord(from: record) { [weak self] addedRecord in
       guard let self else {
-        didAddRecord(nil)
+        didAddRecord(nil, nil)
         return
       }
       /// Upload to vault
-      self.uploadRecord(record: addedRecord) { record in
-        didAddRecord(record)
+      self.uploadRecord(record: addedRecord) { record, errorType in
+        didAddRecord(record, errorType)
       }
     }
   }
@@ -158,7 +158,7 @@ public final class RecordsRepo {
  
   public func uploadRecord(
       record: Record,
-      completion didUploadRecord: @escaping (Record?) -> Void
+      completion didUploadRecord: @escaping (Record?, RecordUploadErrorType?) -> Void
   ) {
     /// Update the upload sync status
     record.syncState = RecordSyncState.uploading.stringValue
@@ -179,11 +179,11 @@ public final class RecordsRepo {
       [weak self] uploadFormsResponse,
       error in
       guard let self else {
-        didUploadRecord(nil)
+        didUploadRecord(nil, error)
         return
       }
       guard let documentId = record.documentID else {
-        didUploadRecord(nil)
+        didUploadRecord(nil, error)
         return
       }
       
@@ -196,12 +196,12 @@ public final class RecordsRepo {
         if let docId = uploadFormsResponse?.batchResponses?.first?.documentID, !isDocumentIsOnServer  {
           deleteRecordV3(documentID: docId, oid: record.oid)
         }
-        didUploadRecord(nil)
+        didUploadRecord(nil, error)
         return
       }
       
       guard let documentId = record.documentID else {
-        didUploadRecord(nil)
+        didUploadRecord(nil, error)
         return
       }
       
@@ -214,7 +214,7 @@ public final class RecordsRepo {
       )
       
       record.documentID = uploadFormsResponse.batchResponses?.first?.documentID
-      didUploadRecord(record)
+      didUploadRecord(record, nil)
     }
   }
   
@@ -509,7 +509,11 @@ public final class RecordsRepo {
     /// We need to store it before deleting from database as once document is deleted we can't get the documentID
     let documentID = record.documentID
     
-    /// Delete from vault v3 only if requested
+    if record.syncState ==  RecordSyncState.upload(success: false).stringValue {
+      databaseManager.deleteRecord(record: record)
+      completion(true)
+    } else {
+      /// Delete from vault v3 only if requested
       deleteRecordV3(documentID: documentID, oid: record.oid) { [weak self] success, statusCode in
         guard let self else {
           completion(false)
@@ -525,6 +529,7 @@ public final class RecordsRepo {
           completion(false)
         }
       }
+    }
   }
   
   /// Clears all data from the database on user logout
@@ -599,11 +604,11 @@ extension RecordsRepo {
           
           for record in records {
               uploadGroup.enter()
-              self.uploadRecord(record: record) { uploadedRecord in
+              self.uploadRecord(record: record) { uploadedRecord, errorType in
                   if uploadedRecord == nil {
                       let uploadError = ErrorHelper.createError(
                           domain: .sync,
-                          code: .networkRequestFailed,
+                          code: errorType == .uploadLimitReached ? .uploadLimitReached : .networkRequestFailed ,
                           message: "Failed to upload record: \(record.documentID ?? "unknown")"
                       )
                       errorsQueue.async(flags: .barrier) {

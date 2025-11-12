@@ -120,8 +120,14 @@ final class RecordUploadManager {
         }
         
       case .failure(let error):
-        EkaMedicalRecordsCoreLogger.capture("❌ 📁 Failed to upload files - \(error.localizedDescription)")
-        recordUploadError = .emptyFormResponse
+        EkaMedicalRecordsCoreLogger.capture("❌ 📁 Failed to upload files")
+        if statusCode == 403 && RecordUploadErrorType.uploadLimitReached.code == error.code {
+          recordUploadError = .uploadLimitReached
+        } else if statusCode == 409 {
+          recordUploadError = .duplicateDocumentUpload
+        } else {
+          recordUploadError = .emptyFormResponse
+        }
         recordUploadCompletion(nil, recordUploadError)
       }
     }
