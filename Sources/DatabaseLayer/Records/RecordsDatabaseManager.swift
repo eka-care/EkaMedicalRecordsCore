@@ -138,15 +138,15 @@ extension RecordsDatabaseManager {
       for record in records {
         // Check if the record already exists
         let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "documentID == %@", record.documentID ?? "")
+        fetchRequest.predicate = NSPredicate(format: "documentID == %@", record.documentID)
         
         do {
           if let existingRecord = try self.backgroundContext.fetch(fetchRequest).first {
             // Update existing record
-            EkaMedicalRecordsCoreLogger.capture("Document id of document being updated is \(record.documentID ?? "")")
+            EkaMedicalRecordsCoreLogger.capture("Document id of document being updated is \(record.documentID)")
             existingRecord.update(from: record)
             updateRecordEvent(
-              id: record.documentID ?? existingRecord.objectID.uriRepresentation().absoluteString,
+              id: record.documentID,
               status: .success
             )
           } else {
@@ -684,7 +684,8 @@ extension RecordsDatabaseManager {
       syncStatus: RecordSyncState? = nil,
       isEdited: Bool? = nil,
       caseModels: [CaseModel]? = nil,
-      tags: [String]? = nil
+      tags: [String]? = nil,
+      isArchieved: Bool? = nil
     ) {
       backgroundContext.perform { [weak self] in
         guard let self = self else { return }
@@ -730,6 +731,9 @@ extension RecordsDatabaseManager {
           }
           if let tags {
             record.setTags(tags)
+          }
+          if let isArchieved {
+            record.isArchived = isArchieved
           }
           
           // Save the changes to the database
@@ -806,26 +810,32 @@ extension RecordsDatabaseManager {
   /// Used to delete a given record
   /// - Parameter record: record object that is to be deleted
   func deleteRecord(record: Record) {
-    let recordId = record.documentID ?? record.objectID.uriRepresentation().absoluteString
-    container.viewContext.delete(record)
+    let objectID = record.objectID
+    let recordId = record.documentID ?? objectID.uriRepresentation().absoluteString
     
-    performSave(
-      context: container.viewContext,
-      operation: .deleteRecord,
-      recordId: recordId
-    ) { [weak self] success in
-      guard let self = self else { return }
-      if success {
-        self.deleteRecordEvent(
-          id: recordId,
-          status: .success
-        )
-      } else {
-        self.deleteRecordEvent(
-          id: recordId,
-          status: .failure,
-          message: "Failed to delete record"
-        )
+    backgroundContext.perform { [weak self] in
+      guard let self else { return }
+      let backgroundRecord = self.backgroundContext.object(with: objectID)
+      self.backgroundContext.delete(backgroundRecord)
+      
+      self.performSave(
+        context: self.backgroundContext,
+        operation: .deleteRecord,
+        recordId: recordId
+      ) { [weak self] success in
+        guard let self = self else { return }
+        if success {
+          self.deleteRecordEvent(
+            id: recordId,
+            status: .success
+          )
+        } else {
+          self.deleteRecordEvent(
+            id: recordId,
+            status: .failure,
+            message: "Failed to delete record"
+          )
+        }
       }
     }
   }
