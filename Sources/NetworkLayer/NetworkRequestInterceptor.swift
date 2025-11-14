@@ -9,7 +9,7 @@ import Alamofire
 import Foundation
 import UIKit
 
-public final class NetworkRequestInterceptor: Alamofire.RequestInterceptor {
+public final class MRNetworkRequestInterceptor: Alamofire.RequestInterceptor {
   
   // MARK: - Properties
   
@@ -72,7 +72,7 @@ public final class NetworkRequestInterceptor: Alamofire.RequestInterceptor {
 
 // MARK: - Helper Functions
 
-extension NetworkRequestInterceptor {
+extension MRNetworkRequestInterceptor {
   /// API call to get new access token
   func refreshTokens(
     refreshToken: String?,

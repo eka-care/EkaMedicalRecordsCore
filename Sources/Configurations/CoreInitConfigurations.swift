@@ -46,7 +46,7 @@ public class CoreInitConfigurations {
   public var ownerID: String?
   
   /// Request Interceptor
-  public var requestInterceptor: Alamofire.RequestInterceptor = NetworkRequestInterceptor()
+  public var requestInterceptor: Alamofire.RequestInterceptor = MRNetworkRequestInterceptor()
   
   /// Delegate to get events
   public weak var delegate: EventLoggerProtocol?
