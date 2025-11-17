@@ -5,7 +5,7 @@
 //  Created by Arya Vashisht on 27/01/25.
 //
 
-struct DocUploadFormsResponse: Codable {
+public struct DocUploadFormsResponse: Codable {
   let error: Bool?
   let message: String?
   let batchResponses: [BatchResponse]?

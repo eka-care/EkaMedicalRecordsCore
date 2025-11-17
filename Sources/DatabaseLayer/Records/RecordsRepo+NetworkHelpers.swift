@@ -48,7 +48,7 @@ extension RecordsRepo {
   ///   - documentDate: Document for the record
   ///   - contentType: Extension type of file Eg: .jpeg, .pdf
   ///   - completion: Returns docUploadResponse and Record Upload Error
-  func uploadRecordsV3(
+  public func uploadRecordsV3(
     documentID: String,
     tags: [String]? = nil,
     recordType: String? = nil,

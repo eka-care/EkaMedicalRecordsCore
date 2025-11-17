@@ -8,18 +8,18 @@
 import Foundation
 
 extension Date {
-  func toEpochString() -> String {
+  public func toEpochString() -> String {
     let wholeSecondEpoch: Int = Int(floor(self.timeIntervalSince1970))
     let stringEpoch: String = String(wholeSecondEpoch)
     return stringEpoch
   }
   
-  func toEpochInt() -> Int {
+  public func toEpochInt() -> Int {
     let wholeSecondEpoch: Int = Int(floor(self.timeIntervalSince1970))
     return wholeSecondEpoch
   }
   
-  func toUSEnglishString(withFormat format: String = "YYYY-MM-dd") -> String {
+  public func toUSEnglishString(withFormat format: String = "YYYY-MM-dd") -> String {
     // Create Date Formatter
     let dateFormatter = DateFormatter()
     dateFormatter.locale = Locale(identifier: "en_US_POSIX")
