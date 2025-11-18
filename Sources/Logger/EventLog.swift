@@ -20,7 +20,7 @@ public struct EventLog {
   /// Platform on which event took place
   public let platform: EventPlatform
   /// User Oid
-  public let userOid: String?
+  public let userOid: String
   
   public init(
     params: [String : Any]? = nil,
@@ -29,7 +29,7 @@ public struct EventLog {
     message: String? = nil,
     status: EventStatusMonitor,
     platform: EventPlatform,
-    userOid: String? = nil
+    userOid: String
   ) {
     self.params = params
     self.eventType = eventType

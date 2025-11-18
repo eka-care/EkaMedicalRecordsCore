@@ -838,7 +838,8 @@ extension RecordsRepo {
             EkaMedicalRecordsCoreLogger.capture("Case successfully created on the server.")
             createCaseEvent(
               id: caseID,
-              status: .success
+              status: .success,
+              userOid: oid
             )
             // Update the case to mark it as remotely created
             let updateModel = CaseArguementModel(
@@ -855,7 +856,8 @@ extension RecordsRepo {
             createCaseEvent(
               id: caseID,
               status: .failure,
-              message: error.localizedDescription
+              message: error.localizedDescription,
+              userOid: oid
             )
             errorsQueue.async(flags: .barrier) {
               errors.append(error)
@@ -927,7 +929,8 @@ extension RecordsRepo {
             EkaMedicalRecordsCoreLogger.capture("Case successfully updated on the server.")
             updateCaseEvent(
               id: caseID,
-              status: .success
+              status: .success,
+              userOid: oid
             )
             // Update the case to mark it as not edited (sync completed)
             let updateModel = CaseArguementModel(
@@ -944,7 +947,8 @@ extension RecordsRepo {
             updateCaseEvent(
               id: caseID,
               status: .failure,
-              message: error.localizedDescription
+              message: error.localizedDescription,
+              userOid: oid
             )
             errorsQueue.async(flags: .barrier) {
               errors.append(error)

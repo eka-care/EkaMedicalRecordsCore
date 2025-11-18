@@ -22,7 +22,8 @@ extension RecordsDatabaseManager {
       EkaMedicalRecordsCoreLogger.capture("Case added successfully!")
       createCaseEvent(
         id: caseId,
-        status: .success
+        status: .success,
+        userOid: newCase.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
       )
       return newCase
     } catch {
@@ -30,7 +31,8 @@ extension RecordsDatabaseManager {
       createCaseEvent(
         id: caseId,
         status: .failure,
-        message: error.localizedDescription
+        message: error.localizedDescription,
+        userOid: newCase.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
       )
       return newCase
     }
@@ -92,14 +94,16 @@ extension RecordsDatabaseManager {
       try container.viewContext.save()
       updateCaseEvent(
         id: caseId,
-        status: .success
+        status: .success,
+        userOid: caseModel.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
       )
     } catch {
       EkaMedicalRecordsCoreLogger.capture("No able to update case \(error.localizedDescription)")
       updateCaseEvent(
         id: caseId,
         status: .failure,
-        message: error.localizedDescription
+        message: error.localizedDescription,
+        userOid: caseModel.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
       )
     }
   }
@@ -114,19 +118,22 @@ extension RecordsDatabaseManager {
     caseModel: CaseModel
   ) {
     let caseId = caseModel.caseID ?? caseModel.objectID.uriRepresentation().absoluteString
+    let userOid = caseModel.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
     container.viewContext.delete(caseModel)
     do {
       try container.viewContext.save()
       deleteCaseEvent(
         id: caseId,
-        status: .success
+        status: .success,
+        userOid: userOid
       )
     } catch {
       EkaMedicalRecordsCoreLogger.capture("Error in deleting case \(error.localizedDescription)")
       deleteCaseEvent(
         id: caseId,
         status: .failure,
-        message: error.localizedDescription
+        message: error.localizedDescription,
+        userOid: userOid
       )
     }
   }
@@ -159,7 +166,8 @@ extension RecordsDatabaseManager {
             existingCase.update(from: caseEntry)
             updateCaseEvent(
               id: caseId,
-              status: .success
+              status: .success,
+              userOid: existingCase.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
             )
           } else {
             // Create new record
@@ -168,7 +176,8 @@ extension RecordsDatabaseManager {
             let caseId = caseEntry.caseId ?? newCase.objectID.uriRepresentation().absoluteString
             createCaseEvent(
               id: caseId,
-              status: .success
+              status: .success,
+              userOid: newCase.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
             )
           }
         } catch {

@@ -147,7 +147,8 @@ extension RecordsDatabaseManager {
             existingRecord.update(from: record)
             updateRecordEvent(
               id: record.documentID,
-              status: .success
+              status: .success,
+              userOid: record.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
             )
           } else {
             // Create new record
@@ -155,7 +156,8 @@ extension RecordsDatabaseManager {
             newRecord.update(from: record)
             createRecordEvent(
               id: record.documentID,
-              status: .success
+              status: .success,
+              userOid: record.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
             )
           }
         } catch {
@@ -214,10 +216,19 @@ extension RecordsDatabaseManager {
             to: newRecord,
             documentURIs: record.documentURIs
           )
-          self.createRecordEvent(id: newRecord.id.debugDescription, status: .success)
+          self.createRecordEvent(
+            id: newRecord.id.debugDescription,
+            status: .success,
+            userOid: record.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
+          )
           EkaMedicalRecordsCoreLogger.capture("Record added successfully!")
         } else {
-          self.createRecordEvent(id: newRecord.id.debugDescription, status: .failure, message: "Failed to save record")
+          self.createRecordEvent(
+            id: newRecord.id.debugDescription,
+            status: .failure,
+            message: "Failed to save record",
+            userOid: record.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
+          )
         }
         
         DispatchQueue.main.async {
@@ -702,7 +713,8 @@ extension RecordsDatabaseManager {
             self.updateRecordEvent(
               id: documentID,
               status: .failure,
-              message: "Record not found"
+              message: "Record not found",
+              userOid: documentOid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
             )
             return
           }
@@ -746,13 +758,15 @@ extension RecordsDatabaseManager {
             if success {
               self.updateRecordEvent(
                 id: record.documentID,
-                status: .success
+                status: .success,
+                userOid: documentOid ?? record.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
               )
             } else {
               self.updateRecordEvent(
                 id: documentID,
                 status: .failure,
-                message: "Failed to save record"
+                message: "Failed to save record",
+                userOid: documentOid ?? record.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
               )
             }
           }
@@ -761,7 +775,8 @@ extension RecordsDatabaseManager {
           self.updateRecordEvent(
             id: documentID,
             status: .failure,
-            message: error.localizedDescription
+            message: error.localizedDescription,
+            userOid: documentOid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
           )
         }
       }
@@ -827,13 +842,15 @@ extension RecordsDatabaseManager {
         if success {
           self.deleteRecordEvent(
             id: recordId,
-            status: .success
+            status: .success,
+            userOid: record.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
           )
         } else {
           self.deleteRecordEvent(
             id: recordId,
             status: .failure,
-            message: "Failed to delete record"
+            message: "Failed to delete record",
+            userOid: record.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
           )
         }
       }

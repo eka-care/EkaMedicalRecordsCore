@@ -79,7 +79,7 @@ extension RecordsRepo {
           id: response?.batchResponses?.first?.documentID,
           status: .failure,
           message: error.errorDescription,
-          userOid: userOid
+          userOid: userOid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
         )
         completion(response, error)
         return
@@ -88,7 +88,7 @@ extension RecordsRepo {
         createRecordEvent(
           id: response.batchResponses?.first?.documentID,
           status: .success,
-          userOid: userOid
+          userOid: userOid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
         )
         completion(response, error)
       }
@@ -125,7 +125,8 @@ extension RecordsRepo {
       case .success:
         deleteRecordEvent(
           id: documentID,
-          status: .success
+          status: .success,
+          userOid: oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
         )
         EkaMedicalRecordsCoreLogger.capture("Record deleted successfully from v3")
         completion(true, statusCode)
@@ -133,7 +134,8 @@ extension RecordsRepo {
         deleteRecordEvent(
           id: documentID,
           status: .failure,
-          message: error.localizedDescription
+          message: error.localizedDescription,
+          userOid: oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
         )
         EkaMedicalRecordsCoreLogger.capture("Failed to delete record \(error.localizedDescription)")
         completion(false, statusCode)
@@ -245,11 +247,20 @@ extension RecordsRepo {
       switch result {
       case .success:
         EkaMedicalRecordsCoreLogger.capture("Updated document")
-        updateRecordEvent(id: documentID, status: .success)
+        updateRecordEvent(
+          id: documentID,
+          status: .success,
+          userOid: documentFilterId ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
+        )
         completion(true)
       case .failure(let error):
         EkaMedicalRecordsCoreLogger.capture("Failure in document update network call \(error.localizedDescription)")
-        updateRecordEvent(id: documentID, status: .failure, message: error.localizedDescription)
+        updateRecordEvent(
+          id: documentID,
+          status: .failure,
+          message: error.localizedDescription,
+          userOid: documentFilterId ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
+        )
         completion(false)
       }
     }

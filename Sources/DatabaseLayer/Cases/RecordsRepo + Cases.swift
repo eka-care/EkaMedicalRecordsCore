@@ -166,7 +166,8 @@ extension RecordsRepo {
         EkaMedicalRecordsCoreLogger.capture("Case successfully created on the server.")
         createCaseEvent(
           id: caseId,
-          status: .success
+          status: .success,
+          userOid: oid
         )
         completion(.success(caseDetails))
         
@@ -175,7 +176,8 @@ extension RecordsRepo {
         createCaseEvent(
           id: caseId,
           status: .failure,
-          message: error.localizedDescription
+          message: error.localizedDescription,
+          userOid: oid
         )
         completion(.failure(error))
       }
@@ -199,7 +201,8 @@ extension RecordsRepo {
         EkaMedicalRecordsCoreLogger.capture("Case deleted successfully")
         deleteCaseEvent(
           id: caseId,
-          status: .success
+          status: .success,
+          userOid: oid
         )
         completion(.success(true))
       case .failure(let error):
@@ -207,7 +210,8 @@ extension RecordsRepo {
         deleteCaseEvent(
           id: caseId,
           status: .failure,
-          message: error.localizedDescription
+          message: error.localizedDescription,
+          userOid: oid
         )
         completion(.failure(error))
       }
@@ -240,7 +244,8 @@ extension RecordsRepo {
         EkaMedicalRecordsCoreLogger.capture("Case updated successfully")
         updateCaseEvent(
           id: caseId,
-          status: .success
+          status: .success,
+          userOid: oid
         )
         completion(.success(true))
       case .failure(let error):
@@ -248,7 +253,8 @@ extension RecordsRepo {
         updateCaseEvent(
           id: caseId,
           status: .failure,
-          message: error.localizedDescription
+          message: error.localizedDescription,
+          userOid: oid
         )
         completion(.failure(error))
       }

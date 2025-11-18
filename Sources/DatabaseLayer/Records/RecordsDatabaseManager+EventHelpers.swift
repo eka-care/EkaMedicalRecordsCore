@@ -19,7 +19,7 @@ extension RecordsDatabaseManager {
     id: String?,
     status: EventStatusMonitor,
     message: String? = nil,
-    userOid: String? = nil
+    userOid: String
   ) {
     guard let id else { return }
     let eventLog = EventLog(
@@ -45,7 +45,7 @@ extension RecordsDatabaseManager {
     id: String?,
     status: EventStatusMonitor,
     message: String? = nil,
-    userOid: String? = nil
+    userOid: String
   ) {
     guard let id else { return }
     let eventLog = EventLog(
@@ -70,7 +70,7 @@ extension RecordsDatabaseManager {
     id: String?,
     status: EventStatusMonitor,
     message: String? = nil,
-    userOid: String? = nil
+    userOid: String
   ) {
     guard let id else { return }
     let eventLog = EventLog(
@@ -97,7 +97,7 @@ extension RecordsDatabaseManager {
     id: String?,
     status: EventStatusMonitor,
     message: String? = nil,
-    userOid: String? = nil
+    userOid: String
   ) {
     guard let id else { return }
     let eventLog = EventLog(
@@ -123,7 +123,7 @@ extension RecordsDatabaseManager {
     id: String?,
     status: EventStatusMonitor,
     message: String? = nil,
-    userOid: String? = nil
+    userOid: String
   ) {
     guard let id else { return }
     let eventLog = EventLog(
@@ -149,7 +149,7 @@ extension RecordsDatabaseManager {
     id: String?,
     status: EventStatusMonitor,
     message: String? = nil,
-    userOid: String? = nil
+    userOid: String
   ) {
     guard let id else { return }
     let eventLog = EventLog(
