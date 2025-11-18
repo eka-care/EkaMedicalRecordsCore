@@ -26,7 +26,8 @@ extension RecordsDatabaseManager {
       params: [
         "id": id
       ],
-      eventType: .create,
+      eventType: .dbCreate,
+      entityType: .record,
       message: message,
       status: status,
       platform: .database,
@@ -51,7 +52,8 @@ extension RecordsDatabaseManager {
       params: [
         "id": id
       ],
-      eventType: .update,
+      eventType: .dbUpdate,
+      entityType: .record,
       status: status,
       platform: .database,
       userOid: userOid
@@ -75,7 +77,87 @@ extension RecordsDatabaseManager {
       params: [
         "id": id
       ],
-      eventType: .delete,
+      eventType: .dbDelete,
+      entityType: .record,
+      status: status,
+      platform: .database,
+      userOid: userOid
+    )
+    CoreInitConfigurations.shared.delegate?.receiveEvent(eventLog: eventLog)
+  }
+  
+  // MARK: - Case Events
+  
+  /// Create case event in database
+  /// - Parameters:
+  ///   - id: case id of the case
+  ///   - status: status of create case event
+  ///   - message: message describing details if any
+  func createCaseEvent(
+    id: String?,
+    status: EventStatusMonitor,
+    message: String? = nil,
+    userOid: String? = nil
+  ) {
+    guard let id else { return }
+    let eventLog = EventLog(
+      params: [
+        "id": id
+      ],
+      eventType: .dbCreate,
+      entityType: .caseEntity,
+      message: message,
+      status: status,
+      platform: .database,
+      userOid: userOid
+    )
+    CoreInitConfigurations.shared.delegate?.receiveEvent(eventLog: eventLog)
+  }
+  
+  /// Update case event in database
+  /// - Parameters:
+  ///   - id: case id of the case
+  ///   - status: status of update case event
+  ///   - message: message describing details if any
+  func updateCaseEvent(
+    id: String?,
+    status: EventStatusMonitor,
+    message: String? = nil,
+    userOid: String? = nil
+  ) {
+    guard let id else { return }
+    let eventLog = EventLog(
+      params: [
+        "id": id
+      ],
+      eventType: .dbUpdate,
+      entityType: .caseEntity,
+      message: message,
+      status: status,
+      platform: .database,
+      userOid: userOid
+    )
+    CoreInitConfigurations.shared.delegate?.receiveEvent(eventLog: eventLog)
+  }
+  
+  /// Delete case event in database
+  /// - Parameters:
+  ///   - id: case id of the case
+  ///   - status: status of delete case event
+  ///   - message: message describing details if any
+  func deleteCaseEvent(
+    id: String?,
+    status: EventStatusMonitor,
+    message: String? = nil,
+    userOid: String? = nil
+  ) {
+    guard let id else { return }
+    let eventLog = EventLog(
+      params: [
+        "id": id
+      ],
+      eventType: .dbDelete,
+      entityType: .caseEntity,
       status: status,
       platform: .database,
       userOid: userOid

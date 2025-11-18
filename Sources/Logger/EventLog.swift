@@ -11,6 +11,8 @@ public struct EventLog {
   public let params: [String: Any]?
   /// Event type
   public let eventType: EventType
+  /// Entity type (Record or Case)
+  public let entityType: EventEntityType
   /// Any message for the event
   public let message: String?
   /// Status in which event is in
@@ -23,6 +25,7 @@ public struct EventLog {
   public init(
     params: [String : Any]? = nil,
     eventType: EventType,
+    entityType: EventEntityType,
     message: String? = nil,
     status: EventStatusMonitor,
     platform: EventPlatform,
@@ -30,6 +33,7 @@ public struct EventLog {
   ) {
     self.params = params
     self.eventType = eventType
+    self.entityType = entityType
     self.message = message
     self.status = status
     self.platform = platform
@@ -39,21 +43,37 @@ public struct EventLog {
 
 /// Event Type
 public enum EventType: String {
-  case create
-  case read
-  case update
-  case delete
+  // Database events
+  case dbCreate
+  case dbRead
+  case dbUpdate
+  case dbDelete
   
-  public var eventName: String {
+  // Server events
+  case serverCreate
+  case serverRead
+  case serverUpdate
+  case serverDelete
+  
+  public func eventName(entityType: EventEntityType) -> String {
+    let entityPrefix = entityType == .record ? "Records" : "Cases"
     switch self {
-    case .create:
-      return "Records_iOS_SDK_CREATE"
-    case .read:
-      return "Records_iOS_SDK_READ"
-    case .update:
-      return "Records_iOS_SDK_UPDATE"
-    case .delete:
-      return "Records_iOS_SDK_DELETE"
+    case .dbCreate:
+      return "\(entityPrefix)_iOS_SDK_DB_CREATE"
+    case .dbRead:
+      return "\(entityPrefix)_iOS_SDK_DB_READ"
+    case .dbUpdate:
+      return "\(entityPrefix)_iOS_SDK_DB_UPDATE"
+    case .dbDelete:
+      return "\(entityPrefix)_iOS_SDK_DB_DELETE"
+    case .serverCreate:
+      return "\(entityPrefix)_iOS_SDK_SERVER_CREATE"
+    case .serverRead:
+      return "\(entityPrefix)_iOS_SDK_SERVER_READ"
+    case .serverUpdate:
+      return "\(entityPrefix)_iOS_SDK_SERVER_UPDATE"
+    case .serverDelete:
+      return "\(entityPrefix)_iOS_SDK_SERVER_DELETE"
     }
   }
 }
@@ -68,4 +88,10 @@ public enum EventStatusMonitor: String {
 public enum EventPlatform: String {
   case database
   case network
+}
+
+/// Event Entity Type
+public enum EventEntityType: String {
+  case record
+  case caseEntity
 }

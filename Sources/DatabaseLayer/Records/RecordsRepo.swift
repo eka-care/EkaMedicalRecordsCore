@@ -836,6 +836,10 @@ extension RecordsRepo {
           switch result {
           case .success(_):
             EkaMedicalRecordsCoreLogger.capture("Case successfully created on the server.")
+            createCaseEvent(
+              id: caseID,
+              status: .success
+            )
             // Update the case to mark it as remotely created
             let updateModel = CaseArguementModel(
               caseId: uploadcase.caseID,
@@ -848,6 +852,11 @@ extension RecordsRepo {
             
           case .failure(let error):
             EkaMedicalRecordsCoreLogger.capture("Failed to create case on server: \(error.localizedDescription)")
+            createCaseEvent(
+              id: caseID,
+              status: .failure,
+              message: error.localizedDescription
+            )
             errorsQueue.async(flags: .barrier) {
               errors.append(error)
             }
@@ -916,6 +925,10 @@ extension RecordsRepo {
           switch result {
           case .success(_):
             EkaMedicalRecordsCoreLogger.capture("Case successfully updated on the server.")
+            updateCaseEvent(
+              id: caseID,
+              status: .success
+            )
             // Update the case to mark it as not edited (sync completed)
             let updateModel = CaseArguementModel(
               caseId: caseItem.caseID,
@@ -928,6 +941,11 @@ extension RecordsRepo {
             
           case .failure(let error):
             EkaMedicalRecordsCoreLogger.capture("Failed to update case on server: \(error.localizedDescription)")
+            updateCaseEvent(
+              id: caseID,
+              status: .failure,
+              message: error.localizedDescription
+            )
             errorsQueue.async(flags: .barrier) {
               errors.append(error)
             }

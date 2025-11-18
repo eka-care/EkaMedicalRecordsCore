@@ -1,21 +1,21 @@
 //
-//  RecordsRepo+EventHelpers.swift
+//  RecordsRepo + CasesEventHelpers.swift
 //  EkaMedicalRecordsCore
 //
 //  Created by Arya Vashisht on 29/05/25.
 //
 
-// MARK: - Event Helpers
+// MARK: - Case Event Helpers
 
 extension RecordsRepo {
   // MARK: - Create
   
-  /// Create record event in network layer
+  /// Create case event in network layer
   /// - Parameters:
-  ///   - id: document id of the document
-  ///   - status: status of create record event
+  ///   - id: case id of the case
+  ///   - status: status of create case event
   ///   - message: message describing details if any
-  func createRecordEvent(
+  func createCaseEvent(
     id: String?,
     status: EventStatusMonitor,
     message: String? = nil,
@@ -27,7 +27,7 @@ extension RecordsRepo {
         "id": id
       ],
       eventType: .serverCreate,
-      entityType: .record,
+      entityType: .caseEntity,
       message: message,
       status: status,
       platform: .network,
@@ -38,12 +38,12 @@ extension RecordsRepo {
   
   // MARK: - Update
   
-  /// Update record event in network
+  /// Update case event in network
   /// - Parameters:
-  ///   - id: document id of the document
-  ///   - status: status of update record event
+  ///   - id: case id of the case
+  ///   - status: status of update case event
   ///   - message: message describing details if any
-  func updateRecordEvent(
+  func updateCaseEvent(
     id: String?,
     status: EventStatusMonitor,
     message: String? = nil,
@@ -55,7 +55,7 @@ extension RecordsRepo {
         "id": id
       ],
       eventType: .serverUpdate,
-      entityType: .record,
+      entityType: .caseEntity,
       message: message,
       status: status,
       platform: .network,
@@ -66,12 +66,12 @@ extension RecordsRepo {
   
   // MARK: - Delete
   
-  /// Delete record event in network
+  /// Delete case event in network
   /// - Parameters:
-  ///   - id: document id of the document
-  ///   - status: status of delete record event
+  ///   - id: case id of the case
+  ///   - status: status of delete case event
   ///   - message: message describing details if any
-  func deleteRecordEvent(
+  func deleteCaseEvent(
     id: String?,
     status: EventStatusMonitor,
     message: String? = nil,
@@ -83,7 +83,7 @@ extension RecordsRepo {
         "id": id
       ],
       eventType: .serverDelete,
-      entityType: .record,
+      entityType: .caseEntity,
       status: status,
       platform: .network,
       userOid: userOid
@@ -91,3 +91,4 @@ extension RecordsRepo {
     CoreInitConfigurations.shared.delegate?.receiveEvent(eventLog: eventLog)
   }
 }
+

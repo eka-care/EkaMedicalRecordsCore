@@ -159,14 +159,24 @@ extension RecordsRepo {
       partnerMeta: nil,
     )
     
-    casesService.createCases(oid: oid, request: request) {  result, statusCode in
+    casesService.createCases(oid: oid, request: request) { [weak self] result, statusCode in
+      guard let self else { return }
       switch result {
       case .success(let caseDetails):
         EkaMedicalRecordsCoreLogger.capture("Case successfully created on the server.")
+        createCaseEvent(
+          id: caseId,
+          status: .success
+        )
         completion(.success(caseDetails))
         
       case .failure(let error):
         EkaMedicalRecordsCoreLogger.capture("Failed to create case on server: \(error.localizedDescription)")
+        createCaseEvent(
+          id: caseId,
+          status: .failure,
+          message: error.localizedDescription
+        )
         completion(.failure(error))
       }
     }
@@ -182,13 +192,23 @@ extension RecordsRepo {
     oid: String,
     completion: @escaping (Result<Bool, Error>) -> Void
   ) {
-    casesService.delete(caseId: caseId, oid: oid) { result, error in
+    casesService.delete(caseId: caseId, oid: oid) { [weak self] result, error in
+      guard let self else { return }
       switch result {
       case .success:
         EkaMedicalRecordsCoreLogger.capture("Case deleted successfully")
+        deleteCaseEvent(
+          id: caseId,
+          status: .success
+        )
         completion(.success(true))
       case .failure(let error):
         EkaMedicalRecordsCoreLogger.capture("Failed to delete Case: \(error.localizedDescription)")
+        deleteCaseEvent(
+          id: caseId,
+          status: .failure,
+          message: error.localizedDescription
+        )
         completion(.failure(error))
       }
     }
@@ -213,13 +233,23 @@ extension RecordsRepo {
       occuredAt: updateCase.occuredAt?.toEpochInt()
     )
     
-    casesService.updateCases(caseId: caseId, oid: oid, request: request) { result, error in
+    casesService.updateCases(caseId: caseId, oid: oid, request: request) { [weak self] result, error in
+      guard let self else { return }
       switch result {
       case .success:
         EkaMedicalRecordsCoreLogger.capture("Case updated successfully")
+        updateCaseEvent(
+          id: caseId,
+          status: .success
+        )
         completion(.success(true))
       case .failure(let error):
         EkaMedicalRecordsCoreLogger.capture("Failed to update Case: \(error.localizedDescription)")
+        updateCaseEvent(
+          id: caseId,
+          status: .failure,
+          message: error.localizedDescription
+        )
         completion(.failure(error))
       }
     }
