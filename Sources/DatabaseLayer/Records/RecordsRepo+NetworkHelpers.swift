@@ -76,7 +76,7 @@ extension RecordsRepo {
       guard let self else { return }
       if let error {
         createRecordEvent(
-          id: response?.batchResponses?.first?.documentID,
+          id: documentID,
           status: .failure,
           message: error.errorDescription,
           userOid: userOid ?? ""
