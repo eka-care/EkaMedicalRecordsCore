@@ -22,15 +22,13 @@ extension RecordsRepo {
     userOid: String
   ) {
     guard let id else { return }
-    let eventLog = EventLog(
-      params: [
-        "id": id
-      ],
-      eventType: .serverCreate,
+    let eventLog = EventLog.create(
+      id: id,
       entityType: .record,
-      message: message,
-      status: status,
+      eventType: .serverCreate,
       platform: .network,
+      status: status,
+      message: message,
       userOid: userOid
     )
     CoreInitConfigurations.shared.delegate?.receiveEvent(eventLog: eventLog)
@@ -50,15 +48,13 @@ extension RecordsRepo {
     userOid: String
   ) {
     guard let id else { return }
-    let eventLog = EventLog(
-      params: [
-        "id": id
-      ],
-      eventType: .serverUpdate,
+    let eventLog = EventLog.create(
+      id: id,
       entityType: .record,
-      message: message,
-      status: status,
+      eventType: .serverUpdate,
       platform: .network,
+      status: status,
+      message: message,
       userOid: userOid
     )
     CoreInitConfigurations.shared.delegate?.receiveEvent(eventLog: eventLog)
@@ -78,14 +74,13 @@ extension RecordsRepo {
     userOid: String
   ) {
     guard let id else { return }
-    let eventLog = EventLog(
-      params: [
-        "id": id
-      ],
-      eventType: .serverDelete,
+    let eventLog = EventLog.create(
+      id: id,
       entityType: .record,
-      status: status,
+      eventType: .serverDelete,
       platform: .network,
+      status: status,
+      message: message,
       userOid: userOid
     )
     CoreInitConfigurations.shared.delegate?.receiveEvent(eventLog: eventLog)

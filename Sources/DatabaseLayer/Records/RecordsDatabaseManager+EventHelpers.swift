@@ -22,15 +22,13 @@ extension RecordsDatabaseManager {
     userOid: String
   ) {
     guard let id else { return }
-    let eventLog = EventLog(
-      params: [
-        "id": id
-      ],
-      eventType: .dbCreate,
+    let eventLog = EventLog.create(
+      id: id,
       entityType: .record,
-      message: message,
-      status: status,
+      eventType: .dbCreate,
       platform: .database,
+      status: status,
+      message: message,
       userOid: userOid
     )
     CoreInitConfigurations.shared.delegate?.receiveEvent(eventLog: eventLog)
@@ -48,14 +46,13 @@ extension RecordsDatabaseManager {
     userOid: String
   ) {
     guard let id else { return }
-    let eventLog = EventLog(
-      params: [
-        "id": id
-      ],
-      eventType: .dbUpdate,
+    let eventLog = EventLog.create(
+      id: id,
       entityType: .record,
-      status: status,
+      eventType: .dbUpdate,
       platform: .database,
+      status: status,
+      message: message,
       userOid: userOid
     )
     CoreInitConfigurations.shared.delegate?.receiveEvent(eventLog: eventLog)
@@ -73,14 +70,13 @@ extension RecordsDatabaseManager {
     userOid: String
   ) {
     guard let id else { return }
-    let eventLog = EventLog(
-      params: [
-        "id": id
-      ],
-      eventType: .dbDelete,
+    let eventLog = EventLog.create(
+      id: id,
       entityType: .record,
-      status: status,
+      eventType: .dbDelete,
       platform: .database,
+      status: status,
+      message: message,
       userOid: userOid
     )
     CoreInitConfigurations.shared.delegate?.receiveEvent(eventLog: eventLog)
@@ -100,15 +96,13 @@ extension RecordsDatabaseManager {
     userOid: String
   ) {
     guard let id else { return }
-    let eventLog = EventLog(
-      params: [
-        "id": id
-      ],
-      eventType: .dbCreate,
+    let eventLog = EventLog.create(
+      id: id,
       entityType: .caseEntity,
-      message: message,
-      status: status,
+      eventType: .dbCreate,
       platform: .database,
+      status: status,
+      message: message,
       userOid: userOid
     )
     CoreInitConfigurations.shared.delegate?.receiveEvent(eventLog: eventLog)
@@ -126,15 +120,13 @@ extension RecordsDatabaseManager {
     userOid: String
   ) {
     guard let id else { return }
-    let eventLog = EventLog(
-      params: [
-        "id": id
-      ],
-      eventType: .dbUpdate,
+    let eventLog = EventLog.create(
+      id: id,
       entityType: .caseEntity,
-      message: message,
-      status: status,
+      eventType: .dbUpdate,
       platform: .database,
+      status: status,
+      message: message,
       userOid: userOid
     )
     CoreInitConfigurations.shared.delegate?.receiveEvent(eventLog: eventLog)
@@ -152,14 +144,13 @@ extension RecordsDatabaseManager {
     userOid: String
   ) {
     guard let id else { return }
-    let eventLog = EventLog(
-      params: [
-        "id": id
-      ],
-      eventType: .dbDelete,
+    let eventLog = EventLog.create(
+      id: id,
       entityType: .caseEntity,
-      status: status,
+      eventType: .dbDelete,
       platform: .database,
+      status: status,
+      message: message,
       userOid: userOid
     )
     CoreInitConfigurations.shared.delegate?.receiveEvent(eventLog: eventLog)

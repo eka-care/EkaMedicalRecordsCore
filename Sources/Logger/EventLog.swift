@@ -95,3 +95,27 @@ public enum EventEntityType: String {
   case record
   case caseEntity
 }
+
+// MARK: - Factory Method
+
+extension EventLog {
+  static func create(
+    id: String,
+    entityType: EventEntityType,
+    eventType: EventType,
+    platform: EventPlatform,
+    status: EventStatusMonitor,
+    message: String? = nil,
+    userOid: String
+  ) -> EventLog {
+    EventLog(
+      params: ["id": id],
+      eventType: eventType,
+      entityType: entityType,
+      message: message,
+      status: status,
+      platform: platform,
+      userOid: userOid
+    )
+  }
+}
