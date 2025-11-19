@@ -145,20 +145,10 @@ extension RecordsDatabaseManager {
             // Update existing record
             EkaMedicalRecordsCoreLogger.capture("Document id of document being updated is \(record.documentID)")
             existingRecord.update(from: record)
-            updateRecordEvent(
-              id: record.documentID,
-              status: .success,
-              userOid: record.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
-            )
           } else {
             // Create new record
             let newRecord = Record(context: self.backgroundContext)
             newRecord.update(from: record)
-            createRecordEvent(
-              id: record.documentID,
-              status: .success,
-              userOid: record.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
-            )
           }
         } catch {
           EkaMedicalRecordsCoreLogger.capture("Error fetching record: \(error)")
@@ -216,19 +206,7 @@ extension RecordsDatabaseManager {
             to: newRecord,
             documentURIs: record.documentURIs
           )
-          self.createRecordEvent(
-            id: newRecord.documentID,
-            status: .success,
-            userOid: record.oid  ?? ""
-          )
           EkaMedicalRecordsCoreLogger.capture("Record added successfully!")
-        } else {
-          self.createRecordEvent(
-            id: newRecord.documentID,
-            status: .failure,
-            message: "Failed to save record",
-            userOid: record.oid ?? ""
-          )
         }
         
         DispatchQueue.main.async {
@@ -710,12 +688,6 @@ extension RecordsDatabaseManager {
           let records = try self.backgroundContext.fetch(fetchRequest)
           guard let record = records.first else {
             EkaMedicalRecordsCoreLogger.capture("Record not found for document ID: \(documentID)")
-            self.updateRecordEvent(
-              id: documentID,
-              status: .failure,
-              message: "Record not found",
-              userOid: documentOid ?? ""
-            )
             return
           }
           
@@ -753,31 +725,9 @@ extension RecordsDatabaseManager {
             context: self.backgroundContext,
             operation: .updateRecord,
             recordId: documentID
-          ) { [weak self] success in
-            guard let self = self else { return }
-            if success {
-              self.updateRecordEvent(
-                id: record.documentID,
-                status: .success,
-                userOid: record.oid ?? ""
-              )
-            } else {
-              self.updateRecordEvent(
-                id: documentID,
-                status: .failure,
-                message: "Failed to save record",
-                userOid: record.oid ??  ""
-              )
-            }
-          }
+          ) { _ in }
         } catch {
           EkaMedicalRecordsCoreLogger.capture("Failed to fetch or update record: \(error)")
-          self.updateRecordEvent(
-            id: documentID,
-            status: .failure,
-            message: error.localizedDescription,
-            userOid: documentOid ?? ""
-          )
         }
       }
     }
@@ -837,23 +787,7 @@ extension RecordsDatabaseManager {
         context: self.backgroundContext,
         operation: .deleteRecord,
         recordId: recordId
-      ) { [weak self] success in
-        guard let self = self else { return }
-        if success {
-          self.deleteRecordEvent(
-            id: recordId,
-            status: .success,
-            userOid: record.oid ?? ""
-          )
-        } else {
-          self.deleteRecordEvent(
-            id: recordId,
-            status: .failure,
-            message: "Failed to delete record",
-            userOid: record.oid ?? ""
-          )
-        }
-      }
+      ) { _ in }
     }
   }
   

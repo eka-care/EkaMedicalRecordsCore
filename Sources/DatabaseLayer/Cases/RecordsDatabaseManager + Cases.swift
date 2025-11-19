@@ -19,20 +19,9 @@ extension RecordsDatabaseManager {
     do {
       try container.viewContext.save()
       EkaMedicalRecordsCoreLogger.capture("Case added successfully!")
-      createCaseEvent(
-        id: newCase.caseID ?? "",
-        status: .success,
-        userOid: newCase.oid ?? ""
-      )
       return newCase
     } catch {
       EkaMedicalRecordsCoreLogger.capture("Error saving record: \(error.localizedDescription)")
-      createCaseEvent(
-        id: newCase.caseID ?? "",
-        status: .failure,
-        message: error.localizedDescription,
-        userOid: newCase.oid ??  ""
-      )
       return newCase
     }
   }
@@ -90,19 +79,8 @@ extension RecordsDatabaseManager {
     caseModel.update(from: caseArguementModel)
     do {
       try container.viewContext.save()
-      updateCaseEvent(
-        id: caseModel.caseID ?? "",
-        status: .success,
-        userOid: caseModel.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
-      )
     } catch {
       EkaMedicalRecordsCoreLogger.capture("No able to update case \(error.localizedDescription)")
-      updateCaseEvent(
-        id: caseModel.caseID ?? "",
-        status: .failure,
-        message: error.localizedDescription,
-        userOid: caseModel.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
-      )
     }
   }
 }
@@ -115,23 +93,11 @@ extension RecordsDatabaseManager {
   func deleteCase(
     caseModel: CaseModel
   ) {
-    let userOid = caseModel.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
     container.viewContext.delete(caseModel)
     do {
       try container.viewContext.save()
-      deleteCaseEvent(
-        id: caseModel.caseID ?? "",
-        status: .success,
-        userOid: userOid
-      )
     } catch {
       EkaMedicalRecordsCoreLogger.capture("Error in deleting case \(error.localizedDescription)")
-      deleteCaseEvent(
-        id: caseModel.caseID ?? "",
-        status: .failure,
-        message: error.localizedDescription,
-        userOid: userOid
-      )
     }
   }
 }
@@ -160,20 +126,10 @@ extension RecordsDatabaseManager {
             // Update existing record
             EkaMedicalRecordsCoreLogger.capture("cased updated for \(existingCase.caseID ?? "")")
             existingCase.update(from: caseEntry)
-            updateCaseEvent(
-              id: existingCase.caseID ?? "",
-              status: .success,
-              userOid: existingCase.oid ?? ""
-            )
           } else {
             // Create new record
             let newCase = CaseModel(context: self.backgroundContext)
             newCase.update(from: caseEntry)
-            createCaseEvent(
-              id: newCase.caseID ?? "",
-              status: .success,
-              userOid: newCase.oid ?? ""
-            )
           }
         } catch {
           EkaMedicalRecordsCoreLogger.capture("Error fetching record: \(error)")
