@@ -16,23 +16,22 @@ extension RecordsDatabaseManager {
   func createCase(from model: CaseArguementModel) -> CaseModel {
     let newCase = CaseModel(context: container.viewContext)
     newCase.update(from: model)
-    let caseId = newCase.caseID ?? newCase.objectID.uriRepresentation().absoluteString
     do {
       try container.viewContext.save()
       EkaMedicalRecordsCoreLogger.capture("Case added successfully!")
       createCaseEvent(
-        id: caseId,
+        id: newCase.caseID ?? "",
         status: .success,
-        userOid: newCase.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
+        userOid: newCase.oid ?? ""
       )
       return newCase
     } catch {
       EkaMedicalRecordsCoreLogger.capture("Error saving record: \(error.localizedDescription)")
       createCaseEvent(
-        id: caseId,
+        id: newCase.caseID ?? "",
         status: .failure,
         message: error.localizedDescription,
-        userOid: newCase.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
+        userOid: newCase.oid ??  ""
       )
       return newCase
     }
@@ -88,19 +87,18 @@ extension RecordsDatabaseManager {
     caseModel: CaseModel,
     caseArguementModel: CaseArguementModel
   ) {
-    let caseId = caseModel.caseID ?? caseModel.objectID.uriRepresentation().absoluteString
     caseModel.update(from: caseArguementModel)
     do {
       try container.viewContext.save()
       updateCaseEvent(
-        id: caseId,
+        id: caseModel.caseID ?? "",
         status: .success,
         userOid: caseModel.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
       )
     } catch {
       EkaMedicalRecordsCoreLogger.capture("No able to update case \(error.localizedDescription)")
       updateCaseEvent(
-        id: caseId,
+        id: caseModel.caseID ?? "",
         status: .failure,
         message: error.localizedDescription,
         userOid: caseModel.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
@@ -117,20 +115,19 @@ extension RecordsDatabaseManager {
   func deleteCase(
     caseModel: CaseModel
   ) {
-    let caseId = caseModel.caseID ?? caseModel.objectID.uriRepresentation().absoluteString
     let userOid = caseModel.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
     container.viewContext.delete(caseModel)
     do {
       try container.viewContext.save()
       deleteCaseEvent(
-        id: caseId,
+        id: caseModel.caseID ?? "",
         status: .success,
         userOid: userOid
       )
     } catch {
       EkaMedicalRecordsCoreLogger.capture("Error in deleting case \(error.localizedDescription)")
       deleteCaseEvent(
-        id: caseId,
+        id: caseModel.caseID ?? "",
         status: .failure,
         message: error.localizedDescription,
         userOid: userOid
@@ -167,7 +164,7 @@ extension RecordsDatabaseManager {
             updateCaseEvent(
               id: caseId,
               status: .success,
-              userOid: existingCase.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
+              userOid: existingCase.oid ?? ""
             )
           } else {
             // Create new record
@@ -177,7 +174,7 @@ extension RecordsDatabaseManager {
             createCaseEvent(
               id: caseId,
               status: .success,
-              userOid: newCase.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
+              userOid: newCase.oid ?? ""
             )
           }
         } catch {

@@ -79,7 +79,7 @@ extension RecordsRepo {
           id: response?.batchResponses?.first?.documentID,
           status: .failure,
           message: error.errorDescription,
-          userOid: userOid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
+          userOid: userOid ?? ""
         )
         completion(response, error)
         return
@@ -88,7 +88,7 @@ extension RecordsRepo {
         createRecordEvent(
           id: response.batchResponses?.first?.documentID,
           status: .success,
-          userOid: userOid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
+          userOid: userOid ??  ""
         )
         completion(response, error)
       }
@@ -250,7 +250,7 @@ extension RecordsRepo {
         updateRecordEvent(
           id: documentID,
           status: .success,
-          userOid: documentFilterId ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
+          userOid: documentFilterId
         )
         completion(true)
       case .failure(let error):
@@ -259,7 +259,7 @@ extension RecordsRepo {
           id: documentID,
           status: .failure,
           message: error.localizedDescription,
-          userOid: documentFilterId ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
+          userOid: documentFilterId
         )
         completion(false)
       }
