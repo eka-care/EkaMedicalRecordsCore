@@ -158,11 +158,10 @@ extension RecordsDatabaseManager {
         do {
           if let existingCase = try self.backgroundContext.fetch(fetchRequest).first {
             // Update existing record
-            let caseId = caseEntry.caseId ?? existingCase.objectID.uriRepresentation().absoluteString
-            EkaMedicalRecordsCoreLogger.capture("cased updated for \(caseId)")
+            EkaMedicalRecordsCoreLogger.capture("cased updated for \(existingCase.caseID ?? "")")
             existingCase.update(from: caseEntry)
             updateCaseEvent(
-              id: caseId,
+              id: existingCase.caseID ?? "",
               status: .success,
               userOid: existingCase.oid ?? ""
             )
@@ -170,9 +169,8 @@ extension RecordsDatabaseManager {
             // Create new record
             let newCase = CaseModel(context: self.backgroundContext)
             newCase.update(from: caseEntry)
-            let caseId = caseEntry.caseId ?? newCase.objectID.uriRepresentation().absoluteString
             createCaseEvent(
-              id: caseId,
+              id: newCase.caseID ?? "",
               status: .success,
               userOid: newCase.oid ?? ""
             )

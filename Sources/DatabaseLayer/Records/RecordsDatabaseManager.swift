@@ -217,17 +217,17 @@ extension RecordsDatabaseManager {
             documentURIs: record.documentURIs
           )
           self.createRecordEvent(
-            id: newRecord.id.debugDescription,
+            id: newRecord.documentID,
             status: .success,
-            userOid: record.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
+            userOid: record.oid  ?? ""
           )
           EkaMedicalRecordsCoreLogger.capture("Record added successfully!")
         } else {
           self.createRecordEvent(
-            id: newRecord.id.debugDescription,
+            id: newRecord.documentID,
             status: .failure,
             message: "Failed to save record",
-            userOid: record.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
+            userOid: record.oid ?? ""
           )
         }
         
@@ -714,7 +714,7 @@ extension RecordsDatabaseManager {
               id: documentID,
               status: .failure,
               message: "Record not found",
-              userOid: documentOid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
+              userOid: documentOid ?? ""
             )
             return
           }
@@ -759,14 +759,14 @@ extension RecordsDatabaseManager {
               self.updateRecordEvent(
                 id: record.documentID,
                 status: .success,
-                userOid: documentOid ?? record.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
+                userOid: record.oid ?? ""
               )
             } else {
               self.updateRecordEvent(
                 id: documentID,
                 status: .failure,
                 message: "Failed to save record",
-                userOid: documentOid ?? record.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
+                userOid: record.oid ??  ""
               )
             }
           }
@@ -776,7 +776,7 @@ extension RecordsDatabaseManager {
             id: documentID,
             status: .failure,
             message: error.localizedDescription,
-            userOid: documentOid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
+            userOid: documentOid ?? ""
           )
         }
       }
@@ -843,14 +843,14 @@ extension RecordsDatabaseManager {
           self.deleteRecordEvent(
             id: recordId,
             status: .success,
-            userOid: record.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
+            userOid: record.oid ?? ""
           )
         } else {
           self.deleteRecordEvent(
             id: recordId,
             status: .failure,
             message: "Failed to delete record",
-            userOid: record.oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
+            userOid: record.oid ?? ""
           )
         }
       }

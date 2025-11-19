@@ -126,7 +126,7 @@ extension RecordsRepo {
         deleteRecordEvent(
           id: documentID,
           status: .success,
-          userOid: oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
+          userOid: oid ?? ""
         )
         EkaMedicalRecordsCoreLogger.capture("Record deleted successfully from v3")
         completion(true, statusCode)
@@ -135,7 +135,7 @@ extension RecordsRepo {
           id: documentID,
           status: .failure,
           message: error.localizedDescription,
-          userOid: oid ?? CoreInitConfigurations.shared.primaryFilterID ?? ""
+          userOid: oid ?? ""
         )
         EkaMedicalRecordsCoreLogger.capture("Failed to delete record \(error.localizedDescription)")
         completion(false, statusCode)
