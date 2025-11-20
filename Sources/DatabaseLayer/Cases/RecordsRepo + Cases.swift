@@ -25,10 +25,21 @@ extension RecordsRepo {
       switch result {
       case .success:
         isRemoteCreated = true
+        createCaseEvent(
+          id: localCase.caseID,
+          status: .success,
+          userOid: localCase.oid
+        )
       case .failure(let error):
         isRemoteCreated = false
         EkaMedicalRecordsCoreLogger.capture(
           "Failed to create case on server: \(error.localizedDescription)"
+        )
+        createCaseEvent(
+          id: localCase.caseID,
+          status: .failure,
+          message: error.localizedDescription,
+          userOid: localCase.oid
         )
       }
       
@@ -81,12 +92,23 @@ extension RecordsRepo {
           caseModel: caseModel,
           caseArguementModel: updatedArg
         )
+        self?.updateCaseEvent(
+          id: caseId,
+          status: .success,
+          userOid: oid
+        )
       case .failure(let error):
         EkaMedicalRecordsCoreLogger.capture("Failed to update case \(caseId) on server: \(error.localizedDescription)")
         updatedArg.isEdited = true
         self?.databaseManager.updateCase(
           caseModel: caseModel,
           caseArguementModel: updatedArg
+        )
+        self?.updateCaseEvent(
+          id: caseId,
+          status: .failure,
+          message: error.localizedDescription,
+          userOid: oid
         )
       }
     }
@@ -113,8 +135,19 @@ extension RecordsRepo {
         // Delete locally
         databaseManager.deleteCase(caseModel: caseModel)
         EkaMedicalRecordsCoreLogger.capture("Case \(caseId) deleted successfully from server.")
+        deleteCaseEvent(
+          id: caseId,
+          status: .success,
+          userOid: oid
+        )
       case .failure(let error):
         EkaMedicalRecordsCoreLogger.capture("Failed to delete case \(caseId) from server: \(error.localizedDescription)")
+        deleteCaseEvent(
+          id: caseId,
+          status: .failure,
+          message: error.localizedDescription,
+          userOid: oid
+        )
       }
     }
   }

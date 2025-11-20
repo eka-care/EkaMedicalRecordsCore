@@ -11,6 +11,7 @@ public enum RecordUploadErrorType {
   case recordCountMetaDataMismatch
   case uploadLimitReached
   case duplicateDocumentUpload
+  case unknown(message: String, statusCode: Int)
   
   var errorDescription: String {
     switch self {
@@ -24,6 +25,17 @@ public enum RecordUploadErrorType {
       return "upload limit has been exceeded"
     case .duplicateDocumentUpload:
       return "Document already uploaded"
+    case .unknown(message: let message, statusCode: let code):
+      return "(Status Code: \(code)) Error: \(message) "
+    }
+  }
+  
+  var isUploadLimitReached: Bool {
+    switch self {
+    case .uploadLimitReached:
+      return true
+    default:
+      return false
     }
   }
   

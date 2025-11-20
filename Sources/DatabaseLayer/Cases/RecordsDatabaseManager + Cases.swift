@@ -19,9 +19,18 @@ extension RecordsDatabaseManager {
     do {
       try container.viewContext.save()
       EkaMedicalRecordsCoreLogger.capture("Case added successfully!")
+      createCaseEvent(
+        id: newCase.caseID,
+        status: .success
+      )
       return newCase
     } catch {
       EkaMedicalRecordsCoreLogger.capture("Error saving record: \(error.localizedDescription)")
+      createCaseEvent(
+        id: model.caseId,
+        status: .failure,
+        message: error.localizedDescription
+      )
       return newCase
     }
   }
@@ -76,11 +85,21 @@ extension RecordsDatabaseManager {
     caseModel: CaseModel,
     caseArguementModel: CaseArguementModel
   ) {
+    let caseId = caseModel.caseID
     caseModel.update(from: caseArguementModel)
     do {
       try container.viewContext.save()
+      updateCaseEvent(
+        id: caseId,
+        status: .success
+      )
     } catch {
       EkaMedicalRecordsCoreLogger.capture("No able to update case \(error.localizedDescription)")
+      updateCaseEvent(
+        id: caseId,
+        status: .failure,
+        message: error.localizedDescription
+      )
     }
   }
 }
@@ -93,11 +112,21 @@ extension RecordsDatabaseManager {
   func deleteCase(
     caseModel: CaseModel
   ) {
+    let caseId = caseModel.caseID
     container.viewContext.delete(caseModel)
     do {
       try container.viewContext.save()
+      deleteCaseEvent(
+        id: caseId,
+        status: .success
+      )
     } catch {
       EkaMedicalRecordsCoreLogger.capture("Error in deleting case \(error.localizedDescription)")
+      deleteCaseEvent(
+        id: caseId,
+        status: .failure,
+        message: error.localizedDescription
+      )
     }
   }
 }
@@ -123,24 +152,29 @@ extension RecordsDatabaseManager {
         
         do {
           if let existingCase = try self.backgroundContext.fetch(fetchRequest).first {
-            // Update existing record
+            // Update existing case
             EkaMedicalRecordsCoreLogger.capture("cased updated for \(caseEntry.caseId ?? "")")
             existingCase.update(from: caseEntry)
-//            updateRecordEvent(
-//              id: record.documentID ?? existingRecord.objectID.uriRepresentation().absoluteString,
-//              status: .success
-//            )
+            updateCaseEvent(
+              id: caseEntry.caseId ?? existingCase.caseID,
+              status: .success
+            )
           } else {
-            // Create new record
+            // Create new case
             let newCase = CaseModel(context: self.backgroundContext)
             newCase.update(from: caseEntry)
-//            createRecordEvent(
-//              id: record.documentID,
-//              status: .success
-//            )
+            createCaseEvent(
+              id: caseEntry.caseId,
+              status: .success
+            )
           }
         } catch {
           EkaMedicalRecordsCoreLogger.capture("Error fetching record: \(error)")
+          updateCaseEvent(
+            id: caseEntry.caseId,
+            status: .failure,
+            message: error.localizedDescription
+          )
         }
       }
       
@@ -152,6 +186,14 @@ extension RecordsDatabaseManager {
         }
       } catch {
         EkaMedicalRecordsCoreLogger.capture("Error saving cases: \(error)")
+        // Log failure for all cases in the batch
+        for caseEntry in cases {
+          updateCaseEvent(
+            id: caseEntry.caseId,
+            status: .failure,
+            message: "Failed to save batch: \(error.localizedDescription)"
+          )
+        }
         DispatchQueue.main.async {
           completion()
         }
