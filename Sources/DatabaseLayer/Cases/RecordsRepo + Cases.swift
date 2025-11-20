@@ -26,9 +26,9 @@ extension RecordsRepo {
       case .success:
         isRemoteCreated = true
         createCaseEvent(
-          id: localCase.caseID,
+          id: localCase.caseID ?? "",
           status: .success,
-          userOid: localCase.oid
+          userOid: localCase.oid ?? CoreInitConfigurations.shared.ownerID ?? ""
         )
       case .failure(let error):
         isRemoteCreated = false
@@ -36,10 +36,10 @@ extension RecordsRepo {
           "Failed to create case on server: \(error.localizedDescription)"
         )
         createCaseEvent(
-          id: localCase.caseID,
+          id: localCase.caseID ?? "",
           status: .failure,
           message: error.localizedDescription,
-          userOid: localCase.oid
+          userOid: localCase.oid ?? CoreInitConfigurations.shared.ownerID ?? ""
         )
       }
       

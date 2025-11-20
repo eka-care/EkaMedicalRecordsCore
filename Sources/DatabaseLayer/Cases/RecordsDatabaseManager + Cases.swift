@@ -20,16 +20,18 @@ extension RecordsDatabaseManager {
       try container.viewContext.save()
       EkaMedicalRecordsCoreLogger.capture("Case added successfully!")
       createCaseEvent(
-        id: newCase.caseID,
-        status: .success
+        id: newCase.caseID ?? "",
+        status: .success,
+        userOid: newCase.oid ?? model.oid ?? CoreInitConfigurations.shared.ownerID ?? ""
       )
       return newCase
     } catch {
       EkaMedicalRecordsCoreLogger.capture("Error saving record: \(error.localizedDescription)")
       createCaseEvent(
-        id: model.caseId,
+        id: model.caseId ?? "",
         status: .failure,
-        message: error.localizedDescription
+        message: error.localizedDescription,
+        userOid: model.oid ?? CoreInitConfigurations.shared.ownerID ?? ""
       )
       return newCase
     }
@@ -85,20 +87,23 @@ extension RecordsDatabaseManager {
     caseModel: CaseModel,
     caseArguementModel: CaseArguementModel
   ) {
-    let caseId = caseModel.caseID
+    let caseId = caseModel.caseID ?? ""
+    let caseOid = caseModel.oid ?? caseArguementModel.oid ?? CoreInitConfigurations.shared.ownerID ?? ""
     caseModel.update(from: caseArguementModel)
     do {
       try container.viewContext.save()
       updateCaseEvent(
         id: caseId,
-        status: .success
+        status: .success,
+        userOid: caseOid
       )
     } catch {
       EkaMedicalRecordsCoreLogger.capture("No able to update case \(error.localizedDescription)")
       updateCaseEvent(
         id: caseId,
         status: .failure,
-        message: error.localizedDescription
+        message: error.localizedDescription,
+        userOid: caseOid
       )
     }
   }
@@ -112,20 +117,23 @@ extension RecordsDatabaseManager {
   func deleteCase(
     caseModel: CaseModel
   ) {
-    let caseId = caseModel.caseID
+    let caseId = caseModel.caseID ?? ""
+    let caseOid = caseModel.oid ?? CoreInitConfigurations.shared.ownerID ?? ""
     container.viewContext.delete(caseModel)
     do {
       try container.viewContext.save()
       deleteCaseEvent(
         id: caseId,
-        status: .success
+        status: .success,
+        userOid: caseOid
       )
     } catch {
       EkaMedicalRecordsCoreLogger.capture("Error in deleting case \(error.localizedDescription)")
       deleteCaseEvent(
         id: caseId,
         status: .failure,
-        message: error.localizedDescription
+        message: error.localizedDescription,
+        userOid: caseOid
       )
     }
   }
@@ -156,24 +164,27 @@ extension RecordsDatabaseManager {
             EkaMedicalRecordsCoreLogger.capture("cased updated for \(caseEntry.caseId ?? "")")
             existingCase.update(from: caseEntry)
             updateCaseEvent(
-              id: caseEntry.caseId ?? existingCase.caseID,
-              status: .success
+              id: existingCase.caseID ?? "",
+              status: .success,
+              userOid: existingCase.oid ?? caseEntry.oid ?? CoreInitConfigurations.shared.ownerID ?? ""
             )
           } else {
             // Create new case
             let newCase = CaseModel(context: self.backgroundContext)
             newCase.update(from: caseEntry)
             createCaseEvent(
-              id: caseEntry.caseId,
-              status: .success
+              id: caseEntry.caseId ?? "",
+              status: .success,
+              userOid: caseEntry.oid ?? CoreInitConfigurations.shared.ownerID ?? ""
             )
           }
         } catch {
           EkaMedicalRecordsCoreLogger.capture("Error fetching record: \(error)")
           updateCaseEvent(
-            id: caseEntry.caseId,
+            id: caseEntry.caseId ?? "",
             status: .failure,
-            message: error.localizedDescription
+            message: error.localizedDescription,
+            userOid: caseEntry.oid ?? CoreInitConfigurations.shared.ownerID ?? ""
           )
         }
       }
@@ -189,9 +200,10 @@ extension RecordsDatabaseManager {
         // Log failure for all cases in the batch
         for caseEntry in cases {
           updateCaseEvent(
-            id: caseEntry.caseId,
+            id: caseEntry.caseId ?? "",
             status: .failure,
-            message: "Failed to save batch: \(error.localizedDescription)"
+            message: "Failed to save batch: \(error.localizedDescription)",
+            userOid: caseEntry.oid ?? CoreInitConfigurations.shared.ownerID ?? ""
           )
         }
         DispatchQueue.main.async {

@@ -16,12 +16,11 @@ extension RecordsDatabaseManager {
   ///   - status: status of create record event
   ///   - message: message describing details if any
   func createRecordEvent(
-    id: String?,
+    id: String,
     status: EventStatusMonitor,
     message: String? = nil,
-    userOid: String? = nil
+    userOid: String
   ) {
-    guard let id else { return }
     let eventLog = EventLog(
       params: [
         "id": id
@@ -44,12 +43,11 @@ extension RecordsDatabaseManager {
   ///   - status: status of update record event
   ///   - message: message describing details if any
   func updateRecordEvent(
-    id: String?,
+    id: String,
     status: EventStatusMonitor,
     message: String? = nil,
-    userOid: String? = nil
+    userOid: String
   ) {
-    guard let id else { return }
     let eventLog = EventLog(
       params: [
         "id": id
@@ -72,12 +70,11 @@ extension RecordsDatabaseManager {
   ///   - status: status of delete record event
   ///   - message: message describing details if any
   func deleteRecordEvent(
-    id: String?,
+    id: String,
     status: EventStatusMonitor,
     message: String? = nil,
-    userOid: String? = nil
+    userOid: String
   ) {
-    guard let id else { return }
     let eventLog = EventLog(
       params: [
         "id": id
@@ -104,12 +101,11 @@ extension RecordsDatabaseManager {
   ///   - status: status of create case event
   ///   - message: message describing details if any
   func createCaseEvent(
-    id: String?,
+    id: String,
     status: EventStatusMonitor,
     message: String? = nil,
-    userOid: String? = nil
+    userOid: String
   ) {
-    guard let id else { return }
     let eventLog = EventLog(
       params: [
         "id": id
@@ -132,12 +128,11 @@ extension RecordsDatabaseManager {
   ///   - status: status of update case event
   ///   - message: message describing details if any
   func updateCaseEvent(
-    id: String?,
+    id: String,
     status: EventStatusMonitor,
     message: String? = nil,
-    userOid: String? = nil
+    userOid: String
   ) {
-    guard let id else { return }
     let eventLog = EventLog(
       params: [
         "id": id
@@ -160,12 +155,11 @@ extension RecordsDatabaseManager {
   ///   - status: status of delete case event
   ///   - message: message describing details if any
   func deleteCaseEvent(
-    id: String?,
+    id: String,
     status: EventStatusMonitor,
     message: String? = nil,
-    userOid: String? = nil
+    userOid: String
   ) {
-    guard let id else { return }
     let eventLog = EventLog(
       params: [
         "id": id
