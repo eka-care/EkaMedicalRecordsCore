@@ -22,7 +22,7 @@ extension RecordsDatabaseManager {
       createCaseEvent(
         id: newCase.caseID ?? "",
         status: .success,
-        userOid: newCase.oid ?? model.oid ?? CoreInitConfigurations.shared.ownerID ?? ""
+        userOid: newCase.oid ?? ""
       )
       return newCase
     } catch {
@@ -31,7 +31,7 @@ extension RecordsDatabaseManager {
         id: model.caseId ?? "",
         status: .failure,
         message: error.localizedDescription,
-        userOid: model.oid ?? CoreInitConfigurations.shared.ownerID ?? ""
+        userOid: model.oid ??  ""
       )
       return newCase
     }
@@ -88,7 +88,7 @@ extension RecordsDatabaseManager {
     caseArguementModel: CaseArguementModel
   ) {
     let caseId = caseModel.caseID ?? ""
-    let caseOid = caseModel.oid ?? caseArguementModel.oid ?? CoreInitConfigurations.shared.ownerID ?? ""
+    let caseOid = caseModel.oid ?? caseArguementModel.oid ?? ""
     caseModel.update(from: caseArguementModel)
     do {
       try container.viewContext.save()
@@ -118,7 +118,7 @@ extension RecordsDatabaseManager {
     caseModel: CaseModel
   ) {
     let caseId = caseModel.caseID ?? ""
-    let caseOid = caseModel.oid ?? CoreInitConfigurations.shared.ownerID ?? ""
+    let caseOid = caseModel.oid ?? ""
     container.viewContext.delete(caseModel)
     do {
       try container.viewContext.save()
@@ -166,7 +166,7 @@ extension RecordsDatabaseManager {
             updateCaseEvent(
               id: existingCase.caseID ?? "",
               status: .success,
-              userOid: existingCase.oid ?? caseEntry.oid ?? CoreInitConfigurations.shared.ownerID ?? ""
+              userOid: existingCase.oid ?? ""
             )
           } else {
             // Create new case
@@ -175,7 +175,7 @@ extension RecordsDatabaseManager {
             createCaseEvent(
               id: caseEntry.caseId ?? "",
               status: .success,
-              userOid: caseEntry.oid ?? CoreInitConfigurations.shared.ownerID ?? ""
+              userOid: caseEntry.oid ?? ""
             )
           }
         } catch {
@@ -184,7 +184,7 @@ extension RecordsDatabaseManager {
             id: caseEntry.caseId ?? "",
             status: .failure,
             message: error.localizedDescription,
-            userOid: caseEntry.oid ?? CoreInitConfigurations.shared.ownerID ?? ""
+            userOid: caseEntry.oid ?? ""
           )
         }
       }
@@ -203,7 +203,7 @@ extension RecordsDatabaseManager {
             id: caseEntry.caseId ?? "",
             status: .failure,
             message: "Failed to save batch: \(error.localizedDescription)",
-            userOid: caseEntry.oid ?? CoreInitConfigurations.shared.ownerID ?? ""
+            userOid: caseEntry.oid ?? ""
           )
         }
         DispatchQueue.main.async {
