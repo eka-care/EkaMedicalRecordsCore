@@ -126,7 +126,7 @@ final class RecordUploadManager {
         } else if statusCode == 409 {
           recordUploadError = .duplicateDocumentUpload
         } else {
-          recordUploadError = .emptyFormResponse
+          recordUploadError = .unknown(message: error.localizedDescription, statusCode: statusCode ?? -1 )
         }
         recordUploadCompletion(nil, recordUploadError)
       }

@@ -147,7 +147,8 @@ extension RecordsDatabaseManager {
             existingRecord.update(from: record)
             updateRecordEvent(
               id: record.documentID,
-              status: .success
+              status: .success,
+              userOid: record.oid ?? ""
             )
           } else {
             // Create new record
@@ -155,7 +156,8 @@ extension RecordsDatabaseManager {
             newRecord.update(from: record)
             createRecordEvent(
               id: record.documentID,
-              status: .success
+              status: .success,
+              userOid: record.oid ??  ""
             )
           }
         } catch {
@@ -214,10 +216,19 @@ extension RecordsDatabaseManager {
             to: newRecord,
             documentURIs: record.documentURIs
           )
-          self.createRecordEvent(id: newRecord.id.debugDescription, status: .success)
+          self.createRecordEvent(
+            id: newRecord.documentID ?? "",
+            status: .success,
+            userOid: newRecord.oid ?? ""
+          )
           EkaMedicalRecordsCoreLogger.capture("Record added successfully!")
         } else {
-          self.createRecordEvent(id: newRecord.id.debugDescription, status: .failure, message: "Failed to save record")
+          self.createRecordEvent(
+            id: newRecord.documentID ?? "",
+            status: .failure,
+            message: "Failed to save record",
+            userOid: newRecord.oid ?? ""
+          )
         }
         
         DispatchQueue.main.async {
@@ -702,7 +713,8 @@ extension RecordsDatabaseManager {
             self.updateRecordEvent(
               id: documentID,
               status: .failure,
-              message: "Record not found"
+              message: "Record not found",
+              userOid: documentOid ?? ""
             )
             return
           }
@@ -745,14 +757,16 @@ extension RecordsDatabaseManager {
             guard let self = self else { return }
             if success {
               self.updateRecordEvent(
-                id: record.documentID,
-                status: .success
+                id: record.documentID ?? "",
+                status: .success,
+                userOid: record.oid ?? ""
               )
             } else {
               self.updateRecordEvent(
                 id: documentID,
                 status: .failure,
-                message: "Failed to save record"
+                message: "Failed to save record",
+                userOid: record.oid ?? ""
               )
             }
           }
@@ -761,7 +775,8 @@ extension RecordsDatabaseManager {
           self.updateRecordEvent(
             id: documentID,
             status: .failure,
-            message: error.localizedDescription
+            message: error.localizedDescription,
+            userOid: documentOid  ?? ""
           )
         }
       }
@@ -812,7 +827,7 @@ extension RecordsDatabaseManager {
   func deleteRecord(record: Record) {
     let objectID = record.objectID
     let recordId = record.documentID ?? objectID.uriRepresentation().absoluteString
-    
+    let oid = record.oid ?? ""
     backgroundContext.perform { [weak self] in
       guard let self else { return }
       let backgroundRecord = self.backgroundContext.object(with: objectID)
@@ -827,13 +842,15 @@ extension RecordsDatabaseManager {
         if success {
           self.deleteRecordEvent(
             id: recordId,
-            status: .success
+            status: .success,
+            userOid: oid
           )
         } else {
           self.deleteRecordEvent(
             id: recordId,
             status: .failure,
-            message: "Failed to delete record"
+            message: "Failed to delete record",
+            userOid: oid
           )
         }
       }

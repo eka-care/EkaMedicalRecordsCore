@@ -5,6 +5,12 @@
 //  Created by Arya Vashisht on 29/05/25.
 //
 
+/// Entity Type for event logging
+public enum EventEntityType: String {
+  case records
+  case cases
+}
+
 /// Event Log structure
 public struct EventLog {
   /// Any extra information
@@ -19,6 +25,8 @@ public struct EventLog {
   public let platform: EventPlatform
   /// User Oid
   public let userOid: String?
+  /// Entity type (Records or Cases)
+  public let entityType: EventEntityType
   
   public init(
     params: [String : Any]? = nil,
@@ -26,7 +34,8 @@ public struct EventLog {
     message: String? = nil,
     status: EventStatusMonitor,
     platform: EventPlatform,
-    userOid: String? = nil
+    userOid: String? = nil,
+    entityType: EventEntityType = .records
   ) {
     self.params = params
     self.eventType = eventType
@@ -34,6 +43,7 @@ public struct EventLog {
     self.status = status
     self.platform = platform
     self.userOid = userOid
+    self.entityType = entityType
   }
 }
 
@@ -44,17 +54,23 @@ public enum EventType: String {
   case update
   case delete
   
-  public var eventName: String {
+  public func eventName(for entityType: EventEntityType) -> String {
+    let entityPrefix = entityType == .cases ? "Cases" : "Records"
     switch self {
     case .create:
-      return "Records_iOS_SDK_CREATE"
+      return "\(entityPrefix)_iOS_SDK_CREATE"
     case .read:
-      return "Records_iOS_SDK_READ"
+      return "\(entityPrefix)_iOS_SDK_READ"
     case .update:
-      return "Records_iOS_SDK_UPDATE"
+      return "\(entityPrefix)_iOS_SDK_UPDATE"
     case .delete:
-      return "Records_iOS_SDK_DELETE"
+      return "\(entityPrefix)_iOS_SDK_DELETE"
     }
+  }
+  
+  @available(*, deprecated, message: "Use eventName(for:) instead")
+  public var eventName: String {
+    return eventName(for: .records)
   }
 }
 
@@ -63,7 +79,6 @@ public enum EventStatusMonitor: String {
   case success
   case failure
 }
-
 /// Event platform
 public enum EventPlatform: String {
   case database
