@@ -84,7 +84,7 @@ public final class RecordsRepo {
         return
       }
       /// Add records to the database in batches
-      databaseAdapter.convertNetworkToDatabaseModels(from: recordItems) { [weak self] databaseInsertModels in
+      databaseAdapter.convertNetworkToDatabaseModels(from: recordItems, oid: oid) { [weak self] databaseInsertModels in
         guard let self else { 
           completion(false, nil)
           return
@@ -135,7 +135,7 @@ public final class RecordsRepo {
         return
       }
       /// Upload to vault
-      self.uploadRecord(record: addedRecord) { record, errorType in
+      self.uploadRecord(record: addedRecord, oid: record.oid) { record, errorType in
         didAddRecord(record, errorType)
       }
     }
@@ -158,6 +158,7 @@ public final class RecordsRepo {
  
   public func uploadRecord(
       record: Record,
+      oid: String,
       completion didUploadRecord: @escaping (Record?, RecordUploadErrorType?) -> Void
   ) {
     /// Update the upload sync status
@@ -173,7 +174,7 @@ public final class RecordsRepo {
       recordType: record.documentType, recordURLs: documentURIs,
       documentDate: record.documentDate?.toEpochInt(),
       contentType: FileType.getFileTypeFromFilePath(filePath: documentURIs.first ?? "")?.fileExtension ?? "",
-      userOid: record.oid,
+      userOid: oid,
       linkedCases: casesLinkedToRecord
     ) {
       [weak self] uploadFormsResponse,
@@ -189,12 +190,14 @@ public final class RecordsRepo {
       
       
       guard error == nil, let uploadFormsResponse else {
-        let isDocumentIsOnServer = uploadFormsResponse?.batchResponses?.first?.errorDetails?.code == "409"
+        let isDocumentIsOnServer = error?.isDocumentAlreadyUploaded == true
         
         databaseManager.updateRecord(documentID: documentId,syncStatus: isDocumentIsOnServer  ? RecordSyncState.upload(success: true) :  RecordSyncState.upload(success: false))
+        
+        let isDeleteNeeded = error?.isEmptyFormResponse == true && error?.isfailedToUploadFiles == true
         /// Make delete api record call so that its not availabe on server
-        if let docId = uploadFormsResponse?.batchResponses?.first?.documentID, !isDocumentIsOnServer  {
-          deleteRecordV3(documentID: docId, oid: record.oid)
+        if isDeleteNeeded, let documentId = record.documentID  {
+          deleteRecordV3(documentID: documentId, oid: record.oid)
         }
         didUploadRecord(nil, error)
         return
@@ -627,7 +630,7 @@ extension RecordsRepo {
           
           for record in records {
               uploadGroup.enter()
-              self.uploadRecord(record: record) { uploadedRecord, errorType in
+            self.uploadRecord(record: record, oid: record.oid ?? "") { uploadedRecord, errorType in
                   if uploadedRecord == nil {
                       let uploadError = ErrorHelper.createError(
                           domain: .sync,

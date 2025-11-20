@@ -21,7 +21,7 @@ public struct RecordModel {
   public var syncState: RecordSyncState?
   public var isAnalyzing: Bool?
   public var isSmart: Bool?
-  public var oid: String?
+  public var oid: String
   public var thumbnail: String?
   public var updatedAt: Date?
   public var uploadDate: Date?
@@ -39,7 +39,7 @@ public struct RecordModel {
     syncState: RecordSyncState? = nil,
     isAnalyzing: Bool? = nil,
     isSmart: Bool? = nil,
-    oid: String? = nil,
+    oid: String,
     thumbnail: String? = nil,
     updatedAt: Date? = nil,
     uploadDate: Date? = nil,
@@ -109,6 +109,7 @@ public final class RecordDatabaseAdapter {
   /// This is to convert network array of models to database models
   func convertNetworkToDatabaseModels(
     from networkModels: [RecordItemElement],
+    oid: String,
     completion: @escaping ([RecordModel]) -> Void
   ) {
     var insertModels = [RecordModel]()
@@ -116,7 +117,7 @@ public final class RecordDatabaseAdapter {
     let dispatchGroup = DispatchGroup()
     networkModels.forEach { networkModel in
       dispatchGroup.enter()
-      convertNetworkModelToInsertModel(from: networkModel) { insertModel in
+      convertNetworkModelToInsertModel(from: networkModel, oid: oid) { insertModel in
         insertModels.append(insertModel)
         dispatchGroup.leave()
       }
@@ -148,7 +149,7 @@ extension RecordDatabaseAdapter {
     guard let recordsPath = FileHelper.writeMultipleDataToDocumentDirectoryAndGetFileNames(
       data,
       fileExtension: contentTypeString
-    ) else { return RecordModel() }
+    ) else { return RecordModel( oid: CoreInitConfigurations.shared.primaryFilterID ?? "") }
     
     /// Add document to database
     /// Generate thumbnail for the record
@@ -165,12 +166,12 @@ extension RecordDatabaseAdapter {
           ) else {
       
       EkaMedicalRecordsCoreLogger.capture("Database entry denied as record thumbnail is not present")
-      return RecordModel()
+      return RecordModel(oid: CoreInitConfigurations.shared.primaryFilterID ?? "")
     }
     
     return RecordModel(
       documentType: documentType, // other type
-      oid: CoreInitConfigurations.shared.primaryFilterID,
+      oid: CoreInitConfigurations.shared.primaryFilterID ?? "",
       thumbnail: thumbnailUrl,
       updatedAt: Date(), // Current date
       uploadDate: Date(), // Current date
@@ -206,9 +207,10 @@ extension RecordDatabaseAdapter {
   /// This is to convert single network model to database model
   private func convertNetworkModelToInsertModel(
     from networkModel: RecordItemElement,
+    oid: String,
     completion: @escaping (RecordModel) -> Void
   ) {
-    var insertModel = RecordModel()
+    var insertModel = RecordModel(oid: oid)
 
     if let documentDate = networkModel.recordDocument.item.metadata?.documentDate {
       insertModel.documentDate = documentDate.toDate()

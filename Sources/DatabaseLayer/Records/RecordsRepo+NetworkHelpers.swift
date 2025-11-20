@@ -59,14 +59,14 @@ extension RecordsRepo {
     documentDate: Int? = nil,
     contentType: String,
     isLinkedWithAbha: Bool? = false,
-    userOid: String? = nil,
+    userOid: String,
     linkedCases: [String]? = nil,
     completion: @escaping (DocUploadFormsResponse?, RecordUploadErrorType?) -> Void
   ) {
     guard let recordURLs,
           let documentsMetaData = RecordUploadManager.formDocumentsMetaData(recordsPath: recordURLs, contentType: contentType) else {
       EkaMedicalRecordsCoreLogger.capture("Invalid record URLs or failed to form documents metadata")
-      completion(nil, .invalidInput)
+      completion(nil, .unknown(message: "Invalid record URLs or failed to form documents metadata", statusCode: -1))
       return
     }
     
@@ -81,7 +81,7 @@ extension RecordsRepo {
       userOid: userOid
     ) { [weak self] response,error in
       guard let self else {
-        completion(nil, .unknown)
+        completion(nil, .unknown(message: "self Deallocated", statusCode: -1))
         return
       }
       if let error {
@@ -89,7 +89,7 @@ extension RecordsRepo {
           id: documentID,
           status: .failure,
           message: error.errorDescription,
-          userOid: userOid ?? ""
+          userOid: userOid
         )
         completion(response, error)
         return
@@ -98,7 +98,7 @@ extension RecordsRepo {
         createRecordEvent(
           id: documentID,
           status: .success,
-          userOid: userOid ?? ""
+          userOid: userOid
         )
         completion(response, error)
       } else {
@@ -108,9 +108,9 @@ extension RecordsRepo {
           id: documentID,
           status: .failure,
           message: "No response received from server",
-          userOid: userOid ?? ""
+          userOid: userOid
         )
-        completion(nil, .unknown)
+        completion(response, error)
       }
     }
   }

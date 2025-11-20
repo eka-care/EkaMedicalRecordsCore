@@ -26,10 +26,9 @@ final class RecordUploadManager {
     documentDate: Int?,
     linkedCases: [String]? = nil,
     isLinkedWithAbha: Bool? = nil,
-    userOid: String? = nil,
+    userOid: String,
     recordUploadCompletion: @escaping RecordUploadCompletion
   ) {
-    var documentIDs = [String]()
     var recordUploadError: RecordUploadErrorType?
     
     /// Making Batch Request
@@ -61,7 +60,10 @@ final class RecordUploadManager {
     /// Network Call
     service.uploadRecords(uploadRequest: request, oid: request.batchRequest.first?.patientOID) { [weak self] result, statusCode in
       
-      guard let self else { return }
+      guard let self else {
+        recordUploadCompletion(nil, .failedToUploadFiles)
+        return
+      }
       
       switch result {
       case .success(let response):
@@ -105,11 +107,6 @@ final class RecordUploadManager {
                 recordUploadError = .failedToUploadFiles
               } else {
                 EkaMedicalRecordsCoreLogger.capture("Submitted file - \(nestedFiles[batchResponseIndex].name)")
-                if let documentID = response.documentID {
-                  if !documentIDs.contains(documentID) {
-                    documentIDs.append(documentID)
-                  }
-                }
               }
             }
           }
@@ -203,7 +200,7 @@ final class RecordUploadManager {
     documentDate: Int?,
     linkedCases: [String]?,
     isLinkedWithAbha: Bool?,
-    userOid: String? = nil
+    userOid: String
   ) -> [DocUploadRequest.BatchRequest] {
     var batchRequests: [DocUploadRequest.BatchRequest] = []
     var filesMetaData: [DocUploadRequest.FileMetaData] = []
@@ -221,7 +218,7 @@ final class RecordUploadManager {
       documentID: documentID,
       documentType: recordType,
       documentDate: documentDate,
-      patientOID: userOid ?? CoreInitConfigurations.shared.primaryFilterID,
+      patientOID: userOid,
       cases: linkedCases,
       tags: tags,
       files: filesMetaData
