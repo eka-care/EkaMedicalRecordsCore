@@ -524,9 +524,11 @@ public final class RecordsRepo {
       }
       /// Only delete from database if server deletion was successful and returned 204
       if success && statusCode == 204 {
+        deleteCaseEvent(id: documentID, status: .success, userOid: record.oid ?? "")
         databaseManager.deleteRecord(record: record)
         completion(true)
       } else {
+        deleteCaseEvent(id: documentID, status: .failure, userOid: record.oid ?? "")
         EkaMedicalRecordsCoreLogger.capture("Server deletion failed or didn't return 204. Status code: \(statusCode ?? -1)")
         completion(false)
       }
