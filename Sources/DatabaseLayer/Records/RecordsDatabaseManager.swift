@@ -148,7 +148,7 @@ extension RecordsDatabaseManager {
             updateRecordEvent(
               id: record.documentID,
               status: .success,
-              userOid: record.oid ?? CoreInitConfigurations.shared.ownerID ?? ""
+              userOid: record.oid ?? ""
             )
           } else {
             // Create new record
@@ -157,7 +157,7 @@ extension RecordsDatabaseManager {
             createRecordEvent(
               id: record.documentID,
               status: .success,
-              userOid: record.oid ?? CoreInitConfigurations.shared.ownerID ?? ""
+              userOid: record.oid ??  ""
             )
           }
         } catch {
@@ -219,7 +219,7 @@ extension RecordsDatabaseManager {
           self.createRecordEvent(
             id: newRecord.documentID ?? "",
             status: .success,
-            userOid: newRecord.oid ?? CoreInitConfigurations.shared.ownerID ?? ""
+            userOid: newRecord.oid ?? ""
           )
           EkaMedicalRecordsCoreLogger.capture("Record added successfully!")
         } else {
@@ -227,7 +227,7 @@ extension RecordsDatabaseManager {
             id: newRecord.documentID ?? "",
             status: .failure,
             message: "Failed to save record",
-            userOid: newRecord.oid ?? CoreInitConfigurations.shared.ownerID ?? ""
+            userOid: newRecord.oid ?? ""
           )
         }
         
@@ -827,7 +827,7 @@ extension RecordsDatabaseManager {
   func deleteRecord(record: Record) {
     let objectID = record.objectID
     let recordId = record.documentID ?? objectID.uriRepresentation().absoluteString
-    
+    let oid = record.oid ?? ""
     backgroundContext.perform { [weak self] in
       guard let self else { return }
       let backgroundRecord = self.backgroundContext.object(with: objectID)
@@ -839,19 +839,18 @@ extension RecordsDatabaseManager {
         recordId: recordId
       ) { [weak self] success in
         guard let self = self else { return }
-        let recordOid = (try? self.backgroundContext.existingObject(with: objectID) as? Record)?.oid ?? CoreInitConfigurations.shared.ownerID ?? ""
         if success {
           self.deleteRecordEvent(
             id: recordId,
             status: .success,
-            userOid: recordOid
+            userOid: oid
           )
         } else {
           self.deleteRecordEvent(
             id: recordId,
             status: .failure,
             message: "Failed to delete record",
-            userOid: recordOid
+            userOid: oid
           )
         }
       }
