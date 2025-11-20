@@ -23,7 +23,10 @@ extension RecordsRepo {
       updatedAt: updatedAt,
       oid: oid
     ) { [weak self] result, metaData in
-      guard self != nil else { return }
+      guard self != nil else {
+        completion(nil, nil, [], NSError(domain: "RecordsRepo", code: -1, userInfo: [NSLocalizedDescriptionKey: "Self deallocated"]))
+        return
+      }
       switch result {
       case .success(let response):
         let recordsItems = response.items
@@ -61,7 +64,11 @@ extension RecordsRepo {
     completion: @escaping (DocUploadFormsResponse?, RecordUploadErrorType?) -> Void
   ) {
     guard let recordURLs,
-          let documentsMetaData = RecordUploadManager.formDocumentsMetaData(recordsPath: recordURLs, contentType: contentType) else { return }
+          let documentsMetaData = RecordUploadManager.formDocumentsMetaData(recordsPath: recordURLs, contentType: contentType) else {
+      EkaMedicalRecordsCoreLogger.capture("Invalid record URLs or failed to form documents metadata")
+      completion(nil, .invalidInput)
+      return
+    }
     
     uploadManager.uploadRecordsToVault(
       documentID: documentID,
@@ -73,7 +80,10 @@ extension RecordsRepo {
       isLinkedWithAbha: isLinkedWithAbha,
       userOid: userOid
     ) { [weak self] response,error in
-      guard let self else { return }
+      guard let self else {
+        completion(nil, .unknown)
+        return
+      }
       if let error {
         createRecordEvent(
           id: documentID,
@@ -91,6 +101,16 @@ extension RecordsRepo {
           userOid: userOid ?? ""
         )
         completion(response, error)
+      } else {
+        // No error but also no response - unexpected case
+        EkaMedicalRecordsCoreLogger.capture("Upload completed but no response received")
+        createRecordEvent(
+          id: documentID,
+          status: .failure,
+          message: "No response received from server",
+          userOid: userOid ?? ""
+        )
+        completion(nil, .unknown)
       }
     }
   }
@@ -150,10 +170,14 @@ extension RecordsRepo {
   func fetchFileDetails(
     oid: String?,
     documentID: String?,
-    completion: @escaping (DocFetchResponse) -> Void
+    completion: @escaping (DocFetchResponse?) -> Void
   ) {
     guard let documentID,
-          let oid else { return }
+          let oid else {
+      EkaMedicalRecordsCoreLogger.capture("Missing documentID or oid for fetchFileDetails")
+      completion(nil)
+      return
+    }
     service.fetchDocDetails(
       documentId: documentID,
       oid: oid
@@ -163,6 +187,7 @@ extension RecordsRepo {
         completion(response)
       case .failure(let error):
         EkaMedicalRecordsCoreLogger.capture("Error in fetching file details \(error.localizedDescription)")
+        completion(nil)
       }
     }
   }
@@ -172,7 +197,10 @@ extension RecordsRepo {
     files: [File]?,
     completion: @escaping ([String]) -> Void
   ) {
-    guard let files else { return }
+    guard let files else {
+      completion([])
+      return
+    }
     var documentURIs: [String] = []
     let dispatchGroup = DispatchGroup()
     for file in files {
@@ -227,6 +255,7 @@ extension RecordsRepo {
     guard let documentID,
           let documentFilterId else {
       EkaMedicalRecordsCoreLogger.capture("Document ID not found while editing record")
+      completion(false)
       return
     }
     /// Set document type - use the documentType string directly
@@ -243,7 +272,10 @@ extension RecordsRepo {
       filterOID: documentFilterId,
       request: request
     ) { [weak self] result, statusCode in
-      guard let self else { return }
+      guard let self else {
+        completion(false)
+        return
+      }
       switch result {
       case .success:
         EkaMedicalRecordsCoreLogger.capture("Updated document")

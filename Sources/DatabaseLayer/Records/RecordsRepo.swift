@@ -265,10 +265,16 @@ public final class RecordsRepo {
     completion: @escaping (_ documentURIs: [String], _ reportInfo: SmartReportInfo?) -> Void
   ) {
     getFileDetails(record: record) { [weak self] docResponse in
-      guard let self else { return }
+      guard let self else {
+        completion([], nil)
+        return
+      }
       /// Get documentURIs
       fetchDocumentURIs(files: docResponse?.files) { [weak self] documentURIs in
-        guard let self else { return }
+        guard let self else {
+          completion([], nil)
+          return
+        }
         databaseManager.addFileDetails(
           to: record,
           documentURIs: record.toRecordMeta?.count == 0 ? documentURIs : nil, /// update document uris only if they are not already present
@@ -287,7 +293,11 @@ public final class RecordsRepo {
     record: Record,
     completion: @escaping (DocFetchResponse?) -> Void
   ) {
-    guard let documentID = record.documentID else { return }
+    guard let documentID = record.documentID else {
+      EkaMedicalRecordsCoreLogger.capture("Document ID is nil for getFileDetails")
+      completion(nil)
+      return
+    }
     fetchFileDetails(oid: record.oid ,documentID: documentID, completion: completion)
   }
   
@@ -548,7 +558,10 @@ extension RecordsRepo {
   /// Used to fetch updated at for the latest
   func fetchLatestRecordUpdatedAtString(oid: String, completion: @escaping (String?) -> Void) {
     fetchLatestRecord(oid: oid) { [weak self] record in
-      guard let self else { return }
+      guard let self else {
+        completion(nil)
+        return
+      }
       let updatedAt = fetchUpdatedAtFromRecord(record: record)
       completion(updatedAt)
     }

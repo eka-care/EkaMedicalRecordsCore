@@ -243,8 +243,10 @@ extension RecordDatabaseAdapter {
       formLocalThumbnailFileNameFromNetworkURL(
         networkUrlString: thumbnail
       ) { localFileName in
-        guard let localFileName else { return }
-        insertModel.thumbnail = localFileName
+        if let localFileName {
+          insertModel.thumbnail = localFileName
+        }
+        // Always call completion even if thumbnail download failed
         completion(insertModel)
       }
     } else {
@@ -256,7 +258,11 @@ extension RecordDatabaseAdapter {
     networkUrlString: String,
     completion: @escaping (String?) -> Void
   ) {
-    guard let networkUrl = URL(string: networkUrlString) else { return }
+    guard let networkUrl = URL(string: networkUrlString) else {
+      EkaMedicalRecordsCoreLogger.capture("Invalid thumbnail URL: \(networkUrlString)")
+      completion(nil)
+      return
+    }
     FileHelper.downloadData(from: networkUrl) { thumbnailData, error in
       if let thumbnailData {
         let localThumbnailURL = FileHelper.writeDataToDocumentDirectoryAndGetFileName(
@@ -264,6 +270,9 @@ extension RecordDatabaseAdapter {
           fileExtension: FileType.image.fileExtension
         )
         completion(localThumbnailURL)
+      } else {
+        EkaMedicalRecordsCoreLogger.capture("Failed to download thumbnail: \(error?.localizedDescription ?? "Unknown error")")
+        completion(nil)
       }
     }
   }
