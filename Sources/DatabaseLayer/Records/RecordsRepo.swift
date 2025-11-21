@@ -193,11 +193,9 @@ public final class RecordsRepo {
         let isDocumentIsOnServer = error?.isDocumentAlreadyUploaded == true
         
         databaseManager.updateRecord(documentID: documentId,syncStatus: isDocumentIsOnServer  ? RecordSyncState.upload(success: true) :  RecordSyncState.upload(success: false))
-        
-        let isDeleteNeeded = error?.isEmptyFormResponse == true && error?.isfailedToUploadFiles == true
         /// Make delete api record call so that its not availabe on server
-        if isDeleteNeeded, let documentId = record.documentID  {
-          deleteRecordV3(documentID: documentId, oid: record.oid)
+        if let docId = uploadFormsResponse?.batchResponses?.first?.documentID, !isDocumentIsOnServer  {
+          deleteRecordV3(documentID: docId, oid: record.oid)
         }
         didUploadRecord(nil, error)
         return

@@ -72,7 +72,7 @@ final class RecordUploadManager {
         guard let batchResponses = response.batchResponses, !batchResponses.isEmpty else {
           recordUploadError = .emptyFormResponse
           EkaMedicalRecordsCoreLogger.capture("Received empty or nil BatchResponse")
-          recordUploadCompletion(nil, recordUploadError)
+          recordUploadCompletion(response, recordUploadError)
           return
         }
         
