@@ -309,7 +309,10 @@ extension RecordsRepo {
   ///   - completion: Completion handler with updatedAt string.
   func fetchLatestCasesUpdatedAtString(oid: String, completion: @escaping (String?) -> Void) {
     fetchLatestCases(oid: oid) { [weak self] recievedCase in
-      guard let self else { return }
+      guard let self else {
+        completion(nil)
+        return
+      }
       let updatedAt = fetchUpdatedAtFromCases(recievedCase: recievedCase)
       completion(updatedAt)
     }
