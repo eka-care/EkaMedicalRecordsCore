@@ -84,7 +84,7 @@ public final class RecordsRepo {
         return
       }
       /// Add records to the database in batches
-      databaseAdapter.convertNetworkToDatabaseModels(from: recordItems) { [weak self] databaseInsertModels in
+      databaseAdapter.convertNetworkToDatabaseModels(from: recordItems, oid: oid) { [weak self] databaseInsertModels in
         guard let self else { 
           completion(false, nil)
           return
@@ -135,7 +135,7 @@ public final class RecordsRepo {
         return
       }
       /// Upload to vault
-      self.uploadRecord(record: addedRecord) { record, errorType in
+      self.uploadRecord(record: addedRecord, oid: record.oid) { record, errorType in
         didAddRecord(record, errorType)
       }
     }
@@ -158,6 +158,7 @@ public final class RecordsRepo {
  
   public func uploadRecord(
       record: Record,
+      oid: String,
       completion didUploadRecord: @escaping (Record?, RecordUploadErrorType?) -> Void
   ) {
     /// Update the upload sync status
@@ -173,7 +174,7 @@ public final class RecordsRepo {
       recordType: record.documentType, recordURLs: documentURIs,
       documentDate: record.documentDate?.toEpochInt(),
       contentType: FileType.getFileTypeFromFilePath(filePath: documentURIs.first ?? "")?.fileExtension ?? "",
-      userOid: record.oid,
+      userOid: oid,
       linkedCases: casesLinkedToRecord
     ) {
       [weak self] uploadFormsResponse,
@@ -189,7 +190,7 @@ public final class RecordsRepo {
       
       
       guard error == nil, let uploadFormsResponse else {
-        let isDocumentIsOnServer = uploadFormsResponse?.batchResponses?.first?.errorDetails?.code == "409"
+        let isDocumentIsOnServer = error?.isDocumentAlreadyUploaded == true
         
         databaseManager.updateRecord(documentID: documentId,syncStatus: isDocumentIsOnServer  ? RecordSyncState.upload(success: true) :  RecordSyncState.upload(success: false))
         /// Make delete api record call so that its not availabe on server
@@ -265,10 +266,16 @@ public final class RecordsRepo {
     completion: @escaping (_ documentURIs: [String], _ reportInfo: SmartReportInfo?) -> Void
   ) {
     getFileDetails(record: record) { [weak self] docResponse in
-      guard let self else { return }
+      guard let self else {
+        completion([], nil)
+        return
+      }
       /// Get documentURIs
       fetchDocumentURIs(files: docResponse?.files) { [weak self] documentURIs in
-        guard let self else { return }
+        guard let self else {
+          completion([], nil)
+          return
+        }
         databaseManager.addFileDetails(
           to: record,
           documentURIs: record.toRecordMeta?.count == 0 ? documentURIs : nil, /// update document uris only if they are not already present
@@ -287,7 +294,11 @@ public final class RecordsRepo {
     record: Record,
     completion: @escaping (DocFetchResponse?) -> Void
   ) {
-    guard let documentID = record.documentID else { return }
+    guard let documentID = record.documentID else {
+      EkaMedicalRecordsCoreLogger.capture("Document ID is nil for getFileDetails")
+      completion(nil)
+      return
+    }
     fetchFileDetails(oid: record.oid ,documentID: documentID, completion: completion)
   }
   
@@ -524,9 +535,11 @@ public final class RecordsRepo {
       }
       /// Only delete from database if server deletion was successful and returned 204
       if success && statusCode == 204 {
+        deleteCaseEvent(id: documentID, status: .success, userOid: record.oid ?? "")
         databaseManager.deleteRecord(record: record)
         completion(true)
       } else {
+        deleteCaseEvent(id: documentID, status: .failure, userOid: record.oid ?? "")
         EkaMedicalRecordsCoreLogger.capture("Server deletion failed or didn't return 204. Status code: \(statusCode ?? -1)")
         completion(false)
       }
@@ -546,7 +559,10 @@ extension RecordsRepo {
   /// Used to fetch updated at for the latest
   func fetchLatestRecordUpdatedAtString(oid: String, completion: @escaping (String?) -> Void) {
     fetchLatestRecord(oid: oid) { [weak self] record in
-      guard let self else { return }
+      guard let self else {
+        completion(nil)
+        return
+      }
       let updatedAt = fetchUpdatedAtFromRecord(record: record)
       completion(updatedAt)
     }
@@ -612,11 +628,11 @@ extension RecordsRepo {
           
           for record in records {
               uploadGroup.enter()
-              self.uploadRecord(record: record) { uploadedRecord, errorType in
+            self.uploadRecord(record: record, oid: record.oid ?? "") { uploadedRecord, errorType in
                   if uploadedRecord == nil {
                       let uploadError = ErrorHelper.createError(
                           domain: .sync,
-                          code: errorType == .uploadLimitReached ? .uploadLimitReached : .networkRequestFailed ,
+                          code: errorType?.isUploadLimitReached ?? false ? .uploadLimitReached : .networkRequestFailed ,
                           message: "Failed to upload record: \(record.documentID ?? "unknown")"
                       )
                       errorsQueue.async(flags: .barrier) {
