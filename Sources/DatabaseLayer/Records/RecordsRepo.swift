@@ -135,7 +135,7 @@ public final class RecordsRepo {
         return
       }
       /// Upload to vault
-      self.uploadRecord(record: addedRecord, oid: record.oid) { record, errorType in
+      self.uploadRecord(record: addedRecord) { record, errorType in
         didAddRecord(record, errorType)
       }
     }
@@ -158,7 +158,6 @@ public final class RecordsRepo {
  
   public func uploadRecord(
       record: Record,
-      oid: String,
       completion didUploadRecord: @escaping (Record?, RecordUploadErrorType?) -> Void
   ) {
     /// Update the upload sync status
@@ -174,7 +173,7 @@ public final class RecordsRepo {
       recordType: record.documentType, recordURLs: documentURIs,
       documentDate: record.documentDate?.toEpochInt(),
       contentType: FileType.getFileTypeFromFilePath(filePath: documentURIs.first ?? "")?.fileExtension ?? "",
-      userOid: oid,
+      userOid: record.oid ?? "",
       linkedCases: casesLinkedToRecord
     ) {
       [weak self] uploadFormsResponse,
@@ -628,7 +627,7 @@ extension RecordsRepo {
           
           for record in records {
               uploadGroup.enter()
-            self.uploadRecord(record: record, oid: record.oid ?? "") { uploadedRecord, errorType in
+            self.uploadRecord(record: record) { uploadedRecord, errorType in
                   if uploadedRecord == nil {
                       let uploadError = ErrorHelper.createError(
                           domain: .sync,
