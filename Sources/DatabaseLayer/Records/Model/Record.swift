@@ -38,7 +38,6 @@ extension Record {
       self.uploadDate = uploadDate
     }
     
-    uploadDate = record.uploadDate
     oid = record.oid
     if let isEdited = record.isEdited {
       self.isEdited = isEdited
