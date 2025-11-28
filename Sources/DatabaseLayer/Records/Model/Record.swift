@@ -30,7 +30,7 @@ extension Record {
       self.thumbnail = thumbnail
     }
    
-    self.updatedAt = updatedAt
+    self.updatedAt = record.updatedAt
     
     if let uploadDate = record.uploadDate {
       self.uploadDate = uploadDate
