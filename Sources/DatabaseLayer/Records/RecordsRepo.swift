@@ -329,7 +329,7 @@ public final class RecordsRepo {
   /// - Returns: Array of unique document types
   public func getDocumentTypesList(caseID: String? = nil) -> [String] {
     let oid = CoreInitConfigurations.shared.filterID
-    let bid = CoreInitConfigurations.shared.ownerID
+    let bid = CoreInitConfigurations.shared.bID
     return databaseManager.getAllUniqueDocumentTypes(oid: oid,bid: bid,caseID: caseID)
   }
   

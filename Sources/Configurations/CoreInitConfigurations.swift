@@ -36,14 +36,14 @@ public class CoreInitConfigurations {
       AuthTokenHolder.shared.refreshToken = refreshToken
     }
   }
-  /// Primary FilterId
+  /// Primary FilterId /OID
   public var primaryFilterID: String?
     
-  /// Filter ID for records
+  /// Filter ID/ all merged OIDs for records
   public var filterID: [String]?
   
   /// Owner ID for records
-  public var ownerID: String?
+  public var bID: String?
   
   /// Request Interceptor
   public var requestInterceptor: Alamofire.RequestInterceptor = MRNetworkRequestInterceptor()
