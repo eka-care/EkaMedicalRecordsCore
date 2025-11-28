@@ -148,7 +148,7 @@ extension RecordsDatabaseManager {
             updateRecordEvent(
               id: record.documentID,
               status: .success,
-              userOid: record.oid ?? ""
+              userOid: record.oid
             )
           } else {
             // Create new record
@@ -157,7 +157,7 @@ extension RecordsDatabaseManager {
             createRecordEvent(
               id: record.documentID,
               status: .success,
-              userOid: record.oid ??  ""
+              userOid: record.oid
             )
           }
         } catch {

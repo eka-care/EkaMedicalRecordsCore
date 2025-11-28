@@ -22,9 +22,7 @@ extension CaseModel {
       associateCaseType(with: caseType)
     }
     
-    if let updatedAt = caseArguementModel.updatedAt {
-      self.updatedAt = updatedAt
-    }
+    self.updatedAt = updatedAt
     
     if let createdAt = caseArguementModel.createdAt {
       self.createdAt = createdAt
