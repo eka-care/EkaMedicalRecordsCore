@@ -364,6 +364,7 @@ public final class RecordsRepo {
     documentID: String,
     documentDate: Date? = nil,
     documentType: String? = nil,
+    updatedAt: Date? = nil,
     documentOid: String? = CoreInitConfigurations.shared.primaryFilterID,
     isEdited: Bool?,
     caseModels: [CaseModel]? = nil,
@@ -373,6 +374,7 @@ public final class RecordsRepo {
     databaseManager.updateRecord(
       documentID: documentID,
       documentDate: documentDate,
+      updatedAt: updatedAt,
       documentType: documentType,
       documentOid: documentOid,
       isEdited: isEdited,

@@ -690,6 +690,7 @@ extension RecordsDatabaseManager {
   func updateRecord(
       documentID: String,
       documentDate: Date? = nil,
+      updatedAt: Date? = nil,
       documentType: String? = nil,
       documentOid: String? = nil,
       syncStatus: RecordSyncState? = nil,
@@ -725,6 +726,10 @@ extension RecordsDatabaseManager {
             record.documentDate = documentDate
           }
          
+          if let updatedAt = updatedAt {
+            record.updatedAt = updatedAt
+          }
+          
           if let documentType {
             record.documentType = documentType
           }
