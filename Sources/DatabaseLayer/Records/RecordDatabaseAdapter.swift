@@ -173,8 +173,8 @@ extension RecordDatabaseAdapter {
       documentType: documentType, // other type
       oid: CoreInitConfigurations.shared.primaryFilterID ?? "",
       thumbnail: thumbnailUrl,
-      updatedAt: nil, // Current date
-      uploadDate: nil, // Current date
+      updatedAt: nil, 
+      uploadDate: Date(), // Current date
       documentURIs: recordsPath,
       contentType: contentType.fileExtension,
       caseModels: caseModels
