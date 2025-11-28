@@ -12,7 +12,7 @@
         <attribute name="isSmart" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="oid" optional="YES" attributeType="String"/>
         <attribute name="thumbnail" optional="YES" attributeType="String"/>
-        <attribute name="updatedAt" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="uploadDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <relationship name="toRecordMeta" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RecordMeta" inverseName="toRecord" inverseEntity="RecordMeta"/>
         <relationship name="toSmartReport" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="SmartReport" inverseName="toRecord" inverseEntity="SmartReport"/>

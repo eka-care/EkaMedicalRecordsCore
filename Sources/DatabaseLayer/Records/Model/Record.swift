@@ -29,8 +29,15 @@ extension Record {
     if let thumbnail = record.thumbnail {
       self.thumbnail = thumbnail
     }
-    updatedAt = record.updatedAt
-    uploadDate = record.uploadDate
+   
+    if let updatedAt = record.updatedAt {
+      self.updatedAt = updatedAt
+    }
+    
+    if let uploadDate = record.uploadDate {
+      self.uploadDate = uploadDate
+    }
+    
     oid = record.oid
     if let isEdited = record.isEdited {
       self.isEdited = isEdited
