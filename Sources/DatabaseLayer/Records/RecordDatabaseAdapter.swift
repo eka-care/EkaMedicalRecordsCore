@@ -31,6 +31,7 @@ public struct RecordModel {
   public var caseModels: [CaseModel]? // Array of case models for many-to-many relationship
   public var caseIDs: [String]? // Array of case IDs for lazy loading
   public var tags: [String]?
+  public var isLinkedWithABHA: Bool?
   
   public init(
     documentDate: Date? = nil,
@@ -48,7 +49,8 @@ public struct RecordModel {
     isEdited: Bool? = nil,
     caseModels: [CaseModel]? = nil,
     caseIDs: [String]? = nil,
-    tags: [String]? = nil
+    tags: [String]? = nil,
+    isLinkedWithABHA: Bool? = nil
   ) {
     self.documentID = UUID().uuidString
     self.documentDate = documentDate
@@ -67,6 +69,7 @@ public struct RecordModel {
     self.caseModels = caseModels
     self.caseIDs = caseIDs
     self.tags = tags
+    self.isLinkedWithABHA = isLinkedWithABHA
   }
 }
 
