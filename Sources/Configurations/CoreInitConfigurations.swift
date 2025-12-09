@@ -19,6 +19,8 @@ public class CoreInitConfigurations {
     blockedFeatures.compactMap({ MedicaRecordsFeatureRestriction(rawValue: $0) })
   }
   
+  public var enbleAbha: Bool = false
+  
   // MARK: - Properties
   
   public static let shared = CoreInitConfigurations()
