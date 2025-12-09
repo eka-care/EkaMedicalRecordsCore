@@ -10,6 +10,7 @@ struct DocUpdateRequest: Codable {
   let documentDate: Int?
   let cases: [String]?
   let tags: [String]?
+  let isAbhaLinked: Bool?
   
   enum CodingKeys: String, CodingKey {
     case oid
@@ -17,5 +18,6 @@ struct DocUpdateRequest: Codable {
     case documentDate = "dd_e"
     case cases
     case tags = "tg"
+    case isAbhaLinked = "ndhm"
   }
 }

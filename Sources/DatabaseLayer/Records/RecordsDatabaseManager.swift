@@ -697,7 +697,8 @@ extension RecordsDatabaseManager {
       isEdited: Bool? = nil,
       caseModels: [CaseModel]? = nil,
       tags: [String]? = nil,
-      isArchieved: Bool? = nil
+      isArchieved: Bool? = nil,
+      isAbhaLinked: Bool? = nil
     ) {
       backgroundContext.perform { [weak self] in
         guard let self = self else { return }
@@ -751,6 +752,10 @@ extension RecordsDatabaseManager {
           }
           if let isArchieved {
             record.isArchived = isArchieved
+          }
+          
+          if let isAbhaLinked {
+            record.isAbhaLinked = isAbhaLinked
           }
           
           // Save the changes to the database

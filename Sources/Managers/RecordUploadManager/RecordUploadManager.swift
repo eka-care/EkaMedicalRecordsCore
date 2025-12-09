@@ -25,8 +25,9 @@ final class RecordUploadManager {
     recordType: String?,
     documentDate: Int?,
     linkedCases: [String]? = nil,
-    isLinkedWithAbha: Bool? = nil,
+    isAbhaLinked: Bool? = nil,
     userOid: String,
+    isAbhaLinked: Bool? = nil,
     recordUploadCompletion: @escaping RecordUploadCompletion
   ) {
     var recordUploadError: RecordUploadErrorType?
@@ -39,7 +40,7 @@ final class RecordUploadManager {
       recordType: recordType,
       documentDate: documentDate,
       linkedCases: linkedCases,
-      isLinkedWithAbha: isLinkedWithAbha,
+      isAbhaLinked: isAbhaLinked,
       userOid: userOid
     )
     
@@ -199,7 +200,7 @@ final class RecordUploadManager {
     recordType: String?,
     documentDate: Int?,
     linkedCases: [String]?,
-    isLinkedWithAbha: Bool?,
+    isAbhaLinked: Bool?,
     userOid: String
   ) -> [DocUploadRequest.BatchRequest] {
     var batchRequests: [DocUploadRequest.BatchRequest] = []
@@ -221,7 +222,8 @@ final class RecordUploadManager {
       patientOID: userOid,
       cases: linkedCases,
       tags: tags,
-      files: filesMetaData
+      files: filesMetaData,
+      isAbhaLinked: isAbhaLinked
     )
     
     batchRequests.append(batchRequest)

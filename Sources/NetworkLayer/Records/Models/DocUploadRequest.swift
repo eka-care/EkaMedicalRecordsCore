@@ -25,6 +25,7 @@ struct DocUploadRequest: Codable {
     let cases: [String]?
     let tags: [String]?
     let files: [FileMetaData]?
+    let isAbhaLinked: Bool?
     
     enum CodingKeys: String, CodingKey {
       case documentType = "dt"
@@ -34,6 +35,7 @@ struct DocUploadRequest: Codable {
       case patientOID = "patient_oid"
       case files
       case documentID = "document_id"
+      case isAbhaLinked = "ndhm"
     }
     
     init(
@@ -43,7 +45,8 @@ struct DocUploadRequest: Codable {
       patientOID: String? = nil,
       cases: [String]? = nil,
       tags: [String]? = nil,
-      files: [DocUploadRequest.FileMetaData]? = nil
+      files: [DocUploadRequest.FileMetaData]? = nil,
+      isAbhaLinked: Bool? = false
     ) {
       self.documentID = documentID
       self.documentType = documentType
@@ -52,6 +55,7 @@ struct DocUploadRequest: Codable {
       self.cases = cases
       self.tags = tags
       self.files = files
+      self.isAbhaLinked = isAbhaLinked
     }
   }
   

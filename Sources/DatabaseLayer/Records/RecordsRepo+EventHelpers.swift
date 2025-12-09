@@ -46,7 +46,8 @@ extension RecordsRepo {
     id: String,
     status: EventStatusMonitor,
     message: String? = nil,
-    userOid: String
+    userOid: String,
+    isAbhaLinked: Bool? = nil
   ) {
     let eventLog = EventLog(
       params: [
@@ -57,7 +58,8 @@ extension RecordsRepo {
       status: status,
       platform: .network,
       userOid: userOid,
-      entityType: .records
+      entityType: .records,
+      isAbhaLinked: isAbhaLinked
     )
     CoreInitConfigurations.shared.delegate?.receiveEvent(eventLog: eventLog)
   }
