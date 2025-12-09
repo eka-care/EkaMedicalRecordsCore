@@ -27,7 +27,6 @@ final class RecordUploadManager {
     linkedCases: [String]? = nil,
     isAbhaLinked: Bool? = nil,
     userOid: String,
-    isAbhaLinked: Bool? = nil,
     recordUploadCompletion: @escaping RecordUploadCompletion
   ) {
     var recordUploadError: RecordUploadErrorType?

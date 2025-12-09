@@ -61,7 +61,6 @@ extension RecordsRepo {
     isAbhaLinked: Bool? = false,
     userOid: String,
     linkedCases: [String]? = nil,
-    isAbhaLinked: Bool? = nil,
     completion: @escaping (DocUploadFormsResponse?, RecordUploadErrorType?) -> Void
   ) {
     guard let recordURLs,
@@ -79,8 +78,7 @@ extension RecordsRepo {
       documentDate: documentDate,
       linkedCases: linkedCases,
       isAbhaLinked: isAbhaLinked,
-      userOid: userOid,
-      isAbhaLinked: isAbhaLinked
+      userOid: userOid
     ) { [weak self] response,error in
       guard let self else {
         completion(nil, .unknown(message: "self Deallocated", statusCode: -1))

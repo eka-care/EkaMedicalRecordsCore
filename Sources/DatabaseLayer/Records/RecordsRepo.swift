@@ -173,9 +173,9 @@ public final class RecordsRepo {
       recordType: record.documentType, recordURLs: documentURIs,
       documentDate: record.documentDate?.toEpochInt(),
       contentType: FileType.getFileTypeFromFilePath(filePath: documentURIs.first ?? "")?.fileExtension ?? "",
+      isAbhaLinked: record.isAbhaLinked,
       userOid: record.oid ?? "",
-      linkedCases: casesLinkedToRecord,
-      isAbhaLinked: record.isAbhaLinked
+      linkedCases: casesLinkedToRecord
     ) {
       [weak self] uploadFormsResponse,
       error in
