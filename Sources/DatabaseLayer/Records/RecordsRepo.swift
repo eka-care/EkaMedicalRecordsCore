@@ -369,7 +369,8 @@ public final class RecordsRepo {
     documentOid: String? = CoreInitConfigurations.shared.primaryFilterID,
     isEdited: Bool?,
     caseModels: [CaseModel]? = nil,
-    tags: [String]? = nil
+    tags: [String]? = nil,
+    isAbhaLinked: Bool? = nil
   ) {
     /// Update in database
     databaseManager.updateRecord(
@@ -380,7 +381,8 @@ public final class RecordsRepo {
       documentOid: documentOid,
       isEdited: isEdited,
       caseModels: caseModels,
-      tags: tags
+      tags: tags,
+      isAbhaLinked: isAbhaLinked
     )
     
     let caseListIds = caseModels?.compactMap(\.caseID) ?? []
@@ -401,7 +403,8 @@ public final class RecordsRepo {
         documentOid: documentOid,
         isEdited: !isSuccess,
         caseModels: caseModels,
-        tags: tags
+        tags: tags,
+        isAbhaLinked: isAbhaLinked
       )
     }
   }
