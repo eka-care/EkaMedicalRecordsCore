@@ -12,14 +12,17 @@ public enum MedicaRecordsFeatureRestriction: String {
   case createMedicalRecordsCases = "CREATE_MEDICAL_RECORDS_CASES"
 }
 
+public enum Features: Hashable {
+    case abha
+    case custom(String)
+}
+
 public class CoreInitConfigurations {
   
   public var blockedFeatures: [String] = []
   public var blockedFeatureTypes: [MedicaRecordsFeatureRestriction] {
     blockedFeatures.compactMap({ MedicaRecordsFeatureRestriction(rawValue: $0) })
   }
-  
-  public var enbleAbha: Bool = false
   
   // MARK: - Properties
   
@@ -52,6 +55,8 @@ public class CoreInitConfigurations {
   
   /// Delegate to get events
   public weak var delegate: EventLoggerProtocol?
+  
+  public var enabledFeatures: Set<Features> = []
   
   // MARK: - Init
   
