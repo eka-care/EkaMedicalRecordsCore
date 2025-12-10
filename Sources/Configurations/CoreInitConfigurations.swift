@@ -14,7 +14,6 @@ public enum MedicaRecordsFeatureRestriction: String {
 
 public enum Features: Hashable {
     case abha
-    case custom(String)
 }
 
 public class CoreInitConfigurations {
