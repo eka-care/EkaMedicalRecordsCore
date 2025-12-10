@@ -244,6 +244,8 @@ extension RecordDatabaseAdapter {
     if let status = networkModel.recordDocument.item.metadata?.abha?.linkStatus,
        status == "LINKED" || status == "INITIATED" {
         insertModel.isAbhaLinked = true
+    } else {
+      insertModel.isAbhaLinked = false
     }
     
     insertModel.syncState = RecordSyncState.upload(success: true)
