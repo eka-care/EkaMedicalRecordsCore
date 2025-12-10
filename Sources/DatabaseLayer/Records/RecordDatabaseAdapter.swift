@@ -240,6 +240,12 @@ extension RecordDatabaseAdapter {
     if let updatedAt = networkModel.recordDocument.item.updatedAt {
       insertModel.updatedAt = updatedAt.toDate()
     }
+    
+    if let status = networkModel.recordDocument.item.metadata?.abha?.linkStatus,
+       status == "LINKED" || status == "INITIATED" {
+        insertModel.isAbhaLinked = true
+    }
+    
     insertModel.syncState = RecordSyncState.upload(success: true)
     /// Assign cases array if available
     insertModel.caseIDs = networkModel.recordDocument.item.cases
