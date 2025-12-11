@@ -281,11 +281,11 @@ extension RecordsRepo {
       switch result {
       case .success:
         EkaMedicalRecordsCoreLogger.capture("Updated document")
-        updateRecordEvent(id: documentID, status: .success, userOid: documentFilterId, isAbhaLinked: isAbhaLinked)
+        updateRecordEvent(id: documentID, status: .success, userOid: documentFilterId)
         completion(true)
       case .failure(let error):
         EkaMedicalRecordsCoreLogger.capture("Failure in document update network call \(error.localizedDescription)")
-        updateRecordEvent(id: documentID, status: .failure, message: error.localizedDescription, userOid: documentFilterId, isAbhaLinked: isAbhaLinked)
+        updateRecordEvent(id: documentID, status: .failure, message: error.localizedDescription, userOid: documentFilterId)
         completion(false)
       }
     }

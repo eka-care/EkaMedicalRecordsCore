@@ -47,7 +47,6 @@ extension RecordsRepo {
     status: EventStatusMonitor,
     message: String? = nil,
     userOid: String,
-    isAbhaLinked: Bool? = nil
   ) {
     let eventLog = EventLog(
       params: [

@@ -393,7 +393,8 @@ public final class RecordsRepo {
       documentType: documentType,
       documentFilterId: documentOid,
       linkedCases: caseListIds,
-      tags: tags
+      tags: tags,
+      isAbhaLinked: isAbhaLinked
     ) { [weak self] isSuccess in
       guard let self = self else { return }
       self.databaseManager.updateRecord(
