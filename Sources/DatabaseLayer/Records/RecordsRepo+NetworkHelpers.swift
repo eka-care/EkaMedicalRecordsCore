@@ -58,7 +58,7 @@ extension RecordsRepo {
     recordURLs: [String]?,
     documentDate: Int? = nil,
     contentType: String,
-    isLinkedWithAbha: Bool? = false,
+    isAbhaLinked: Bool? = false,
     userOid: String,
     linkedCases: [String]? = nil,
     completion: @escaping (DocUploadFormsResponse?, RecordUploadErrorType?) -> Void
@@ -77,7 +77,7 @@ extension RecordsRepo {
       recordType: recordType,
       documentDate: documentDate,
       linkedCases: linkedCases,
-      isLinkedWithAbha: isLinkedWithAbha,
+      isAbhaLinked: isAbhaLinked,
       userOid: userOid
     ) { [weak self] response,error in
       guard let self else {
@@ -250,6 +250,7 @@ extension RecordsRepo {
     documentFilterId: String? = nil,
     linkedCases: [String]? = nil,
     tags: [String]? = nil,
+    isAbhaLinked: Bool? = nil,
     completion: @escaping (Bool) -> Void
   ) {
     guard let documentID,
@@ -265,7 +266,8 @@ extension RecordsRepo {
       documentType: documentType,
       documentDate: documentDate?.toEpochInt(),
       cases: linkedCases,
-      tags: tags
+      tags: tags,
+      isAbhaLinked: isAbhaLinked
     )
     service.editDocumentDetails(
       documentId: documentID,

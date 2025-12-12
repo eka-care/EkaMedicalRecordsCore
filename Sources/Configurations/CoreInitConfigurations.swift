@@ -12,6 +12,10 @@ public enum MedicaRecordsFeatureRestriction: String {
   case createMedicalRecordsCases = "CREATE_MEDICAL_RECORDS_CASES"
 }
 
+public enum Features: Hashable {
+    case abha
+}
+
 public class CoreInitConfigurations {
   
   public var blockedFeatures: [String] = []
@@ -50,6 +54,8 @@ public class CoreInitConfigurations {
   
   /// Delegate to get events
   public weak var delegate: EventLoggerProtocol?
+  
+  public var enabledFeatures: Set<Features> = []
   
   // MARK: - Init
   

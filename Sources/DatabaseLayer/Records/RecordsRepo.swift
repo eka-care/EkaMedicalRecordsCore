@@ -173,6 +173,7 @@ public final class RecordsRepo {
       recordType: record.documentType, recordURLs: documentURIs,
       documentDate: record.documentDate?.toEpochInt(),
       contentType: FileType.getFileTypeFromFilePath(filePath: documentURIs.first ?? "")?.fileExtension ?? "",
+      isAbhaLinked: record.isAbhaLinked,
       userOid: record.oid ?? "",
       linkedCases: casesLinkedToRecord
     ) {
@@ -368,7 +369,8 @@ public final class RecordsRepo {
     documentOid: String? = CoreInitConfigurations.shared.primaryFilterID,
     isEdited: Bool?,
     caseModels: [CaseModel]? = nil,
-    tags: [String]? = nil
+    tags: [String]? = nil,
+    isAbhaLinked: Bool? = nil
   ) {
     /// Update in database
     databaseManager.updateRecord(
@@ -379,7 +381,8 @@ public final class RecordsRepo {
       documentOid: documentOid,
       isEdited: isEdited,
       caseModels: caseModels,
-      tags: tags
+      tags: tags,
+      isAbhaLinked: isAbhaLinked
     )
     
     let caseListIds = caseModels?.compactMap(\.caseID) ?? []
@@ -390,7 +393,8 @@ public final class RecordsRepo {
       documentType: documentType,
       documentFilterId: documentOid,
       linkedCases: caseListIds,
-      tags: tags
+      tags: tags,
+      isAbhaLinked: isAbhaLinked
     ) { [weak self] isSuccess in
       guard let self = self else { return }
       self.databaseManager.updateRecord(
@@ -400,7 +404,8 @@ public final class RecordsRepo {
         documentOid: documentOid,
         isEdited: !isSuccess,
         caseModels: caseModels,
-        tags: tags
+        tags: tags,
+        isAbhaLinked: isAbhaLinked
       )
     }
   }

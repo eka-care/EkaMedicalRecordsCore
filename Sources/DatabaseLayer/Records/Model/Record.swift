@@ -54,6 +54,10 @@ extension Record {
     if let tags = record.tags {
       associateTags(with: tags)
     }
+    
+    if let isAbhaLinked = record.isAbhaLinked {
+      self.isAbhaLinked = isAbhaLinked
+    }
   }
   
   /// Used to get local paths of file

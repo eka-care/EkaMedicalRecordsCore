@@ -28,6 +28,8 @@ public struct EventLog {
   /// Entity type (Records or Cases)
   public let entityType: EventEntityType
   
+  public let isAbhaLinked: Bool?
+  
   public init(
     params: [String : Any]? = nil,
     eventType: EventType,
@@ -35,7 +37,8 @@ public struct EventLog {
     status: EventStatusMonitor,
     platform: EventPlatform,
     userOid: String? = nil,
-    entityType: EventEntityType = .records
+    entityType: EventEntityType = .records,
+    isAbhaLinked: Bool? = nil
   ) {
     self.params = params
     self.eventType = eventType
@@ -44,6 +47,7 @@ public struct EventLog {
     self.platform = platform
     self.userOid = userOid
     self.entityType = entityType
+    self.isAbhaLinked = isAbhaLinked
   }
 }
 

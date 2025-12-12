@@ -31,6 +31,7 @@ public struct RecordModel {
   public var caseModels: [CaseModel]? // Array of case models for many-to-many relationship
   public var caseIDs: [String]? // Array of case IDs for lazy loading
   public var tags: [String]?
+  public var isAbhaLinked: Bool?
   
   public init(
     documentDate: Date? = nil,
@@ -48,7 +49,8 @@ public struct RecordModel {
     isEdited: Bool? = nil,
     caseModels: [CaseModel]? = nil,
     caseIDs: [String]? = nil,
-    tags: [String]? = nil
+    tags: [String]? = nil,
+    isAbhaLinked: Bool? = nil
   ) {
     self.documentID = UUID().uuidString
     self.documentDate = documentDate
@@ -67,6 +69,7 @@ public struct RecordModel {
     self.caseModels = caseModels
     self.caseIDs = caseIDs
     self.tags = tags
+    self.isAbhaLinked = isAbhaLinked
   }
 }
 
@@ -237,6 +240,14 @@ extension RecordDatabaseAdapter {
     if let updatedAt = networkModel.recordDocument.item.updatedAt {
       insertModel.updatedAt = updatedAt.toDate()
     }
+    
+    if let status = networkModel.recordDocument.item.metadata?.abha?.linkStatus,
+       status == "LINKED" || status == "INITIATED" {
+        insertModel.isAbhaLinked = true
+    } else {
+      insertModel.isAbhaLinked = false
+    }
+    
     insertModel.syncState = RecordSyncState.upload(success: true)
     /// Assign cases array if available
     insertModel.caseIDs = networkModel.recordDocument.item.cases
