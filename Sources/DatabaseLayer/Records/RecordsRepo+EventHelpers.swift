@@ -58,7 +58,6 @@ extension RecordsRepo {
       platform: .network,
       userOid: userOid,
       entityType: .records,
-      isAbhaLinked: isAbhaLinked
     )
     CoreInitConfigurations.shared.delegate?.receiveEvent(eventLog: eventLog)
   }
