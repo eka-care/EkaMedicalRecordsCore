@@ -11,6 +11,7 @@ public enum RecordUploadErrorType: Equatable {
   case recordCountMetaDataMismatch
   case uploadLimitReached
   case duplicateDocumentUpload
+  case emptyBachRequest
   case unknown(message: String, statusCode: Int)
   
   var errorDescription: String {
@@ -25,6 +26,8 @@ public enum RecordUploadErrorType: Equatable {
       return "Upload limit has been exceeded"
     case .duplicateDocumentUpload:
       return "Document already uploaded"
+    case .emptyBachRequest:
+      return "Empty batch request"
     case .unknown(let message, let code):
       return "(Status Code: \(code)) Error: \(message)"
     }
@@ -44,6 +47,10 @@ public enum RecordUploadErrorType: Equatable {
   
   var isfailedToUploadFiles: Bool {
     self == .failedToUploadFiles
+  }
+  
+  var isEmptyBachRequest: Bool {
+    self == .emptyBachRequest
   }
   
   var code: String {

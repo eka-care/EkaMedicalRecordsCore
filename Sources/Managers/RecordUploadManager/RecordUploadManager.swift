@@ -57,8 +57,15 @@ final class RecordUploadManager {
     let request = DocUploadRequest(batchRequest: batchRequests)
     EkaMedicalRecordsCoreLogger.capture("DocUploadRequestV3 - \(request)")
     
+    guard let patientOID = request.batchRequest.first?.patientOID else {
+      recordUploadError = .unknown(message: "mising oid", statusCode: -1)
+      EkaMedicalRecordsCoreLogger.capture("Received empty or nil patientOID")
+      recordUploadCompletion(nil, recordUploadError)
+      return
+    }
+    
     /// Network Call
-    service.uploadRecords(uploadRequest: request, oid: request.batchRequest.first?.patientOID) { [weak self] result, statusCode in
+    service.uploadRecords(uploadRequest: request, oid: patientOID) { [weak self] result, statusCode in
       
       guard let self else {
         recordUploadCompletion(nil, .failedToUploadFiles)
@@ -70,7 +77,7 @@ final class RecordUploadManager {
         EkaMedicalRecordsCoreLogger.capture("Received DocUploadFormsResponse - \(response)")
         
         guard let batchResponses = response.batchResponses, !batchResponses.isEmpty else {
-          recordUploadError = .emptyFormResponse
+          recordUploadError = .emptyBachRequest
           EkaMedicalRecordsCoreLogger.capture("Received empty or nil BatchResponse")
           recordUploadCompletion(response, recordUploadError)
           return
@@ -82,6 +89,12 @@ final class RecordUploadManager {
         /// Now we have to start submitting files on to these urls
         /// Start submitting files concurrently
         for (batchResponseIndex, response) in batchResponses.enumerated() {
+          
+          guard response.errorDetails?.code != "409" else {
+            recordUploadError = .duplicateDocumentUpload
+            EkaMedicalRecordsCoreLogger.capture("Dublicate Document Upload")
+            continue
+          }
           
           guard let forms = response.forms else {
             recordUploadError = .emptyFormResponse

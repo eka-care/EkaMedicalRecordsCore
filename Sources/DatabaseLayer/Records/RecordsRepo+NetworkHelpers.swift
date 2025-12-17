@@ -15,7 +15,7 @@ extension RecordsRepo {
   func syncRecordsForPage(
     token: String?,
     updatedAt: String?,
-    oid: String?,
+    oid: String,
     completion: @escaping (_ nextPageToken: String?,_ lastSourceRefreshedAt: Int? ,_ items: [RecordItemElement], _ error: Error?) -> Void
   ) {
     service.fetchRecords(
@@ -126,7 +126,7 @@ extension RecordsRepo {
   ///   - completion: completion handler with success status and status code
   func deleteRecordV3(
     documentID: String?,
-    oid: String?,
+    oid: String,
     completion: @escaping (Bool, Int?) -> Void = { _, _ in }
   ) {
     guard let documentID else { 
@@ -146,7 +146,7 @@ extension RecordsRepo {
         deleteRecordEvent(
           id: documentID,
           status: .success,
-          userOid: oid ?? ""
+          userOid: oid
         )
         EkaMedicalRecordsCoreLogger.capture("Record deleted successfully from v3")
         completion(true, statusCode)
@@ -155,7 +155,7 @@ extension RecordsRepo {
           id: documentID,
           status: .failure,
           message: error.localizedDescription,
-          userOid: oid ?? ""
+          userOid: oid
         )
         EkaMedicalRecordsCoreLogger.capture("Failed to delete record \(error.localizedDescription)")
         completion(false, statusCode)
