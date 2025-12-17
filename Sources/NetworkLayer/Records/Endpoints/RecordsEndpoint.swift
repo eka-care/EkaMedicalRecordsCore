@@ -68,9 +68,7 @@ extension RecordsEndpoint: RequestProvider {
       if let updatedAt {
         params["u_at__gt"] = updatedAt
       }
-      
-      params["p_oid"] = oid
-      
+            
       return AF.request(
         "\(DomainConfigurations.ekaURL)/mr/api/v1/docs",
         method: .get,
@@ -124,7 +122,6 @@ extension RecordsEndpoint: RequestProvider {
       /// delete
     case .delete(let documentID, let oid):
       var params = [String: String]()
-      params["p_oid"] = oid
       let encodedDocID = documentID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? documentID
       return AF.request(
         "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/\(encodedDocID)",
@@ -140,7 +137,6 @@ extension RecordsEndpoint: RequestProvider {
     case .fetchDocDetails(let documentID, let patientOID):
       var params = [String: String]()
       
-      params["p_oid"] = patientOID
       let encodedDocID = documentID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? documentID
       return AF.request(
         "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/\(encodedDocID)",
