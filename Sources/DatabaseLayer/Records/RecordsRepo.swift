@@ -200,11 +200,12 @@ public final class RecordsRepo {
           if let docId = uploadFormsResponse?.batchResponses?.first?.documentID {
             deleteRecordV3(documentID: docId, oid: record.oid) { [weak self] _, _ in
               self?.databaseManager.updateRecord(documentID: documentId, syncStatus: RecordSyncState.upload(success: false))
+              didUploadRecord(nil, error)
             }
           } else {
             databaseManager.updateRecord(documentID: documentId, syncStatus: RecordSyncState.upload(success: false))
+            didUploadRecord(nil, error)
           }
-          didUploadRecord(nil, error)
         }
         return
       }
