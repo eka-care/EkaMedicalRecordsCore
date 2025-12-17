@@ -14,14 +14,14 @@ protocol RecordsProvider {
   func fetchRecords(
     token: String?,
     updatedAt: String?,
-    oid: String?,
+    oid: String,
     _ completion: @escaping (Result<DocsListFetchResponse, Error>, Int?) -> Void
   )
   
   /// Upload records v3
   func uploadRecords(
     uploadRequest request: DocUploadRequest,
-    oid: String?,
+    oid: String,
     _ completion: @escaping (Result<DocUploadFormsResponse, MRError>, Int?) -> Void
   )
   
@@ -38,7 +38,7 @@ protocol RecordsProvider {
   /// delete file
   func delete(
     documentId: String,
-    oid: String?,
+    oid: String,
     _ completion: @escaping (Result<Bool, Error>, Int?) -> Void
   )
   
@@ -52,7 +52,7 @@ protocol RecordsProvider {
   /// edit document details
   func editDocumentDetails(
     documentId id: String,
-    filterOID: String?,
+    filterOID: String,
     request: DocUpdateRequest,
     _ completion: @escaping (Result<Bool, Error>, Int?) -> Void
   )
@@ -68,7 +68,7 @@ extension RecordsProvider {
   func fetchRecords(
     token: String?,
     updatedAt: String?,
-    oid: String?,
+    oid: String,
     _ completion: @escaping (Result<DocsListFetchResponse, Error>, Int?) -> Void
   ) {
     networkService
@@ -85,7 +85,7 @@ extension RecordsProvider {
   /// Upload Records v3
   func uploadRecords(
     uploadRequest request: DocUploadRequest,
-    oid: String?,
+    oid: String,
     _ completion: @escaping (Result<DocUploadFormsResponse, MRError>, Int?) -> Void
   ) {
     networkService.execute(RecordsEndpoint.uploadRecords(request: request, oid: oid), completion: completion)
@@ -106,7 +106,7 @@ extension RecordsProvider {
   /// delete file
   func delete(
     documentId: String,
-    oid: String?,
+    oid: String,
     _ completion: @escaping (Result<Bool, Error>, Int?) -> Void
   ) {
     networkService.execute(RecordsEndpoint.delete(documentId: documentId, oid: oid), completion: completion)
@@ -124,7 +124,7 @@ extension RecordsProvider {
   /// edit document details
   func editDocumentDetails(
     documentId id: String,
-    filterOID: String?,
+    filterOID: String,
     request: DocUpdateRequest,
     _ completion: @escaping (Result<Bool, Error>, Int?) -> Void
   ) {

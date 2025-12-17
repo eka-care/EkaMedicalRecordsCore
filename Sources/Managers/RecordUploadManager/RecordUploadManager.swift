@@ -57,8 +57,15 @@ final class RecordUploadManager {
     let request = DocUploadRequest(batchRequest: batchRequests)
     EkaMedicalRecordsCoreLogger.capture("DocUploadRequestV3 - \(request)")
     
+    guard let patientOID = request.batchRequest.first?.patientOID else {
+      recordUploadError = .unknown(message: "mising oid", statusCode: -1)
+      EkaMedicalRecordsCoreLogger.capture("Received empty or nil patientOID")
+      recordUploadCompletion(nil, recordUploadError)
+      return
+    }
+    
     /// Network Call
-    service.uploadRecords(uploadRequest: request, oid: request.batchRequest.first?.patientOID) { [weak self] result, statusCode in
+    service.uploadRecords(uploadRequest: request, oid: patientOID) { [weak self] result, statusCode in
       
       guard let self else {
         recordUploadCompletion(nil, .failedToUploadFiles)

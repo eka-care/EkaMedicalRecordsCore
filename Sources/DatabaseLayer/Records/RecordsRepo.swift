@@ -197,8 +197,8 @@ public final class RecordsRepo {
           databaseManager.updateRecord(documentID: documentId, syncStatus: RecordSyncState.upload(success: true))
           didUploadRecord(nil, error)
         default:
-          if let docId = uploadFormsResponse?.batchResponses?.first?.documentID {
-            deleteRecordV3(documentID: docId, oid: record.oid) { [weak self] _, _ in
+          if let docId = uploadFormsResponse?.batchResponses?.first?.documentID , let oid = record.oid{
+            deleteRecordV3(documentID: docId, oid: oid) { [weak self] _, _ in
               self?.databaseManager.updateRecord(documentID: documentId, syncStatus: RecordSyncState.upload(success: false))
               didUploadRecord(nil, error)
             }
@@ -538,18 +538,25 @@ public final class RecordsRepo {
       completion(true)
       return
     }
-    deleteRecordV3(documentID: documentID, oid: record.oid) { [weak self] success, statusCode in
+    
+    guard let oid = record.oid else {
+      completion(false)
+      deleteRecordEvent(id: documentID,status: .failure,message: "missing oid" ,userOid: record.oid ?? "")
+      return
+    }
+    
+    deleteRecordV3(documentID: documentID, oid: oid) { [weak self] success, statusCode in
       guard let self else {
         completion(false)
         return
       }
       /// Only delete from database if server deletion was successful and returned 204
       if success && statusCode == 204 {
-        deleteCaseEvent(id: documentID, status: .success, userOid: record.oid ?? "")
+        deleteRecordEvent(id: documentID, status: .success, userOid: record.oid ?? "")
         databaseManager.deleteRecord(record: record)
         completion(true)
       } else {
-        deleteCaseEvent(id: documentID, status: .failure, userOid: record.oid ?? "")
+        deleteRecordEvent(id: documentID, status: .failure, userOid: record.oid ?? "")
         EkaMedicalRecordsCoreLogger.capture("Server deletion failed or didn't return 204. Status code: \(statusCode ?? -1)")
         completion(false)
       }

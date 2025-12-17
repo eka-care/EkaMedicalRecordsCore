@@ -13,12 +13,12 @@ enum RecordsEndpoint {
   case fetchRecords(
     token: String?,
     updatedAt: String?,
-    oid: String?
+    oid: String
   )
   /// upload records v3
   case uploadRecords(
     request: DocUploadRequest,
-    oid: String?
+    oid: String
   )
   /// Submit documents
   case submitDocuments(
@@ -31,7 +31,7 @@ enum RecordsEndpoint {
   /// delete
   case delete(
     documentId: String,
-    oid: String?
+    oid: String
   )
   /// Fetch doc details
   case fetchDocDetails(
@@ -41,7 +41,7 @@ enum RecordsEndpoint {
   /// Edit document details
   case editDocDetails(
     documentID: String,
-    filterOID: String?,
+    filterOID: String,
     request: DocUpdateRequest
   )
   
@@ -69,26 +69,25 @@ extension RecordsEndpoint: RequestProvider {
         params["u_at__gt"] = updatedAt
       }
       
-      if let oid {
-        params["p_oid"] = oid
-      }
+      params["p_oid"] = oid
       
       return AF.request(
         "\(DomainConfigurations.ekaURL)/mr/api/v1/docs",
         method: .get,
         parameters: params,
         encoding: URLEncoding.queryString,
+        headers: HTTPHeaders([.contentType(HTTPHeader.contentTypeJson.rawValue), .init(name: "X-Pt-Id", value: oid)]),
         interceptor: CoreInitConfigurations.shared.requestInterceptor
       )
       .validate()
       
     case .uploadRecords(let request, let oid):
-      let oidQueryParamString = oid != nil ? "?p_oid=\(oid ?? "")" : ""
       return AF.request(
-        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs\(oidQueryParamString)",
+        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs",
         method: .post,
         parameters: request,
         encoder: JSONParameterEncoder.default,
+        headers: HTTPHeaders([.contentType(HTTPHeader.contentTypeJson.rawValue), .init(name: "X-Pt-Id", value: oid)]),
         interceptor: CoreInitConfigurations.shared.requestInterceptor
       )
       .validate()
@@ -125,16 +124,14 @@ extension RecordsEndpoint: RequestProvider {
       /// delete
     case .delete(let documentID, let oid):
       var params = [String: String]()
-      
-      if let oid {
-        params["p_oid"] = oid
-      }
+      params["p_oid"] = oid
       let encodedDocID = documentID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? documentID
       return AF.request(
         "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/\(encodedDocID)",
         method: .delete,
         parameters: params,
         encoding: URLEncoding.queryString,
+        headers: HTTPHeaders([.contentType(HTTPHeader.contentTypeJson.rawValue), .init(name: "X-Pt-Id", value: oid)]),
         interceptor: CoreInitConfigurations.shared.requestInterceptor
       )
       .validate()
@@ -150,22 +147,23 @@ extension RecordsEndpoint: RequestProvider {
         method: .get,
         parameters: params,
         encoding: URLEncoding.queryString,
+        headers: HTTPHeaders([.contentType(HTTPHeader.contentTypeJson.rawValue), .init(name: "X-Pt-Id", value: patientOID)]),
         interceptor: CoreInitConfigurations.shared.requestInterceptor
       )
       .validate()
       
     case .editDocDetails(
       let documentID,
-      let filterOID,
+      let patientOid,
       let request
     ):
-      let patientOidString = filterOID != nil ? "?p_oid=\(filterOID ?? "")" : ""
       let encodedDocID = documentID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? documentID
       return AF.request(
-        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/\(encodedDocID)\(patientOidString)",
+        "\(DomainConfigurations.ekaURL)/mr/api/v1/docs/\(encodedDocID)",
         method: .patch,
         parameters: request,
         encoder: JSONParameterEncoder.default,
+        headers: HTTPHeaders([.contentType(HTTPHeader.contentTypeJson.rawValue), .init(name: "X-Pt-Id", value: patientOid)]),
         interceptor: CoreInitConfigurations.shared.requestInterceptor
       )
       .validate()
