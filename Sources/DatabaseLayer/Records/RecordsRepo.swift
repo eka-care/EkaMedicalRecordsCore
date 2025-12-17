@@ -370,7 +370,7 @@ public final class RecordsRepo {
     documentDate: Date? = nil,
     documentType: String? = nil,
     updatedAt: Date? = nil,
-    documentOid: String? = CoreInitConfigurations.shared.primaryFilterID,
+    documentOid: String,
     isEdited: Bool?,
     caseModels: [CaseModel]? = nil,
     tags: [String]? = nil,
