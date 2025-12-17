@@ -85,7 +85,7 @@ final class RecordUploadManager {
           
           guard response.errorDetails?.code != "409" else {
             recordUploadError = .duplicateDocumentUpload
-            EkaMedicalRecordsCoreLogger.capture("Received empty or nil BatchResponse")
+            EkaMedicalRecordsCoreLogger.capture("Dublicate Document Upload")
             continue
           }
           
