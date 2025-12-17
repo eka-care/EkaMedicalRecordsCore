@@ -188,24 +188,24 @@ public final class RecordsRepo {
         return
       }
       
-      
       guard error == nil, let uploadFormsResponse else {
-        let isDocumentIsOnServer = error?.isDocumentAlreadyUploaded ?? false
-        if  isDocumentIsOnServer == true {
-          databaseManager.updateRecord(documentID: documentId, syncStatus: RecordSyncState.upload(success: true) )
-        }
-        /// Make delete api record call so that its not availabe on server
-        if let docId = uploadFormsResponse?.batchResponses?.first?.documentID, !isDocumentIsOnServer  {
-          deleteRecordV3(documentID: docId, oid: record.oid) {[weak self] _, _ in
-            self?.databaseManager.updateRecord(documentID: documentId, syncStatus: RecordSyncState.upload(success: false))
+        switch error {
+        case .uploadLimitReached:
+          databaseManager.updateRecord(documentID: documentId, syncStatus: RecordSyncState.upload(success: false))
+          didUploadRecord(nil, error)
+        case .duplicateDocumentUpload:
+          databaseManager.updateRecord(documentID: documentId, syncStatus: RecordSyncState.upload(success: true))
+          didUploadRecord(nil, error)
+        default:
+          if let docId = uploadFormsResponse?.batchResponses?.first?.documentID {
+            deleteRecordV3(documentID: docId, oid: record.oid) { [weak self] _, _ in
+              self?.databaseManager.updateRecord(documentID: documentId, syncStatus: RecordSyncState.upload(success: false))
+            }
+          } else {
+            databaseManager.updateRecord(documentID: documentId, syncStatus: RecordSyncState.upload(success: false))
           }
+          didUploadRecord(nil, error)
         }
-        didUploadRecord(nil, error)
-        return
-      }
-      
-      guard let documentId = record.documentID else {
-        didUploadRecord(nil, error)
         return
       }
       

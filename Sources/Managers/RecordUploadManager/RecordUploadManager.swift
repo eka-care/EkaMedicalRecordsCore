@@ -70,7 +70,7 @@ final class RecordUploadManager {
         EkaMedicalRecordsCoreLogger.capture("Received DocUploadFormsResponse - \(response)")
         
         guard let batchResponses = response.batchResponses, !batchResponses.isEmpty else {
-          recordUploadError = .emptyFormResponse
+          recordUploadError = .emptyBachRequest
           EkaMedicalRecordsCoreLogger.capture("Received empty or nil BatchResponse")
           recordUploadCompletion(response, recordUploadError)
           return
@@ -82,6 +82,12 @@ final class RecordUploadManager {
         /// Now we have to start submitting files on to these urls
         /// Start submitting files concurrently
         for (batchResponseIndex, response) in batchResponses.enumerated() {
+          
+          guard response.errorDetails?.code != "409" else {
+            recordUploadError = .duplicateDocumentUpload
+            EkaMedicalRecordsCoreLogger.capture("Received empty or nil BatchResponse")
+            continue
+          }
           
           guard let forms = response.forms else {
             recordUploadError = .emptyFormResponse
