@@ -190,22 +190,17 @@ public final class RecordsRepo {
       
       guard error == nil, let uploadFormsResponse else {
         switch error {
-        case .uploadLimitReached:
+        case .uploadLimitReached, .unknown(message: _, statusCode: _):
           databaseManager.updateRecord(documentID: documentId, syncStatus: RecordSyncState.upload(success: false))
           didUploadRecord(nil, error)
         case .duplicateDocumentUpload:
           databaseManager.updateRecord(documentID: documentId, syncStatus: RecordSyncState.upload(success: true))
           didUploadRecord(nil, error)
         default:
-          if let docId = uploadFormsResponse?.batchResponses?.first?.documentID , let oid = record.oid{
-            deleteRecordV3(documentID: docId, oid: oid) { [weak self] _, _ in
+          deleteRecordV3(documentID: documentId, oid: record.oid ?? "") { [weak self] _, _ in
               self?.databaseManager.updateRecord(documentID: documentId, syncStatus: RecordSyncState.upload(success: false))
               didUploadRecord(nil, error)
             }
-          } else {
-            databaseManager.updateRecord(documentID: documentId, syncStatus: RecordSyncState.upload(success: false))
-            didUploadRecord(nil, error)
-          }
         }
         return
       }
