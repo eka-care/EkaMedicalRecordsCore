@@ -149,10 +149,11 @@ public final class RecordsRepo {
   public func getAllRecordsCount(
     caseID: String? = nil,
     documentType: String? = nil,
+    includeArchieve: Bool = false,
     completion: @escaping (Int) -> Void
   ) {
     let oid = CoreInitConfigurations.shared.filterID
-    let count = databaseManager.getRecordsCount(oid: oid, caseID: caseID, documentType: documentType)
+    let count = databaseManager.getRecordsCount(oid: oid, caseID: caseID, documentType: documentType, includeArchieve: includeArchieve)
     completion(count)
   }
  
@@ -528,6 +529,9 @@ public final class RecordsRepo {
       return
     }
     databaseManager.updateRecord(documentID: documentID, isArchieved: true)
+    if record.syncState == RecordSyncState.upload(success: false).stringValue {
+      databaseManager.deleteRecord(record: record)
+    }
     /// Delete from server ONLY if requested; otherwise just mark archived for later sync
     guard deleteFromServer else {
       completion(true)
@@ -997,3 +1001,4 @@ extension RecordsRepo {
     }
   }
 }
+

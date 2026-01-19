@@ -494,9 +494,10 @@ extension RecordsDatabaseManager {
   func getRecordsCount(
     oid: [String]? = nil,
     caseID: String? = nil,
-    documentType: String? = nil
+    documentType: String? = nil,
+    includeArchieve: Bool
   ) -> Int {
-    let fetchRequest = QueryHelper.fetchAllRecordsCountQuery(oid: oid, caseID: caseID, documentType: documentType)
+    let fetchRequest = QueryHelper.fetchAllRecordsCountQuery(oid: oid, caseID: caseID, documentType: documentType, includeArchieved: includeArchieve)
     
     do {
       let result = try container.viewContext.fetch(fetchRequest)
