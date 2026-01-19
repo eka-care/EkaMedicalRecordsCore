@@ -431,7 +431,7 @@ extension QueryHelper {
     
     // Handle isArchived predicate - nil values are treated as not archived
     if !includeArchieved {
-      predicates.append(NSPredicate(format: "isArchived != %@", NSNumber(value: false)))
+      predicates.append(NSPredicate(format: "isArchived != %@", NSNumber(value: true)))
     }
     
     if !predicates.isEmpty {
