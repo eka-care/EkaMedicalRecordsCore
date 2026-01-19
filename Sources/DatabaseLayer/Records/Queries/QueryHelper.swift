@@ -405,7 +405,7 @@ extension QueryHelper {
   ///   - caseID: Optional case ID to filter records by
   ///   - documentType: Optional document type to filter records by
   /// - Returns: NSFetchRequest configured to fetch total count of records
-  public static func fetchAllRecordsCountQuery(oid: [String]? = nil, caseID: String? = nil, documentType: String? = nil) -> NSFetchRequest<NSFetchRequestResult> {
+  public static func fetchAllRecordsCountQuery(oid: [String]? = nil, caseID: String? = nil, documentType: String? = nil, includeArchieved: Bool = false) -> NSFetchRequest<NSFetchRequestResult> {
     let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: Record.entity().name!)
     fetchRequest.resultType = .countResultType
     
@@ -428,6 +428,8 @@ extension QueryHelper {
       let documentTypePredicate = NSPredicate(format: "documentType == %@", documentType)
       predicates.append(documentTypePredicate)
     }
+    
+    predicates.append(NSPredicate(format: "isArchived == %@", !includeArchieved))
     
     if !predicates.isEmpty {
       fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
