@@ -429,7 +429,10 @@ extension QueryHelper {
       predicates.append(documentTypePredicate)
     }
     
-    predicates.append(NSPredicate(format: "isArchived == %@", NSNumber(value: !includeArchieved)))
+    // Handle isArchived predicate - nil values are treated as not archived
+    if !includeArchieved {
+      predicates.append(NSPredicate(format: "isArchived != %@", NSNumber(value: false)))
+    }
     
     if !predicates.isEmpty {
       fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
