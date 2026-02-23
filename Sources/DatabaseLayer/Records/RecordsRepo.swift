@@ -528,9 +528,10 @@ public final class RecordsRepo {
       completion(false)
       return
     }
-    databaseManager.updateRecord(documentID: documentID, isArchieved: true)
     if record.syncState == RecordSyncState.upload(success: false).stringValue {
       databaseManager.deleteRecord(record: record)
+    } else {
+      databaseManager.updateRecord(documentID: documentID, isArchieved: true)
     }
     /// Delete from server ONLY if requested; otherwise just mark archived for later sync
     guard deleteFromServer else {
