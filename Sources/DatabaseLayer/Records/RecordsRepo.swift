@@ -516,11 +516,9 @@ public final class RecordsRepo {
   /// Used to delete a specific record from the database
   /// - Parameters:
   ///   - record: record to be deleted
-  ///   - deleteFromServer: whether to also delete the record from the server (default: true)
   ///   - completion: completion handler with success status
   public func deleteRecord(
     record: Record,
-    deleteFromServer: Bool = true,
     completion: @escaping (Bool) -> Void = { _ in }
   ) {
     /// We need to store it before deleting from database as once document is deleted we can't get the documentID
@@ -528,16 +526,14 @@ public final class RecordsRepo {
       completion(false)
       return
     }
-    databaseManager.updateRecord(documentID: documentID, isArchieved: true)
-    if record.syncState == RecordSyncState.upload(success: false).stringValue {
+    guard record.syncState == RecordSyncState.upload(success: false).stringValue  else {
       databaseManager.deleteRecord(record: record)
-    }
-    /// Delete from server ONLY if requested; otherwise just mark archived for later sync
-    guard deleteFromServer else {
       completion(true)
       return
     }
     
+    databaseManager.updateRecord(documentID: documentID, isArchieved: true)
+
     guard let oid = record.oid else {
       completion(false)
       deleteRecordEvent(id: documentID,status: .failure,message: "missing oid" ,userOid: record.oid ?? "")
@@ -763,7 +759,7 @@ extension RecordsRepo {
       for record in records {
         deleteGroup.enter()
         // Reuse central deletion function to keep behavior consistent
-        self.deleteRecord(record: record, deleteFromServer: true) { [weak self] success in
+        self.deleteRecord(record: record) { [weak self] success in
           guard self != nil else {
             deleteGroup.leave()
             return
