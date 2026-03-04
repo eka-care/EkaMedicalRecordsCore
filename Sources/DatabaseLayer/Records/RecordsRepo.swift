@@ -526,9 +526,23 @@ public final class RecordsRepo {
       completion(false)
       return
     }
-    guard record.syncState == RecordSyncState.upload(success: false).stringValue  else {
+    
+    let syncState = record.syncState
+    if syncState == RecordSyncState.upload(success: false).stringValue {
       databaseManager.deleteRecord(record: record)
       completion(true)
+      return
+    }
+    
+    if syncState == RecordSyncState.uploading.stringValue {
+      databaseManager.updateRecord(documentID: documentID, isArchieved: true)
+      completion(true)
+      return
+    }
+    
+    guard syncState == RecordSyncState.upload(success: true).stringValue ||
+            syncState == nil else {
+      completion(false)
       return
     }
     
