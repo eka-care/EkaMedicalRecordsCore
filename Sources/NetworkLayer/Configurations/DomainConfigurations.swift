@@ -7,16 +7,38 @@
 
 import Foundation
 
-enum DomainConfigurations {
+public enum DomainConfigurations {
+  public enum Environment {
+    case production
+    case development
+  }
+  
+  public static var environment: Environment = .production
+  
   public static var apiURL: String {
-    return "https://api.eka.care"
+    switch environment {
+    case .production:
+      return "https://api.eka.care"
+    case .development:
+      return "https://api.dev.eka.care"
+    }
   }
   
   public static var vaultURL: String {
-    return "https://vault.eka.care"
+    switch environment {
+    case .production:
+      return "https://vault.eka.care"
+    case .development:
+      return "https://vault.dev.eka.care"
+    }
   }
   
   public static var ekaURL: String {
-    return "https://api.eka.care"
+    switch environment {
+    case .production:
+      return "https://api.eka.care"
+    case .development:
+      return "https://api.dev.eka.care"
+    }
   }
 }
