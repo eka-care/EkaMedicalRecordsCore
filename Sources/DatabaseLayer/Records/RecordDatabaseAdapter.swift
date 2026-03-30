@@ -226,8 +226,13 @@ extension RecordDatabaseAdapter {
     if let documentType = networkModel.recordDocument.item.documentType {
       insertModel.documentType = documentType
     }
-    /// Form smart of the document
-    insertModel.isSmart = networkModel.recordDocument.item.metadata?.autoTags?.contains(where: { $0 == RecordDocumentTagType.smartTag.networkName }) ?? false
+    /// `auto_tags` is an array, but the backend sends a single status value.
+    let smartReportStatus = SmartReportStatus(
+      rawValue: networkModel.recordDocument.item.metadata?.autoTags?.first ?? ""
+    )
+    insertModel.isSmart = smartReportStatus?.isSmart ?? false
+    insertModel.isAnalyzing = smartReportStatus?.isProcessing ?? false
+    
     if let oid = networkModel.recordDocument.item.patientID {
       insertModel.oid = oid
     }
