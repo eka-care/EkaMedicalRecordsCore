@@ -211,7 +211,8 @@ public final class RecordsRepo {
 //        recordID: record.objectID,
         documentID: uploadFormsResponse.batchResponses?.first?.documentID ?? documentId,
         documentOid: record.oid,
-        syncStatus: RecordSyncState.upload(success: true)
+        syncStatus: RecordSyncState.upload(success: true),
+        isAnalyzing: true
       )
       
       record.documentID = uploadFormsResponse.batchResponses?.first?.documentID

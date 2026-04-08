@@ -52,6 +52,13 @@ public class CoreInitConfigurations {
   /// Request Interceptor
   public var requestInterceptor: Alamofire.RequestInterceptor = MRNetworkRequestInterceptor()
   
+  /// Network environment
+  public var environment: DomainConfigurations.Environment = .release {
+    didSet {
+      DomainConfigurations.environment = environment
+    }
+  }
+  
   /// Delegate to get events
   public weak var delegate: EventLoggerProtocol?
   
