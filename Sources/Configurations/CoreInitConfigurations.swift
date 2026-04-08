@@ -53,7 +53,7 @@ public class CoreInitConfigurations {
   public var requestInterceptor: Alamofire.RequestInterceptor = MRNetworkRequestInterceptor()
   
   /// Network environment
-  public var environment: DomainConfigurations.Environment = .production {
+  public var environment: DomainConfigurations.Environment = .release {
     didSet {
       DomainConfigurations.environment = environment
     }
