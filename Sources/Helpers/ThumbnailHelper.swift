@@ -42,6 +42,8 @@ final class ThumbnailHelper {
       image = generatePdfThumbnail(for: pdfUrl, atPage: 0)
     case .image:
       image = UIImage(data: data)
+    case .html:
+      return nil
     }
     guard let image else {
       return nil
