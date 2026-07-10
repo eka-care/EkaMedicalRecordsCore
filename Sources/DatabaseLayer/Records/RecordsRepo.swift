@@ -135,8 +135,14 @@ public final class RecordsRepo {
         return
       }
       /// Upload to vault
-      self.uploadRecord(record: addedRecord) { record, errorType in
-        didAddRecord(record, errorType)
+      self.uploadRecord(record: addedRecord) { [weak self] uploadedRecord, errorType in
+        if uploadedRecord == nil, errorType?.isDocumentAlreadyUploaded == true {
+          self?.deleteRecordV3(documentID: addedRecord.documentID, oid: addedRecord.oid ?? "") { _, _ in
+            didAddRecord(nil, errorType)
+          }
+        } else {
+          didAddRecord(uploadedRecord, errorType)
+        }
       }
     }
   }
@@ -190,19 +196,8 @@ public final class RecordsRepo {
       }
       
       guard error == nil, let uploadFormsResponse else {
-        switch error {
-        case .uploadLimitReached, .unknown(message: _, statusCode: _):
-          databaseManager.updateRecord(documentID: documentId, syncStatus: RecordSyncState.upload(success: false))
-          didUploadRecord(nil, error)
-        case .duplicateDocumentUpload:
-          databaseManager.updateRecord(documentID: documentId, syncStatus: RecordSyncState.upload(success: true))
-          didUploadRecord(nil, error)
-        default:
-          deleteRecordV3(documentID: documentId, oid: record.oid ?? "") { [weak self] _, _ in
-              self?.databaseManager.updateRecord(documentID: documentId, syncStatus: RecordSyncState.upload(success: false))
-              didUploadRecord(nil, error)
-            }
-        }
+        databaseManager.updateRecord(documentID: documentId, syncStatus: RecordSyncState.upload(success: false))
+        didUploadRecord(nil, error)
         return
       }
       
@@ -655,18 +650,48 @@ extension RecordsRepo {
           
           for record in records {
               uploadGroup.enter()
-            self.uploadRecord(record: record) { uploadedRecord, errorType in
-                  if uploadedRecord == nil {
-                      let uploadError = ErrorHelper.createError(
-                          domain: .sync,
-                          code: errorType?.isUploadLimitReached ?? false ? .uploadLimitReached : .networkRequestFailed ,
-                          message: "Failed to upload record: \(record.documentID ?? "unknown")"
-                      )
-                      errorsQueue.async(flags: .barrier) {
-                          errors.append(uploadError)
-                      }
+            self.uploadRecord(record: record) { [weak self] uploadedRecord, errorType in
+                  guard let self else {
+                      uploadGroup.leave()
+                      return
                   }
-                  uploadGroup.leave()
+                  if uploadedRecord == nil, errorType?.isDocumentAlreadyUploaded == true {
+                      self.deleteRecordV3(documentID: record.documentID, oid: record.oid ?? "") { [weak self] success, _ in
+                          guard success else {
+                              uploadGroup.leave()
+                              return
+                          }
+                          guard let self else {
+                              uploadGroup.leave()
+                              return
+                          }
+                          self.uploadRecord(record: record) { retryRecord, retryError in
+                              if retryRecord == nil {
+                                  let uploadError = ErrorHelper.createError(
+                                      domain: .sync,
+                                      code: retryError?.isUploadLimitReached ?? false ? .uploadLimitReached : .networkRequestFailed,
+                                      message: "Failed to upload record after duplicate cleanup: \(record.documentID ?? "unknown")"
+                                  )
+                                  errorsQueue.async(flags: .barrier) {
+                                      errors.append(uploadError)
+                                  }
+                              }
+                              uploadGroup.leave()
+                          }
+                      }
+                  } else {
+                      if uploadedRecord == nil {
+                          let uploadError = ErrorHelper.createError(
+                              domain: .sync,
+                              code: errorType?.isUploadLimitReached ?? false ? .uploadLimitReached : .networkRequestFailed,
+                              message: "Failed to upload record: \(record.documentID ?? "unknown")"
+                          )
+                          errorsQueue.async(flags: .barrier) {
+                              errors.append(uploadError)
+                          }
+                      }
+                      uploadGroup.leave()
+                  }
               }
           }
           
