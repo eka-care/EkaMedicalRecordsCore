@@ -16,6 +16,7 @@ public final class RecordsRepo {
   public let databaseAdapter = RecordDatabaseAdapter()
   private var isSyncing = false
   private var casesSyncing = false
+  private let syncLock = NSLock()
   let uploadManager = RecordUploadManager()
   let service: RecordsProvider = RecordsApiService()
   let casesService: CasesProvider = CasesApiService()
@@ -609,26 +610,46 @@ extension RecordsRepo {
   
   /// Used to sync the unuploaded records
   public func syncUnuploadedRecords(completion: @escaping (Result<Void, Error>) -> Void) {
-      syncNewRecords { [weak self] newRecordsResult in
-          guard let self = self else { 
-            completion(.failure(ErrorHelper.selfDeallocatedError()))
-            return 
+      syncLock.lock()
+      guard !isSyncing else {
+          syncLock.unlock()
+          EkaMedicalRecordsCoreLogger.capture("Skipping syncUnuploadedRecords — a sync is already in progress")
+          completion(.success(()))
+          return
+      }
+      isSyncing = true
+      syncLock.unlock()
+
+      // Every exit path must go through finish so the isSyncing flag is released
+      let finish: (Result<Void, Error>) -> Void = { [weak self] result in
+          if let self {
+              self.syncLock.lock()
+              self.isSyncing = false
+              self.syncLock.unlock()
           }
-          
+          completion(result)
+      }
+
+      syncNewRecords { [weak self] newRecordsResult in
+          guard let self = self else {
+            finish(.failure(ErrorHelper.selfDeallocatedError()))
+            return
+          }
+
           switch newRecordsResult {
           case .success:
             self.syncEditedRecords { editedRecordsResult in
               switch editedRecordsResult {
               case .success:
                 self.syncArchivedRecords { archivedDeletionResult in
-                  completion(archivedDeletionResult)
+                  finish(archivedDeletionResult)
                 }
               case .failure(let error):
-                completion(.failure(error))
+                finish(.failure(error))
               }
             }
           case .failure(let error):
-            completion(.failure(error))
+            finish(.failure(error))
           }
       }
   }
@@ -646,35 +667,29 @@ extension RecordsRepo {
               return
           }
           
-          let uploadGroup = DispatchGroup()
-          var errors: [Error] = []
-          let errorsQueue = DispatchQueue(label: "syncNewRecords.errors", attributes: .concurrent)
-          
-          for record in records {
-              // Skip uploading records attempted less than 10 minutes ago — they may still be in-flight
-              if record.syncState == RecordSyncState.uploading.stringValue,
-                 let uploadDate = record.uploadDate,
-                 Date().timeIntervalSince(uploadDate) < 5 * 60 {
-                  EkaMedicalRecordsCoreLogger.capture("Skipping retry for record \(record.documentID ?? "unknown") — last upload attempt was less than 10 minutes ago")
-                  continue
-              }
-              uploadGroup.enter()
-            self.uploadRecord(record: record) { uploadedRecord, errorType in
-                  if uploadedRecord == nil {
-                      let uploadError = ErrorHelper.createError(
-                          domain: .sync,
-                          code: errorType?.isUploadLimitReached ?? false ? .uploadLimitReached : .networkRequestFailed ,
-                          message: "Failed to upload record: \(record.documentID ?? "unknown")"
-                      )
-                      errorsQueue.async(flags: .barrier) {
-                          errors.append(uploadError)
+          let uploadQueue = DispatchQueue(label: "syncNewRecords.uploadQueue")
+          uploadQueue.async {
+              let uploadSemaphore = DispatchSemaphore(value: 0)
+              var errors: [Error] = []
+
+              for record in records {
+                  // uploadRecord touches the managed object, so keep it on the main thread as before
+                  DispatchQueue.main.async {
+                      self.uploadRecord(record: record) { uploadedRecord, errorType in
+                          if uploadedRecord == nil {
+                              let uploadError = ErrorHelper.createError(
+                                  domain: .sync,
+                                  code: errorType?.isUploadLimitReached ?? false ? .uploadLimitReached : .networkRequestFailed ,
+                                  message: "Failed to upload record: \(record.documentID ?? "unknown")"
+                              )
+                              errors.append(uploadError)
+                          }
+                          uploadSemaphore.signal()
                       }
                   }
-                  uploadGroup.leave()
+                  uploadSemaphore.wait()
               }
-          }
-          
-          uploadGroup.notify(queue: .global(qos: .utility)) {
+
               if errors.isEmpty {
                   completion(.success(()))
               } else {
@@ -815,21 +830,42 @@ extension RecordsRepo {
 
 extension RecordsRepo {
   
-  /// Used to sync the unuploaded records
+  /// Used to sync the unsynced cases.
+  /// Re-entrant calls while a cases sync is in progress return immediately without touching the database.
   public func syncUnsyncedCases(completion: @escaping (Result<Void, Error>) -> Void) {
+    syncLock.lock()
+    guard !casesSyncing else {
+      syncLock.unlock()
+      EkaMedicalRecordsCoreLogger.capture("Skipping syncUnsyncedCases — a cases sync is already in progress")
+      completion(.success(()))
+      return
+    }
+    casesSyncing = true
+    syncLock.unlock()
+
+    // Every exit path must go through finish so the casesSyncing flag is released
+    let finish: (Result<Void, Error>) -> Void = { [weak self] result in
+      if let self {
+        self.syncLock.lock()
+        self.casesSyncing = false
+        self.syncLock.unlock()
+      }
+      completion(result)
+    }
+
     syncNewCases { [weak self] newCasesResult in
       guard let self  else {
-        completion(.failure(ErrorHelper.selfDeallocatedError()))
-        return 
+        finish(.failure(ErrorHelper.selfDeallocatedError()))
+        return
       }
-      
+
       switch newCasesResult {
       case .success:
         syncEditedCases { editedCasesResult in
-          completion(editedCasesResult)
+          finish(editedCasesResult)
         }
       case .failure(let error):
-        completion(.failure(error))
+        finish(.failure(error))
       }
     }
   }
@@ -847,13 +883,12 @@ extension RecordsRepo {
         return
       }
       
-      let uploadGroup = DispatchGroup()
       var errors: [Error] = []
-      let errorsQueue = DispatchQueue(label: "syncNewCases.errors", attributes: .concurrent)
-      
+
+      // Validate on the main thread (where fetchCase delivers) and collect upload candidates,
+      // so the background queue below never touches the managed objects
+      var casesToCreate: [(caseModel: CaseModel, caseID: String, caseName: String, caseType: String, oid: String)] = []
       for uploadcase in cases {
-        uploadGroup.enter()
-        
         // Validate that all required data is available before making the API call
         guard let caseID = uploadcase.caseID, !caseID.isEmpty,
               let caseName = uploadcase.caseName, !caseName.isEmpty,
@@ -867,43 +902,13 @@ extension RecordsRepo {
           ].compactMap { $0 }
           let validationError = ErrorHelper.validationError(missingFields: missingFields)
           EkaMedicalRecordsCoreLogger.capture("Skipping case creation - missing required data: \(missingFields.joined(separator: ", "))")
-          errorsQueue.async(flags: .barrier) {
-            errors.append(validationError)
-          }
-          uploadGroup.leave()
+          errors.append(validationError)
           continue
         }
-        
-        self.casesService.createCases(oid: oid, request: CasesCreateRequest(id: caseID, displayName: caseName, hiType: nil ,occurredAt: uploadcase.occuredAt?.toEpochInt() ?? Date().toEpochInt(), type: caseType, partnerMeta: nil)) { [weak self] result, statusCode in
-          guard let self else {
-            uploadGroup.leave()
-            return
-          }
-          
-          switch result {
-          case .success(_):
-            EkaMedicalRecordsCoreLogger.capture("Case successfully created on the server.")
-            // Update the case to mark it as remotely created
-            let updateModel = CaseArguementModel(
-              caseId: uploadcase.caseID,
-              isRemoteCreated: true
-            )
-            self.databaseManager.updateCase(
-              caseModel: uploadcase,
-              caseArguementModel: updateModel
-            )
-            
-          case .failure(let error):
-            EkaMedicalRecordsCoreLogger.capture("Failed to create case on server: \(error.localizedDescription)")
-            errorsQueue.async(flags: .barrier) {
-              errors.append(error)
-            }
-          }
-          uploadGroup.leave()
-        }
+        casesToCreate.append((uploadcase, caseID, caseName, caseType, oid))
       }
-      
-      uploadGroup.notify(queue: .global(qos: .utility)) {
+
+      let reportResult = {
         if errors.isEmpty {
           completion(.success(()))
         } else {
@@ -914,6 +919,47 @@ extension RecordsRepo {
           )
           completion(.failure(combinedError))
         }
+      }
+
+      guard !casesToCreate.isEmpty else {
+        reportResult()
+        return
+      }
+
+      // Create cases one at a time: the semaphore blocks the serial queue until
+      // the current request's completion fires before starting the next one
+      let uploadQueue = DispatchQueue(label: "syncNewCases.uploadQueue")
+      uploadQueue.async {
+        let uploadSemaphore = DispatchSemaphore(value: 0)
+
+        for item in casesToCreate {
+          // The service call and managed object access stay on the main thread as before
+          DispatchQueue.main.async {
+            self.casesService.createCases(oid: item.oid, request: CasesCreateRequest(id: item.caseID, displayName: item.caseName, hiType: nil ,occurredAt: item.caseModel.occuredAt?.toEpochInt() ?? Date().toEpochInt(), type: item.caseType, partnerMeta: nil)) { result, statusCode in
+              switch result {
+              case .success(_):
+                EkaMedicalRecordsCoreLogger.capture("Case successfully created on the server.")
+                // Update the case to mark it as remotely created
+                let updateModel = CaseArguementModel(
+                  caseId: item.caseID,
+                  isRemoteCreated: true
+                )
+                self.databaseManager.updateCase(
+                  caseModel: item.caseModel,
+                  caseArguementModel: updateModel
+                )
+
+              case .failure(let error):
+                EkaMedicalRecordsCoreLogger.capture("Failed to create case on server: \(error.localizedDescription)")
+                errors.append(error)
+              }
+              uploadSemaphore.signal()
+            }
+          }
+          uploadSemaphore.wait()
+        }
+
+        reportResult()
       }
     }
   }
@@ -931,13 +977,12 @@ extension RecordsRepo {
         return
       }
       
-      let editGroup = DispatchGroup()
       var errors: [Error] = []
-      let errorsQueue = DispatchQueue(label: "syncEditedCases.errors", attributes: .concurrent)
-      
+
+      // Validate on the main thread (where fetchCase delivers) and collect update candidates,
+      // so the background queue below never touches the managed objects
+      var casesToUpdate: [(caseModel: CaseModel, caseID: String, oid: String)] = []
       for caseItem in cases {
-        editGroup.enter()
-        
         // Validate that all required data is available before making the API call
         guard let caseID = caseItem.caseID, !caseID.isEmpty,
               let oid = caseItem.oid, !oid.isEmpty else {
@@ -947,43 +992,13 @@ extension RecordsRepo {
           ].compactMap { $0 }
           let validationError = ErrorHelper.validationError(missingFields: missingFields)
           EkaMedicalRecordsCoreLogger.capture("Skipping case update - missing required data: \(missingFields.joined(separator: ", "))")
-          errorsQueue.async(flags: .barrier) {
-            errors.append(validationError)
-          }
-          editGroup.leave()
+          errors.append(validationError)
           continue
         }
-        
-        self.casesService.updateCases(caseId: caseID, oid: oid, request: CasesUpdateRequest(displayName: caseItem.caseName, type: caseItem.caseType, hiType: nil, occuredAt: caseItem.occuredAt?.toEpochInt())) { [weak self] result, statusCode in
-          guard let self else {
-            editGroup.leave()
-            return
-          }
-          
-          switch result {
-          case .success(_):
-            EkaMedicalRecordsCoreLogger.capture("Case successfully updated on the server.")
-            // Update the case to mark it as not edited (sync completed)
-            let updateModel = CaseArguementModel(
-              caseId: caseItem.caseID,
-              isEdited: false
-            )
-            self.databaseManager.updateCase(
-              caseModel: caseItem,
-              caseArguementModel: updateModel
-            )
-            
-          case .failure(let error):
-            EkaMedicalRecordsCoreLogger.capture("Failed to update case on server: \(error.localizedDescription)")
-            errorsQueue.async(flags: .barrier) {
-              errors.append(error)
-            }
-          }
-          editGroup.leave()
-        }
+        casesToUpdate.append((caseItem, caseID, oid))
       }
-      
-      editGroup.notify(queue: .global(qos: .utility)) {
+
+      let reportResult = {
         if errors.isEmpty {
           completion(.success(()))
         } else {
@@ -994,6 +1009,47 @@ extension RecordsRepo {
           )
           completion(.failure(combinedError))
         }
+      }
+
+      guard !casesToUpdate.isEmpty else {
+        reportResult()
+        return
+      }
+
+      // Update cases one at a time: the semaphore blocks the serial queue until
+      // the current request's completion fires before starting the next one
+      let editQueue = DispatchQueue(label: "syncEditedCases.editQueue")
+      editQueue.async {
+        let editSemaphore = DispatchSemaphore(value: 0)
+
+        for item in casesToUpdate {
+          // The service call and managed object access stay on the main thread as before
+          DispatchQueue.main.async {
+            self.casesService.updateCases(caseId: item.caseID, oid: item.oid, request: CasesUpdateRequest(displayName: item.caseModel.caseName, type: item.caseModel.caseType, hiType: nil, occuredAt: item.caseModel.occuredAt?.toEpochInt())) { result, statusCode in
+              switch result {
+              case .success(_):
+                EkaMedicalRecordsCoreLogger.capture("Case successfully updated on the server.")
+                // Update the case to mark it as not edited (sync completed)
+                let updateModel = CaseArguementModel(
+                  caseId: item.caseID,
+                  isEdited: false
+                )
+                self.databaseManager.updateCase(
+                  caseModel: item.caseModel,
+                  caseArguementModel: updateModel
+                )
+
+              case .failure(let error):
+                EkaMedicalRecordsCoreLogger.capture("Failed to update case on server: \(error.localizedDescription)")
+                errors.append(error)
+              }
+              editSemaphore.signal()
+            }
+          }
+          editSemaphore.wait()
+        }
+
+        reportResult()
       }
     }
   }
