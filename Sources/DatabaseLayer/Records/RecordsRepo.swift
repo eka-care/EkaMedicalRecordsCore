@@ -194,9 +194,6 @@ public final class RecordsRepo {
         case .uploadLimitReached, .unknown(message: _, statusCode: _):
           databaseManager.updateRecord(documentID: documentId, syncStatus: RecordSyncState.upload(success: false))
           didUploadRecord(nil, error)
-        case .duplicateDocumentUpload:
-          databaseManager.updateRecord(documentID: documentId, syncStatus: RecordSyncState.upload(success: true))
-          didUploadRecord(nil, error)
         default:
           deleteRecordV3(documentID: documentId, oid: record.oid ?? "") { [weak self] _, _ in
               self?.databaseManager.updateRecord(documentID: documentId, syncStatus: RecordSyncState.upload(success: false))
