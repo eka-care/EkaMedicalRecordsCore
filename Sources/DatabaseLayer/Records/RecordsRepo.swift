@@ -654,7 +654,7 @@ extension RecordsRepo {
               // Skip uploading records attempted less than 10 minutes ago — they may still be in-flight
               if record.syncState == RecordSyncState.uploading.stringValue,
                  let uploadDate = record.uploadDate,
-                 Date().timeIntervalSince(uploadDate) < 10 * 60 {
+                 Date().timeIntervalSince(uploadDate) < 5 * 60 {
                   EkaMedicalRecordsCoreLogger.capture("Skipping retry for record \(record.documentID ?? "unknown") — last upload attempt was less than 10 minutes ago")
                   continue
               }
