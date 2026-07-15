@@ -651,6 +651,13 @@ extension RecordsRepo {
           let errorsQueue = DispatchQueue(label: "syncNewRecords.errors", attributes: .concurrent)
           
           for record in records {
+              // Skip uploading records attempted less than 10 minutes ago — they may still be in-flight
+              if record.syncState == RecordSyncState.uploading.stringValue,
+                 let uploadDate = record.uploadDate,
+                 Date().timeIntervalSince(uploadDate) < 10 * 60 {
+                  EkaMedicalRecordsCoreLogger.capture("Skipping retry for record \(record.documentID ?? "unknown") — last upload attempt was less than 10 minutes ago")
+                  continue
+              }
               uploadGroup.enter()
             self.uploadRecord(record: record) { uploadedRecord, errorType in
                   if uploadedRecord == nil {

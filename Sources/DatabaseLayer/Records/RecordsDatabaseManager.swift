@@ -692,6 +692,7 @@ extension RecordsDatabaseManager {
       documentID: String,
       documentDate: Date? = nil,
       updatedAt: Date? = nil,
+      uploadDate: Date? = nil,
       documentType: String? = nil,
       documentOid: String? = nil,
       syncStatus: RecordSyncState? = nil,
@@ -732,7 +733,11 @@ extension RecordsDatabaseManager {
           if let updatedAt = updatedAt {
             record.updatedAt = updatedAt
           }
-          
+
+          if let uploadDate = uploadDate {
+            record.uploadDate = uploadDate
+          }
+
           if let documentType {
             record.documentType = documentType
           }
