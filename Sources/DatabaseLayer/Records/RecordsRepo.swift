@@ -16,7 +16,7 @@ public final class RecordsRepo {
   public let databaseAdapter = RecordDatabaseAdapter()
   private var isSyncing = false
   private var casesSyncing = false
-  private let syncLock = NSLock()
+  private let syncSemaphore = DispatchSemaphore(value: 1)
   let uploadManager = RecordUploadManager()
   let service: RecordsProvider = RecordsApiService()
   let casesService: CasesProvider = CasesApiService()
@@ -610,22 +610,22 @@ extension RecordsRepo {
   
   /// Used to sync the unuploaded records
   public func syncUnuploadedRecords(completion: @escaping (Result<Void, Error>) -> Void) {
-      syncLock.lock()
+      syncSemaphore.wait()
       guard !isSyncing else {
-          syncLock.unlock()
+          syncSemaphore.signal()
           EkaMedicalRecordsCoreLogger.capture("Skipping syncUnuploadedRecords — a sync is already in progress")
           completion(.success(()))
           return
       }
       isSyncing = true
-      syncLock.unlock()
+      syncSemaphore.signal()
 
       // Every exit path must go through finish so the isSyncing flag is released
       let finish: (Result<Void, Error>) -> Void = { [weak self] result in
           if let self {
-              self.syncLock.lock()
+              self.syncSemaphore.wait()
               self.isSyncing = false
-              self.syncLock.unlock()
+              self.syncSemaphore.signal()
           }
           completion(result)
       }
@@ -833,22 +833,22 @@ extension RecordsRepo {
   /// Used to sync the unsynced cases.
   /// Re-entrant calls while a cases sync is in progress return immediately without touching the database.
   public func syncUnsyncedCases(completion: @escaping (Result<Void, Error>) -> Void) {
-    syncLock.lock()
+    syncSemaphore.wait()
     guard !casesSyncing else {
-      syncLock.unlock()
+      syncSemaphore.signal()
       EkaMedicalRecordsCoreLogger.capture("Skipping syncUnsyncedCases — a cases sync is already in progress")
       completion(.success(()))
       return
     }
     casesSyncing = true
-    syncLock.unlock()
+    syncSemaphore.signal()
 
     // Every exit path must go through finish so the casesSyncing flag is released
     let finish: (Result<Void, Error>) -> Void = { [weak self] result in
       if let self {
-        self.syncLock.lock()
+        self.syncSemaphore.wait()
         self.casesSyncing = false
-        self.syncLock.unlock()
+        self.syncSemaphore.signal()
       }
       completion(result)
     }
