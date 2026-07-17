@@ -253,7 +253,6 @@ extension RecordDatabaseAdapter {
       insertModel.isAbhaLinked = false
     }
     
-    insertModel.syncState = RecordSyncState.upload(success: true)
     /// Assign cases array if available
     insertModel.caseIDs = networkModel.recordDocument.item.cases
     /// Form Thumbnail asynchronously

@@ -16,6 +16,7 @@ public final class RecordsRepo {
   public let databaseAdapter = RecordDatabaseAdapter()
   private var isSyncing = false
   private var casesSyncing = false
+  private static let staleUploadThreshold: TimeInterval = 5 * 60
   let uploadManager = RecordUploadManager()
   let service: RecordsProvider = RecordsApiService()
   let casesService: CasesProvider = CasesApiService()
@@ -643,17 +644,24 @@ extension RecordsRepo {
               return
           }
           
+          let staleCutoff = Date().addingTimeInterval(-Self.staleUploadThreshold)
+          let recordsToUpload = records.filter { record in
+              guard record.syncState == RecordSyncState.uploading.stringValue,
+                    let uploadStartedAt = record.uploadDate else { return true }
+              return uploadStartedAt < staleCutoff
+          }
+
           // Handle case where there are no records to upload
-          guard !records.isEmpty else {
+          guard !recordsToUpload.isEmpty else {
               completion(.success(()))
               return
           }
-          
+
           let uploadGroup = DispatchGroup()
           var errors: [Error] = []
           let errorsQueue = DispatchQueue(label: "syncNewRecords.errors", attributes: .concurrent)
-          
-          for record in records {
+
+          for record in recordsToUpload {
               uploadGroup.enter()
             self.uploadRecord(record: record) { uploadedRecord, errorType in
                   if uploadedRecord == nil {
