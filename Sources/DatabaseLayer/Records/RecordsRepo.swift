@@ -14,9 +14,12 @@ public final class RecordsRepo {
   public static let shared = RecordsRepo()
   public let databaseManager = RecordsDatabaseManager.shared
   public let databaseAdapter = RecordDatabaseAdapter()
-  private var isSyncing = false
-  private var casesSyncing = false
-  private let syncSemaphore = DispatchSemaphore(value: 1)
+  /// Serialize records syncs: the semaphore is held for the whole sync, and the
+  /// wait happens on the private queue so a caller's thread (e.g. main) never blocks
+  private let recordsSyncQueue = DispatchQueue(label: "com.eka.records.sync.records")
+  private let recordsSyncSemaphore = DispatchSemaphore(value: 1)
+  private let casesSyncQueue = DispatchQueue(label: "com.eka.records.sync.cases")
+  private let casesSyncSemaphore = DispatchSemaphore(value: 1)
   let uploadManager = RecordUploadManager()
   let service: RecordsProvider = RecordsApiService()
   let casesService: CasesProvider = CasesApiService()
@@ -608,48 +611,44 @@ extension RecordsRepo {
     return updatedAt?.toEpochString()
   }
   
-  /// Used to sync the unuploaded records
+  /// Used to sync the unuploaded records.
+  /// Calls made while a sync is running wait on the private queue and run one after another.
   public func syncUnuploadedRecords(completion: @escaping (Result<Void, Error>) -> Void) {
-      syncSemaphore.wait()
-      guard !isSyncing else {
-          syncSemaphore.signal()
-          EkaMedicalRecordsCoreLogger.capture("Skipping syncUnuploadedRecords — a sync is already in progress")
-          completion(.success(()))
-          return
-      }
-      isSyncing = true
-      syncSemaphore.signal()
-
-      // Every exit path must go through finish so the isSyncing flag is released
-      let finish: (Result<Void, Error>) -> Void = { [weak self] result in
-          if let self {
-              self.syncSemaphore.wait()
-              self.isSyncing = false
-              self.syncSemaphore.signal()
-          }
-          completion(result)
-      }
-
-      syncNewRecords { [weak self] newRecordsResult in
-          guard let self = self else {
-            finish(.failure(ErrorHelper.selfDeallocatedError()))
-            return
+      recordsSyncQueue.async { [weak self] in
+          guard let self else {
+              completion(.failure(ErrorHelper.selfDeallocatedError()))
+              return
           }
 
-          switch newRecordsResult {
-          case .success:
-            self.syncEditedRecords { editedRecordsResult in
-              switch editedRecordsResult {
+          self.recordsSyncSemaphore.wait()
+
+          // Every exit path must go through finish so the semaphore is released
+          let finish: (Result<Void, Error>) -> Void = { [weak self] result in
+              self?.recordsSyncSemaphore.signal()
+              completion(result)
+          }
+
+          self.syncNewRecords { [weak self] newRecordsResult in
+              guard let self = self else {
+                finish(.failure(ErrorHelper.selfDeallocatedError()))
+                return
+              }
+
+              switch newRecordsResult {
               case .success:
-                self.syncArchivedRecords { archivedDeletionResult in
-                  finish(archivedDeletionResult)
+                self.syncEditedRecords { editedRecordsResult in
+                  switch editedRecordsResult {
+                  case .success:
+                    self.syncArchivedRecords { archivedDeletionResult in
+                      finish(archivedDeletionResult)
+                    }
+                  case .failure(let error):
+                    finish(.failure(error))
+                  }
                 }
               case .failure(let error):
                 finish(.failure(error))
               }
-            }
-          case .failure(let error):
-            finish(.failure(error))
           }
       }
   }
@@ -831,41 +830,36 @@ extension RecordsRepo {
 extension RecordsRepo {
   
   /// Used to sync the unsynced cases.
-  /// Re-entrant calls while a cases sync is in progress return immediately without touching the database.
+  /// Calls made while a cases sync is running wait on the private queue and run one after another.
   public func syncUnsyncedCases(completion: @escaping (Result<Void, Error>) -> Void) {
-    syncSemaphore.wait()
-    guard !casesSyncing else {
-      syncSemaphore.signal()
-      EkaMedicalRecordsCoreLogger.capture("Skipping syncUnsyncedCases — a cases sync is already in progress")
-      completion(.success(()))
-      return
-    }
-    casesSyncing = true
-    syncSemaphore.signal()
-
-    // Every exit path must go through finish so the casesSyncing flag is released
-    let finish: (Result<Void, Error>) -> Void = { [weak self] result in
-      if let self {
-        self.syncSemaphore.wait()
-        self.casesSyncing = false
-        self.syncSemaphore.signal()
-      }
-      completion(result)
-    }
-
-    syncNewCases { [weak self] newCasesResult in
-      guard let self  else {
-        finish(.failure(ErrorHelper.selfDeallocatedError()))
+    casesSyncQueue.async { [weak self] in
+      guard let self else {
+        completion(.failure(ErrorHelper.selfDeallocatedError()))
         return
       }
 
-      switch newCasesResult {
-      case .success:
-        syncEditedCases { editedCasesResult in
-          finish(editedCasesResult)
+      self.casesSyncSemaphore.wait()
+
+      // Every exit path must go through finish so the semaphore is released
+      let finish: (Result<Void, Error>) -> Void = { [weak self] result in
+        self?.casesSyncSemaphore.signal()
+        completion(result)
+      }
+
+      self.syncNewCases { [weak self] newCasesResult in
+        guard let self  else {
+          finish(.failure(ErrorHelper.selfDeallocatedError()))
+          return
         }
-      case .failure(let error):
-        finish(.failure(error))
+
+        switch newCasesResult {
+        case .success:
+          syncEditedCases { editedCasesResult in
+            finish(editedCasesResult)
+          }
+        case .failure(let error):
+          finish(.failure(error))
+        }
       }
     }
   }
