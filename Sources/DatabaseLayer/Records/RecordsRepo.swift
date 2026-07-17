@@ -20,6 +20,7 @@ public final class RecordsRepo {
   private let recordsSyncSemaphore = DispatchSemaphore(value: 1)
   private let casesSyncQueue = DispatchQueue(label: "com.eka.records.sync.cases")
   private let casesSyncSemaphore = DispatchSemaphore(value: 1)
+  private static let staleUploadThreshold: TimeInterval = 5 * 60
   let uploadManager = RecordUploadManager()
   let service: RecordsProvider = RecordsApiService()
   let casesService: CasesProvider = CasesApiService()
@@ -659,9 +660,16 @@ extension RecordsRepo {
               completion(.failure(ErrorHelper.selfDeallocatedError()))
               return
           }
-          
+
+          let staleCutoff = Date().addingTimeInterval(-Self.staleUploadThreshold)
+          let recordsToUpload = records.filter { record in
+              guard record.syncState == RecordSyncState.uploading.stringValue,
+                    let uploadStartedAt = record.uploadDate else { return true }
+              return uploadStartedAt < staleCutoff
+          }
+
           // Handle case where there are no records to upload
-          guard !records.isEmpty else {
+          guard !recordsToUpload.isEmpty else {
               completion(.success(()))
               return
           }
@@ -671,7 +679,7 @@ extension RecordsRepo {
               let uploadSemaphore = DispatchSemaphore(value: 0)
               var errors: [Error] = []
 
-              for record in records {
+              for record in recordsToUpload {
                   // uploadRecord touches the managed object, so keep it on the main thread as before
                   DispatchQueue.main.async {
                       self.uploadRecord(record: record) { uploadedRecord, errorType in
