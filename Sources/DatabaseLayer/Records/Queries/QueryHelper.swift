@@ -61,7 +61,7 @@ public final class QueryHelper {
   public static func fetchRecordsForEditedRecordSync() -> NSFetchRequest<Record> {
       let fetchRequest: NSFetchRequest<Record> = Record.fetchRequest()
       fetchRequest.predicate = NSPredicate(
-          format: "isEdited == %@ AND syncState == %@",
+          format: "isEdited == %@ AND (syncState == %@ OR syncState == nil)",
           NSNumber(value: true),
           RecordSyncState.upload(success: true).stringValue
       )
