@@ -10,27 +10,32 @@ import Foundation
 public enum FileType: String {
   case pdf = "PDF"
   case image = "IMG"
-  
+  case html = "HTML"
+
   public var fileExtension: String {
     switch self {
     case .pdf:
       return ".pdf"
     case .image:
       return ".jpg"
+    case .html:
+      return ".html"
     }
   }
-  
+
   public static func getTypeFromFileExtension(fileExtension: String) -> FileType? {
     switch fileExtension {
     case ".pdf":
       return .pdf
     case ".jpg":
       return .image
+    case ".html":
+      return .html
     default:
       return nil
     }
   }
-  
+
   public static func getFileTypeFromFilePath(filePath: String) -> FileType? {
     let fileExtension = (filePath as NSString).pathExtension.lowercased()
     switch fileExtension {
@@ -38,6 +43,8 @@ public enum FileType: String {
       return .pdf
     case "jpg", "jpeg", "png", "gif", "heic", "bmp", "tiff", "webp":
       return .image
+    case "html":
+      return .html
     default:
       return nil
     }
@@ -133,6 +140,8 @@ public final class FileHelper {
       return .imageJpg
     case ".m4a":
       return .audio
+    case ".html":
+      return .html
     default:
       return .pdf
     }

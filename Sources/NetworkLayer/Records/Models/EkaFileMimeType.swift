@@ -10,6 +10,7 @@ enum EkaFileMimeType: String {
   case pdf = "application/pdf"
   case audio = "audio/aac"
   case video = "video/mp4"
+  case html = "text/html"
   
   public var uiHelperValue: String {
     switch self {
@@ -21,6 +22,8 @@ enum EkaFileMimeType: String {
       return "audio"
     case .video:
       return "video"
+    case .html:
+      return "html"
     }
   }
   
@@ -34,6 +37,8 @@ enum EkaFileMimeType: String {
       return ".jpg"
     case .pdf:
       return ".pdf"
+    case .html:
+      return ".html"
     }
   }
 }
